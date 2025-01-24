@@ -10,6 +10,7 @@ function loginWithFacebook() {
 
             // Ativar a seleção do formulário após login
             document.getElementById('form').style.display = 'block';
+            document.getElementById('loginBtn').style.display = 'none';  // Ocultar o botão de login
         } else {
             console.log('Usuário cancelou o login');
         }
