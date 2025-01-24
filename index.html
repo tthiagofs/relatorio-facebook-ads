@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Facebook Ads</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- SDK do Facebook -->
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    <script>
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : '618519427538646',  // ID do seu aplicativo
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v12.0'  // Use a versão mais recente da API
+            });
+            FB.AppEvents.logPageView();
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerar Relatório - Facebook Ads</h1>
+        <!-- Formulário para gerar relatório -->
+        <form id="form">
+            <label for="unitId">Selecione a Unidade:</label>
+            <select id="unitId" required>
+                <option value="">Escolha a unidade</option>
+                <option value="1249079713041417">Curvelo</option>
+                <option value="910600177134595">Ilheus</option>
+                <!-- Adicione outras unidades conforme necessário -->
+            </select>
+            <label for="startDate">Data Início:</label>
+            <input type="date" id="startDate" required>
+            <label for="endDate">Data Fim:</label>
+            <input type="date" id="endDate" required>
+            <button type="submit">Gerar Relatório</button>
+        </form>
+
+        <!-- Botão de login do Facebook -->
+        <button id="loginBtn" onclick="loginWithFacebook()">Login com Facebook</button>
+
+        <div id="reportContainer" class="report-container">
+            <!-- O relatório será exibido aqui -->
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
