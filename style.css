@@ -41,9 +41,8 @@ select, input[type="date"], button {
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 14px;
-    background-color: #fff; /* Garante o fundo branco */
-    color: #333; /* Texto preto */
-    appearance: none; /* Remove estilos padrão do navegador */
+    background-color: #fff;
+    color: #333;
 }
 
 button {
@@ -81,19 +80,7 @@ button:hover {
     font-weight: bold;
 }
 
-/* Ajustes específicos para dropdown */
-select {
-    background-color: #fff; /* Fundo branco */
-    color: #000; /* Texto preto */
-}
-
 option {
-    background-color: #fff; /* Fundo branco */
-    color: #000; /* Texto preto */
-}
-
-/* Garantindo visibilidade no foco */
-select:focus, option:focus {
-    outline: none;
-    border-color: #4CAF50; /* Realce no foco */
+    color: #000;
+    background-color: #fff;
 }
