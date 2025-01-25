@@ -77,3 +77,24 @@ button:hover {
 .report-container p strong {
     font-weight: bold;
 }
+
+
+select, option {
+    color: #333; /* Define a cor do texto */
+    background-color: #fff; /* Define o fundo branco */
+    font-size: 14px; /* Ajusta o tamanho do texto */
+    border: 1px solid #ccc; /* Adiciona uma borda */
+    border-radius: 4px; /* Adiciona bordas arredondadas */
+    padding: 10px;
+    appearance: none; /* Remove estilos padrão do navegador (opcional) */
+}
+
+select:hover, select:focus {
+    outline: none;
+    border-color: #4CAF50; /* Cor da borda ao focar */
+}
+
+option {
+    color: #333; /* Cor do texto das opções */
+    background-color: #fff; /* Fundo branco para as opções */
+}
