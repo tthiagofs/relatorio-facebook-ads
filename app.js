@@ -8,6 +8,9 @@ function loginWithFacebook() {
             accessToken = response.authResponse.accessToken;
             console.log('Token de Acesso:', accessToken);
 
+            // Buscar contas de anúncio do usuário
+            fetchAdAccounts();
+
             // Ativar a seleção do formulário após login
             document.getElementById('form').style.display = 'block';
             document.getElementById('loginBtn').style.display = 'none';  // Ocultar o botão de login
@@ -15,6 +18,43 @@ function loginWithFacebook() {
             console.log('Usuário cancelou o login');
         }
     }, { scope: 'ads_read,ads_management' });  // Permissões necessárias
+}
+
+// Função para buscar contas de anúncio do usuário
+function fetchAdAccounts() {
+    if (!accessToken) {
+        alert("Por favor, faça login no Facebook primeiro.");
+        return;
+    }
+
+    // URL da API para listar as contas de anúncio do usuário
+    const url = `https://graph.facebook.com/v12.0/me/adaccounts?access_token=${accessToken}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.data && data.data.length > 0) {
+                const adAccounts = data.data;
+                const unitSelect = document.getElementById('unitId');
+                
+                // Limpar opções existentes no dropdown
+                unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+
+                // Adicionar as contas ao dropdown
+                adAccounts.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account.id; // ID da conta de anúncio
+                    option.textContent = account.name; // Nome da conta de anúncio
+                    unitSelect.appendChild(option);
+                });
+            } else {
+                alert("Nenhuma conta de anúncio encontrada para o usuário.");
+            }
+        })
+        .catch(error => {
+            console.error("Erro ao buscar contas de anúncio:", error);
+            alert("Erro ao buscar as contas de anúncio. Tente novamente.");
+        });
 }
 
 // Função para gerar o relatório com os dados da campanha
@@ -42,11 +82,13 @@ function fetchCampaignData(unitId) {
     const endDate = document.getElementById('endDate').value;
 
     // URL da API para buscar os dados das campanhas
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?access_token=${accessToken}&time_range={'since':'${startDate}','until':'${endDate}'}`;
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?access_token=${accessToken}&time_range={"since":"${startDate}","until":"${endDate}"}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
+            console.log('Dados recebidos:', data); // Log para depuração
+
             // Verificando se há dados
             if (data && data.data && data.data.length > 0) {
                 const campaignData = data.data[0];  // Pegando os dados da primeira campanha (ajustar conforme necessidade)
