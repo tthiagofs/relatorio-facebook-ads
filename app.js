@@ -45,11 +45,13 @@ function fetchCampaignData(unitId) {
     fetch(url)
         .then(response => response.json())
         .then(data => {
+            console.log("Resposta da API:", data); // Verificar os dados retornados
+
             if (data && data.data && data.data.length > 0) {
                 const campaignData = data.data[0];
 
                 const reach = campaignData.reach || 0;
-                const messagesStarted = campaignData.onsite_conversion.messaging_conversation_started_7d || 0;
+                const messagesStarted = campaignData['onsite_conversion.messaging_conversation_started_7d'] || 0;
                 const spent = campaignData.spend || 0;
                 const costPerMessage = messagesStarted > 0 ? (spent / messagesStarted).toFixed(2) : 'N/A';
 
@@ -74,7 +76,6 @@ function fetchCampaignData(unitId) {
             alert('Ocorreu um erro ao buscar os dados da campanha. Tente novamente.');
         });
 }
-
 // Função para lidar com o envio do formulário
 document.getElementById('form').addEventListener('submit', function(event) {
     event.preventDefault();
