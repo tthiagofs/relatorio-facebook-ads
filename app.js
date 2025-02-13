@@ -1,6 +1,5 @@
 let accessToken = '';  // Armazena o token de acesso do Facebook
 
-// Função de login com o Facebook
 function loginWithFacebook() {
     FB.login(function(response) {
         if (response.authResponse) {
@@ -52,14 +51,63 @@ function fetchAdAccounts() {
         });
 }
 
-document.getElementById('form').addEventListener('submit', function(event) {
-    event.preventDefault();  // Impede o recarregamento da página
+function fetchCampaignData(unitId) {
+    if (!accessToken) {
+        alert("Por favor, faça login no Facebook primeiro.");
+        return;
+    }
 
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?access_token=${accessToken}&time_range={\"since\":\"${startDate}\",\"until\":\"${endDate}\"}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Dados recebidos:', data);
+            if (data && data.data && data.data.length > 0) {
+                const campaignData = data.data[0];
+                const reportData = {
+                    unitName: unitId,
+                    startDate: startDate,
+                    endDate: endDate,
+                    campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
+                    spent: campaignData.spend || '0,00',
+                    messages: campaignData.messaging_conversion || 0,
+                    cpc: campaignData.cost_per_messaging_conversion || '0,00',
+                    reach: campaignData.reach || 0
+                };
+                generateReport(reportData);
+            } else {
+                alert('Nenhum dado encontrado para esse período.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao buscar dados da campanha:', error);
+            alert('Ocorreu um erro ao buscar os dados da campanha. Tente novamente.');
+        });
+}
+
+function generateReport(data) {
+    const reportContainer = document.getElementById('reportContainer');
+    reportContainer.innerHTML = `
+        <h2>📊 RELATÓRIO - UNIDADE ${data.unitName}</h2>
+        <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
+        <p><strong>Campanha:</strong> ${data.campaignName}</p>
+        <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
+        <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
+        <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
+        <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
+    `;
+}
+
+document.getElementById('form').addEventListener('submit', function(event) {
+    event.preventDefault();
     const unitId = document.getElementById('unitId').value;
     if (!unitId) {
         alert('Por favor, selecione uma unidade.');
         return;
     }
-
     fetchCampaignData(unitId);
 });
