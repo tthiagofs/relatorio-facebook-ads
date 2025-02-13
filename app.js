@@ -52,4 +52,14 @@ function fetchAdAccounts() {
         });
 }
 
-document.getElementById('form').style.display = 'none';  // Esconder o formulário inicialmente
+document.getElementById('form').addEventListener('submit', function(event) {
+    event.preventDefault();  // Impede o recarregamento da página
+
+    const unitId = document.getElementById('unitId').value;
+    if (!unitId) {
+        alert('Por favor, selecione uma unidade.');
+        return;
+    }
+
+    fetchCampaignData(unitId);
+});
