@@ -8,26 +8,22 @@ function loginWithFacebook() {
             accessToken = response.authResponse.accessToken;
             console.log('Token de Acesso:', accessToken);
 
-            // Buscar contas de anúncio do usuário
             fetchAdAccounts();
 
-            // Ativar a seleção do formulário após login
             document.getElementById('form').style.display = 'block';
-            document.getElementById('loginBtn').style.display = 'none';  // Ocultar o botão de login
+            document.getElementById('loginBtn').style.display = 'none';
         } else {
             console.log('Usuário cancelou o login');
         }
-    }, { scope: 'ads_read,ads_management' });  // Permissões necessárias
+    }, { scope: 'ads_read,ads_management' });
 }
 
-// Função para buscar contas de anúncio do usuário
 function fetchAdAccounts() {
     if (!accessToken) {
         alert("Por favor, faça login no Facebook primeiro.");
         return;
     }
 
-    // URL da API para listar as contas de anúncio do usuário com campos explicitamente solicitados
     const url = `https://graph.facebook.com/v12.0/me/adaccounts?fields=id,name&access_token=${accessToken}`;
 
     fetch(url)
@@ -43,7 +39,7 @@ function fetchAdAccounts() {
                 adAccounts.forEach(account => {
                     const option = document.createElement('option');
                     option.value = account.id;
-                    option.textContent = account.name || `Conta ${account.id}`;  // Fallback se o nome não estiver presente
+                    option.textContent = account.name || `Conta ${account.id}`;
                     unitSelect.appendChild(option);
                 });
             } else {
@@ -55,3 +51,5 @@ function fetchAdAccounts() {
             alert("Erro ao buscar as contas de anúncio. Tente novamente.");
         });
 }
+
+document.getElementById('form').style.display = 'none';  // Esconder o formulário inicialmente
