@@ -31,6 +31,15 @@ function fetchAdAccounts() {
         });
 }
 
+function formatarNumero(numero) {
+    return parseFloat(numero).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatarData(data) {
+    const partes = data.split('-');
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
@@ -44,17 +53,17 @@ function fetchCampaignData(unitId) {
             const actions = campaignData.actions || [];
             const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
             const spent = parseFloat(campaignData.spend) || 0;
-            const cpc = messages > 0 ? (spent / messages).toFixed(2) : '0,00';
+            const cpc = messages > 0 ? (spent / messages) : 0;
 
             const reportData = {
                 unitName: adAccountsMap[unitId] || unitId,
-                startDate,
-                endDate,
+                startDate: formatarData(startDate),
+                endDate: formatarData(endDate),
                 campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
-                spent: spent.toFixed(2),
-                messages,
-                cpc,
-                reach: campaignData.reach || 0
+                spent: formatarNumero(spent),
+                messages: messages.toLocaleString('pt-BR'),
+                cpc: formatarNumero(cpc),
+                reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
             };
             generateReport(reportData);
         })
