@@ -1,9 +1,14 @@
-
-// app.js
+// app.js corrigido para garantir login funcional
 let accessToken = '';  
 let adAccountsMap = {};  
 
 function loginWithFacebook() {
+    FB.init({
+        appId      : '618519427538646',
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v18.0'
+    });
     FB.login(function(response) {
         if (response.authResponse) {
             accessToken = response.authResponse.accessToken;
