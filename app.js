@@ -1,4 +1,4 @@
-// Código completo corrigido e com implementação dos principais criativos
+// Código completo atualizado com melhorias de qualidade e layout dos criativos
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -80,7 +80,7 @@ function generateReport(data) {
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
         <h3>🎨 Principais Criativos</h3>
-        <div id="creativesContainer"></div>
+        <div id="creativesContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
     `;
     fetchTopCreatives(data.unitId);
 }
@@ -91,10 +91,10 @@ function fetchTopCreatives(unitId) {
         .then(response => response.json())
         .then(data => {
             const creativesContainer = document.getElementById('creativesContainer');
-            creativesContainer.innerHTML = data.data.slice(0, 2).map(ad => `
+            creativesContainer.innerHTML = data.data.map(ad => `
                 <div>
                     <p>${ad.name}</p>
-                    <img src="${ad.creative.thumbnail_url}" alt="Criativo ${ad.name}" style="width:100%;max-width:300px;margin-bottom:10px;">
+                    <img src="${ad.creative.thumbnail_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:200px; height:auto; border:1px solid #ddd; border-radius:8px;">
                 </div>
             `).join('');
         })
