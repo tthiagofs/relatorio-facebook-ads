@@ -31,15 +31,24 @@ function fetchAdAccounts() {
         });
 }
 
+function formatarNumero(numero) {
+    return parseFloat(numero).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatarData(data) {
+    const partes = data.split('-');
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
+            console.log('Dados recebidos da API:', data);
             const campaignData = data.data && data.data.length > 0 ? data.data[0] : {};
             const actions = campaignData.actions || [];
             const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
@@ -50,17 +59,30 @@ function fetchCampaignData(unitId) {
                 unitName: adAccountsMap[unitId] || unitId,
                 startDate: formatarData(startDate),
                 endDate: formatarData(endDate),
-                campaignName: campaignData.adset_name || 'Nenhum conjunto encontrado',
+                campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
                 spent: formatarNumero(spent),
-                messages: messages || 0,
-                cpc: messages > 0 ? formatarNumero(cpc) : '0,00',
-                reach: campaignData.reach ? parseInt(campaignData.reach).toLocaleString('pt-BR') : '0'
+                messages: messages.toLocaleString('pt-BR'),
+                cpc: formatarNumero(cpc),
+                reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
             };
             generateReport(reportData);
         })
         .catch(error => {
             console.error('Erro ao buscar dados:', error);
         });
+}
+
+function generateReport(data) {
+    const reportContainer = document.getElementById('reportContainer');
+    reportContainer.innerHTML = `
+        <h2>📊 RELATÓRIO - ${data.unitName}</h2>
+        <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
+        <p><strong>Campanha:</strong> ${data.campaignName}</p>
+        <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
+        <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
+        <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
+        <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
+    `;
 }
 
 document.getElementById('form').addEventListener('submit', function(event) {
