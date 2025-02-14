@@ -34,21 +34,23 @@ function fetchAdAccounts() {
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const campaignFilter = document.getElementById('campaignFilter').value.toLowerCase();
+    const campaignFilter = document.getElementById('campaignFilter').value.trim();
 
     let url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     if (campaignFilter) {
-        url += `&filtering=${encodeURIComponent(JSON.stringify([{field: 'adset.name', operator: 'CONTAINS', value: campaignFilter}]))}`;
+        url += `&filtering=${encodeURIComponent('[{"field":"adset.name","operator":"CONTAINS","value":"' + campaignFilter + '"}]')}`;
     }
 
     fetch(url)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Erro na resposta da API');
+            return response.json();
+        })
         .then(data => {
             console.log('Dados recebidos da API:', data);
-
             if (!data.data || data.data.length === 0) {
-                alert('Nenhum conjunto de anúncios encontrado com esse filtro.');
+                alert('Nenhum conjunto de anúncios encontrado para esse período ou filtro.');
                 return;
             }
 
@@ -72,6 +74,7 @@ function fetchCampaignData(unitId) {
         })
         .catch(error => {
             console.error('Erro ao buscar dados:', error);
+            alert('Erro ao gerar relatório. Verifique os parâmetros e tente novamente.');
         });
 }
 
