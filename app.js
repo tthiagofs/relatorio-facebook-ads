@@ -31,29 +31,20 @@ function fetchAdAccounts() {
         });
 }
 
-function formatarNumero(numero) {
-    return parseFloat(numero).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatarData(data) {
-    const partes = data.split('-');
-    return `${partes[2]}/${partes[1]}/${partes[0]}`;
-}
-
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const campaignFilter = document.getElementById('campaignFilter').value.toLowerCase(); 
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
             console.log('Dados recebidos da API:', data);
-            const filteredData = data.data ? data.data.filter(item => campaignFilter === '' || (item.campaign_name && item.campaign_name.toLowerCase().includes(campaignFilter))) : [];
+            const filteredData = data.data ? data.data.filter(item => campaignFilter === '' || (item.adset_name && item.adset_name.toLowerCase().includes(campaignFilter))) : [];
 
             if (filteredData.length === 0) {
-                alert('Nenhuma campanha encontrada com esse filtro.');
+                alert('Nenhum conjunto de anúncios encontrado com esse filtro.');
                 return;
             }
 
@@ -67,7 +58,7 @@ function fetchCampaignData(unitId) {
                 unitName: adAccountsMap[unitId] || unitId,
                 startDate: formatarData(startDate),
                 endDate: formatarData(endDate),
-                campaignName: campaignData.campaign_name || 'Nenhuma campanha encontrada',
+                campaignName: campaignData.adset_name || 'Nenhum conjunto encontrado',
                 spent: formatarNumero(spent),
                 messages: messages.toLocaleString('pt-BR'),
                 cpc: formatarNumero(cpc),
