@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,40 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório Facebook Ads</title>
     <link rel="stylesheet" href="style.css">
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    <script>
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : '618519427538646',
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v12.0'
+            });
+            FB.AppEvents.logPageView();
+        };
+    </script>
 </head>
 <body>
-    <h1>Relatório Facebook Ads</h1>
-    <button id="loginBtn" onclick="loginWithFacebook()">Login com Facebook</button>
-    <form id="form" style="display:none;">
-        <label for="unitId">Unidade:</label>
-        <select id="unitId"></select>
-        <label for="startDate">Data Inicial:</label>
-        <input type="date" id="startDate" required>
-        <label for="endDate">Data Final:</label>
-        <input type="date" id="endDate" required>
-        <button type="submit">Gerar Relatório</button>
-    </form>
-    <div id="reportContainer"></div>
+    <div class="container">
+        <h1>Gerar Relatório - Facebook Ads</h1>
 
-    <div id="reportTemplate" style="display:none;">
-        <style>
-            body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 20px; }
-            h2 { color: #333; }
-            p { font-size: 14px; }
-            .report-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-            .creative img, .creative video { width: 200px; border-radius: 8px; margin: 10px; }
-        </style>
-        <div class="report-section">
-            <h2>📊 RELATÓRIO - <span id="unitName"></span></h2>
-            <p><strong>Período analisado:</strong> <span id="period"></span></p>
-            <p><strong>Campanha:</strong> <span id="campaign"></span></p>
-            <p>💰 <strong>Investimento:</strong> R$ <span id="spent"></span></p>
-            <p>💬 <strong>Mensagens iniciadas:</strong> <span id="messages"></span></p>
-            <p>💵 <strong>Custo por mensagem:</strong> R$ <span id="cpc"></span></p>
-            <p>📢 <strong>Alcance:</strong> <span id="reach"></span> pessoas</p>
-        </div>
-        <h3>🎨 Principais Criativos</h3>
-        <div class="creative" id="creativesContainer"></div>
+        <!-- Botão de login do Facebook -->
+        <button id="loginBtn" onclick="loginWithFacebook()">Login com Facebook</button>
+
+        <!-- Formulário para gerar relatório (inicialmente oculto) -->
+        <form id="form" style="display: none;">
+            <label for="unitId">Selecione a Unidade:</label>
+            <select id="unitId" required>
+                <option value="">Escolha a unidade</option>
+            </select>
+
+            <label for="startDate">Data Início:</label>
+            <input type="date" id="startDate" required>
+
+            <label for="endDate">Data Fim:</label>
+            <input type="date" id="endDate" required>
+
+            <button type="submit">Gerar Relatório</button>
+        </form>
+
+        <div id="reportContainer" class="report-container"></div>
     </div>
 
     <script src="app.js"></script>
