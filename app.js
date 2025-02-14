@@ -1,4 +1,4 @@
-// app.js corrigido para garantir login funcional
+// app.js
 let accessToken = '';  
 let adAccountsMap = {};  
 
