@@ -21,7 +21,7 @@ function fetchAdAccounts() {
                 const unitSelect = document.getElementById('unitId');
                 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
                 data.data.forEach(account => {
-                    adAccountsMap[account.id] = account.name;  // Armazena o nome
+                    adAccountsMap[account.id] = account.name;
                     const option = document.createElement('option');
                     option.value = account.id;
                     option.textContent = account.name;
@@ -34,21 +34,26 @@ function fetchAdAccounts() {
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
             console.log('Dados recebidos da API:', data);
             const campaignData = data.data && data.data.length > 0 ? data.data[0] : {};
+            const actions = campaignData.actions || [];
+            const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
+            const spent = parseFloat(campaignData.spend) || 0;
+            const cpc = messages > 0 ? (spent / messages).toFixed(2) : '0,00';
+
             const reportData = {
-                unitName: adAccountsMap[unitId] || unitId,  // Usa o nome da conta
+                unitName: adAccountsMap[unitId] || unitId,
                 startDate,
                 endDate,
                 campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
-                spent: campaignData.spend || '0,00',
-                messages: campaignData.messaging_conversions || 0,
-                cpc: campaignData.cost_per_messaging_conversion || '0,00',
+                spent: spent.toFixed(2),
+                messages,
+                cpc,
                 reach: campaignData.reach || 0
             };
             generateReport(reportData);
