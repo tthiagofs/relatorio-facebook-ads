@@ -43,16 +43,21 @@ function formatarData(data) {
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const campaignFilter = document.getElementById('campaignFilter').value.toLowerCase(); // Novo filtro
+    const campaignFilter = document.getElementById('campaignFilter').value.toLowerCase(); 
     const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
             console.log('Dados recebidos da API:', data);
-            const filteredData = data.data ? data.data.filter(item => campaignFilter === '' || item.campaign_name.toLowerCase().includes(campaignFilter)) : [];
+            const filteredData = data.data ? data.data.filter(item => campaignFilter === '' || (item.campaign_name && item.campaign_name.toLowerCase().includes(campaignFilter))) : [];
 
-            const campaignData = filteredData.length > 0 ? filteredData[0] : {};
+            if (filteredData.length === 0) {
+                alert('Nenhuma campanha encontrada com esse filtro.');
+                return;
+            }
+
+            const campaignData = filteredData[0];
             const actions = campaignData.actions || [];
             const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
             const spent = parseFloat(campaignData.spend) || 0;
@@ -73,19 +78,6 @@ function fetchCampaignData(unitId) {
         .catch(error => {
             console.error('Erro ao buscar dados:', error);
         });
-}
-
-function generateReport(data) {
-    const reportContainer = document.getElementById('reportContainer');
-    reportContainer.innerHTML = `
-        <h2>📊 RELATÓRIO - ${data.unitName}</h2>
-        <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
-        <p><strong>Campanha:</strong> ${data.campaignName}</p>
-        <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
-        <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
-        <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
-        <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
-    `;
 }
 
 document.getElementById('form').addEventListener('submit', function(event) {
