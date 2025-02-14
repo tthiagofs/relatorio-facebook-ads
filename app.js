@@ -1,4 +1,4 @@
-// Código corrigido para exibir criativos corretamente (imagens e vídeos) e manter o relatório visível
+// Versão anterior restaurada para exibir imagens de criativos com qualidade excelente e implementar prévias de vídeos
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -71,7 +71,6 @@ function fetchCampaignData(unitId) {
 
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
-    reportContainer.style.overflow = 'visible';
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
@@ -87,15 +86,15 @@ function generateReport(data) {
 }
 
 function fetchTopCreatives(unitId) {
-    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{thumbnail_url,image_url,video_url}&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{image_url,thumbnail_url,video_url}&access_token=${accessToken}`;
     fetch(url)
         .then(response => response.json())
         .then(data => {
             const creativesContainer = document.getElementById('creativesContainer');
             creativesContainer.innerHTML = data.data.map(ad => {
                 const preview = ad.creative.video_url ?
-                    `<video src="${ad.creative.video_url}" controls style="width:100%; max-width:250px; height:auto; border-radius:8px;"></video>` :
-                    `<img src="${ad.creative.image_url || ad.creative.thumbnail_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">`;
+                    `<iframe src="https://www.facebook.com/ads/library/?id=${ad.id}" frameborder="0" allowfullscreen style="width:100%; max-width:250px; height:200px; border-radius:8px;"></iframe>` :
+                    `<img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">`;
                 return `
                     <div>
                         <p>${ad.name}</p>
