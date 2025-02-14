@@ -1,4 +1,4 @@
-// app.js corrigido
+// Código completo corrigido e com implementação dos principais criativos
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -61,7 +61,8 @@ function fetchCampaignData(unitId) {
                 spent: spent.toFixed(2).replace('.', ','),
                 messages: messages.toLocaleString('pt-BR'),
                 cpc: cpc.toFixed(2).replace('.', ','),
-                reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
+                reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR'),
+                unitId
             };
             generateReport(reportData);
         })
@@ -78,7 +79,26 @@ function generateReport(data) {
         <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
+        <h3>🎨 Principais Criativos</h3>
+        <div id="creativesContainer"></div>
     `;
+    fetchTopCreatives(data.unitId);
+}
+
+function fetchTopCreatives(unitId) {
+    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{thumbnail_url}&access_token=${accessToken}`;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const creativesContainer = document.getElementById('creativesContainer');
+            creativesContainer.innerHTML = data.data.slice(0, 2).map(ad => `
+                <div>
+                    <p>${ad.name}</p>
+                    <img src="${ad.creative.thumbnail_url}" alt="Criativo ${ad.name}" style="width:100%;max-width:300px;margin-bottom:10px;">
+                </div>
+            `).join('');
+        })
+        .catch(error => console.error('Erro ao buscar criativos:', error));
 }
 
 document.getElementById('form').addEventListener('submit', function(event) {
