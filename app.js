@@ -55,7 +55,7 @@ function fetchCampaignData(unitId) {
             let adPreviews = '';
             topAds.forEach(ad => {
                 const adId = ad.ad_id;
-                adPreviews += `<img src="https://graph.facebook.com/v12.0/${adId}/previews?access_token=${accessToken}" alt="Prévia do Anúncio ${adId}" style="max-width: 100%; margin-top: 20px;">`;
+                adPreviews += `<iframe src="https://www.facebook.com/ads/library/?id=${adId}" style="width:100%; height:500px; border:none; margin-top:20px;"></iframe>`;
             });
 
             const campaignData = sortedAds[0];
