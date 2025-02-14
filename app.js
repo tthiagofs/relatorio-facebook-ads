@@ -43,12 +43,13 @@ function fetchCampaignData(unitId) {
     }
 
     fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error('Erro na resposta da API');
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             console.log('Dados recebidos da API:', data);
+            if (data.error) {
+                alert(`Erro da API: ${data.error.message}`);
+                return;
+            }
             if (!data.data || data.data.length === 0) {
                 alert('Nenhum conjunto de anúncios encontrado para esse período ou filtro.');
                 return;
