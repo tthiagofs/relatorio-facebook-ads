@@ -1,4 +1,5 @@
 let accessToken = '';  // Armazena o token de acesso do Facebook
+let adAccountsMap = {};  // Armazena os nomes das contas
 
 function loginWithFacebook() {
     FB.login(function(response) {
@@ -20,6 +21,7 @@ function fetchAdAccounts() {
                 const unitSelect = document.getElementById('unitId');
                 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
                 data.data.forEach(account => {
+                    adAccountsMap[account.id] = account.name;  // Armazena o nome
                     const option = document.createElement('option');
                     option.value = account.id;
                     option.textContent = account.name;
@@ -40,7 +42,7 @@ function fetchCampaignData(unitId) {
             console.log('Dados recebidos da API:', data);
             const campaignData = data.data && data.data.length > 0 ? data.data[0] : {};
             const reportData = {
-                unitName: unitId,
+                unitName: adAccountsMap[unitId] || unitId,  // Usa o nome da conta
                 startDate,
                 endDate,
                 campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
@@ -59,7 +61,7 @@ function fetchCampaignData(unitId) {
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
     reportContainer.innerHTML = `
-        <h2>📊 RELATÓRIO - UNIDADE ${data.unitName}</h2>
+        <h2>📊 RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
         <p><strong>Campanha:</strong> ${data.campaignName}</p>
         <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
