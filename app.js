@@ -34,15 +34,16 @@ function fetchAdAccounts() {
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const campaignFilter = document.getElementById('campaignFilter').value.toLowerCase(); 
+    const campaignFilter = document.getElementById('campaignFilter').value.toLowerCase();
 
     let url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
+    const params = new URLSearchParams();
     if (campaignFilter) {
-        url += `&filtering=[{"field":"adset.name","operator":"CONTAINS","value":"${campaignFilter}"}]`;
+        params.append('filtering', JSON.stringify([{field: 'adset.name', operator: 'CONTAINS', value: campaignFilter}]));
     }
 
-    fetch(url)
+    fetch(`${url}&${params.toString()}`)
         .then(response => response.json())
         .then(data => {
             console.log('Dados recebidos da API:', data);
