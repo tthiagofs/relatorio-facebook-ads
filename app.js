@@ -1,98 +1,72 @@
 let accessToken = '';  // Armazena o token de acesso do Facebook
+let adAccountsMap = {};  // Armazena os nomes das contas para usar no relatório
 
 function loginWithFacebook() {
     FB.login(function(response) {
         if (response.authResponse) {
-            console.log('Usuário autenticado', response.authResponse);
             accessToken = response.authResponse.accessToken;
-            console.log('Token de Acesso:', accessToken);
-
             fetchAdAccounts();
-
             document.getElementById('form').style.display = 'block';
             document.getElementById('loginBtn').style.display = 'none';
-        } else {
-            console.log('Usuário cancelou o login');
         }
     }, { scope: 'ads_read,ads_management' });
 }
 
 function fetchAdAccounts() {
-    if (!accessToken) {
-        alert("Por favor, faça login no Facebook primeiro.");
-        return;
-    }
-
     const url = `https://graph.facebook.com/v12.0/me/adaccounts?fields=id,name&access_token=${accessToken}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            console.log('Dados recebidos:', data);
             if (data && data.data && data.data.length > 0) {
-                const adAccounts = data.data;
                 const unitSelect = document.getElementById('unitId');
-
                 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
 
-                adAccounts.forEach(account => {
+                data.data.forEach(account => {
+                    adAccountsMap[account.id] = account.name;  // Armazena nome da conta
                     const option = document.createElement('option');
                     option.value = account.id;
-                    option.textContent = account.name || `Conta ${account.id}`;
+                    option.textContent = account.name;
                     unitSelect.appendChild(option);
                 });
-            } else {
-                alert("Nenhuma conta de anúncio encontrada para o usuário.");
             }
         })
-        .catch(error => {
-            console.error("Erro ao buscar contas de anúncio:", error);
-            alert("Erro ao buscar as contas de anúncio. Tente novamente.");
-        });
+        .catch(error => console.error("Erro ao buscar contas de anúncio:", error));
 }
 
 function fetchCampaignData(unitId) {
-    if (!accessToken) {
-        alert("Por favor, faça login no Facebook primeiro.");
-        return;
-    }
-
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?access_token=${accessToken}&time_range={\"since\":\"${startDate}\",\"until\":\"${endDate}\"}`;
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,messaging_conversations_started,reach&access_token=${accessToken}&time_range={\"since\":\"${startDate}\",\"until\":\"${endDate}\"}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            console.log('Dados recebidos:', data);
             if (data && data.data && data.data.length > 0) {
                 const campaignData = data.data[0];
                 const reportData = {
-                    unitName: unitId,
+                    unitName: adAccountsMap[unitId],  // Usa o nome armazenado
                     startDate: startDate,
                     endDate: endDate,
                     campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
                     spent: campaignData.spend || '0,00',
-                    messages: campaignData.messaging_conversion || 0,
-                    cpc: campaignData.cost_per_messaging_conversion || '0,00',
-                    reach: campaignData.reach || 0
+                    messages: campaignData.messaging_conversations_started || 0,  // Corrigido
+                    cpc: (campaignData.spend / campaignData.messaging_conversations_started) || '0,00', // Corrigido
+                    reach: campaignData.reach || 0  // Corrigido
                 };
                 generateReport(reportData);
             } else {
                 alert('Nenhum dado encontrado para esse período.');
             }
         })
-        .catch(error => {
-            console.error('Erro ao buscar dados da campanha:', error);
-            alert('Ocorreu um erro ao buscar os dados da campanha. Tente novamente.');
-        });
+        .catch(error => console.error('Erro ao buscar dados da campanha:', error));
 }
 
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
     reportContainer.innerHTML = `
-        <h2>📊 RELATÓRIO - UNIDADE ${data.unitName}</h2>
+        <h2>📊 RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
         <p><strong>Campanha:</strong> ${data.campaignName}</p>
         <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
