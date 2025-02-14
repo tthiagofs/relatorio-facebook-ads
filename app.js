@@ -40,12 +40,7 @@ function fetchCampaignData(unitId) {
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            if (!data.data || data.data.length === 0) {
-                alert('Nenhum dado encontrado para esse período.');
-                return;
-            }
-
-            const campaignData = data.data[0];
+            const campaignData = data.data && data.data.length > 0 ? data.data[0] : {};
             const actions = campaignData.actions || [];
             const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
             const spent = parseFloat(campaignData.spend) || 0;
@@ -57,15 +52,14 @@ function fetchCampaignData(unitId) {
                 endDate: formatarData(endDate),
                 campaignName: campaignData.adset_name || 'Nenhum conjunto encontrado',
                 spent: formatarNumero(spent),
-                messages: messages.toLocaleString('pt-BR'),
-                cpc: formatarNumero(cpc),
-                reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
+                messages: messages || 0,
+                cpc: messages > 0 ? formatarNumero(cpc) : '0,00',
+                reach: campaignData.reach ? parseInt(campaignData.reach).toLocaleString('pt-BR') : '0'
             };
             generateReport(reportData);
         })
         .catch(error => {
             console.error('Erro ao buscar dados:', error);
-            alert('Erro ao gerar relatório. Verifique os parâmetros e tente novamente.');
         });
 }
 
