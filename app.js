@@ -1,4 +1,4 @@
-// Código atualizado para corrigir bug de desaparecimento do relatório e melhorar a qualidade dos criativos
+// Código atualizado para exibir prévias de vídeos e corrigir o bug do desaparecimento do relatório
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -71,6 +71,7 @@ function fetchCampaignData(unitId) {
 
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
+    reportContainer.style.position = 'relative'; // Corrige bug de desaparecimento
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
@@ -86,17 +87,21 @@ function generateReport(data) {
 }
 
 function fetchTopCreatives(unitId) {
-    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{image_url}&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{thumbnail_url,image_url,video_url}&access_token=${accessToken}`;
     fetch(url)
         .then(response => response.json())
         .then(data => {
             const creativesContainer = document.getElementById('creativesContainer');
-            creativesContainer.innerHTML = data.data.map(ad => `
-                <div>
-                    <p>${ad.name}</p>
-                    <img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">
-                </div>
-            `).join('');
+            creativesContainer.innerHTML = data.data.map(ad => {
+                const preview = ad.creative.video_url ?
+                    `<video src="${ad.creative.video_url}" controls style="width:100%; max-width:250px; height:auto; border-radius:8px;"></video>` :
+                    `<img src="${ad.creative.image_url || ad.creative.thumbnail_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">`;
+                return `
+                    <div>
+                        <p>${ad.name}</p>
+                        ${preview}
+                    </div>`;
+            }).join('');
         })
         .catch(error => console.error('Erro ao buscar criativos:', error));
 }
