@@ -34,7 +34,7 @@ function fetchAdAccounts() {
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,messaging_conversations_started,reach&access_token=${accessToken}&time_range={\"since\":\"${startDate}\",\"until\":\"${endDate}\"}`;
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,messaging_conversations_started,reach&access_token=${accessToken}&time_range={"since":"${startDate}","until":"${endDate}"}`;
 
     fetch(url)
         .then(response => response.json())
@@ -70,13 +70,4 @@ function generateReport(data) {
         <p><strong>Campanha:</strong> ${data.campaignName}</p>
         <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
         <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
-        <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
-        <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
-    `;
-}
-
-document.getElementById('form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const unitId = document.getElementById('unitId').value;
-    fetchCampaignData(unitId);
-});
+        <p>💵 <strong>Cust
