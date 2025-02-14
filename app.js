@@ -1,4 +1,4 @@
-// Código completo atualizado com melhorias de qualidade e layout dos criativos
+// Código atualizado para corrigir bug de desaparecimento do relatório e melhorar a qualidade dos criativos
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -80,13 +80,13 @@ function generateReport(data) {
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
         <h3>🎨 Principais Criativos</h3>
-        <div id="creativesContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+        <div id="creativesContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top:20px;"></div>
     `;
     fetchTopCreatives(data.unitId);
 }
 
 function fetchTopCreatives(unitId) {
-    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{thumbnail_url}&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{image_url}&access_token=${accessToken}`;
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -94,7 +94,7 @@ function fetchTopCreatives(unitId) {
             creativesContainer.innerHTML = data.data.map(ad => `
                 <div>
                     <p>${ad.name}</p>
-                    <img src="${ad.creative.thumbnail_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:200px; height:auto; border:1px solid #ddd; border-radius:8px;">
+                    <img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">
                 </div>
             `).join('');
         })
