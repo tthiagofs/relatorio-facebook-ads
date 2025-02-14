@@ -1,4 +1,4 @@
-// Código corrigido para exibir corretamente os criativos (imagens e vídeos)
+// Código corrigido para exibir criativos corretamente (imagens e vídeos) e manter o relatório visível
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -71,7 +71,7 @@ function fetchCampaignData(unitId) {
 
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
-    reportContainer.style.position = 'relative';
+    reportContainer.style.overflow = 'visible';
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
