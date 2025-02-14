@@ -1,5 +1,6 @@
-let accessToken = '';  // Armazena o token de acesso do Facebook
-let adAccountsMap = {};  // Armazena os nomes das contas
+// app.js corrigido
+let accessToken = '';  
+let adAccountsMap = {};  
 
 function loginWithFacebook() {
     FB.login(function(response) {
@@ -8,12 +9,14 @@ function loginWithFacebook() {
             fetchAdAccounts();
             document.getElementById('form').style.display = 'block';
             document.getElementById('loginBtn').style.display = 'none';
+        } else {
+            alert('Falha no login com o Facebook');
         }
     }, { scope: 'ads_read,ads_management' });
 }
 
 function fetchAdAccounts() {
-    const url = `https://graph.facebook.com/v12.0/me/adaccounts?fields=id,name&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v18.0/me/adaccounts?fields=id,name&access_token=${accessToken}`;
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -28,49 +31,44 @@ function fetchAdAccounts() {
                     unitSelect.appendChild(option);
                 });
             }
-        });
+        })
+        .catch(error => console.error('Erro ao buscar contas de anúncios:', error));
 }
 
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,reach,actions,ad_id&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+    const url = `https://graph.facebook.com/v18.0/${unitId}/insights?fields=campaign_name,spend,reach,actions,ad_id&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            const campaignData = data.data && data.data.length > 0 ? data.data[0] : {};
+            if (!data.data || data.data.length === 0) {
+                generateReport({ unitName: adAccountsMap[unitId] || unitId, startDate, endDate, campaignName: 'Sem dados', spent: '0,00', messages: '0', cpc: '0,00', reach: '0' });
+                return;
+            }
+            const campaignData = data.data[0];
             const actions = campaignData.actions || [];
-            const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
+            const messages = actions.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
             const spent = parseFloat(campaignData.spend) || 0;
             const cpc = messages > 0 ? (spent / messages) : 0;
 
-            const topAds = data.data.sort((a, b) => {
-                const aMessages = a.actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
-                const bMessages = b.actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
-                return bMessages - aMessages;
-            }).slice(0, 2);
-
-            let adPreviews = topAds.map(ad => `<iframe src="https://www.facebook.com/ads/library/?id=${ad.ad_id}" style="width:100%; height:500px; border:none; margin-top:20px;"></iframe>`).join('');
-
             const reportData = {
                 unitName: adAccountsMap[unitId] || unitId,
-                startDate: formatarData(startDate),
-                endDate: formatarData(endDate),
+                startDate,
+                endDate,
                 campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
-                spent: formatarNumero(spent),
+                spent: spent.toFixed(2).replace('.', ','),
                 messages: messages.toLocaleString('pt-BR'),
-                cpc: formatarNumero(cpc),
+                cpc: cpc.toFixed(2).replace('.', ','),
                 reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
             };
-            generateReport(reportData, adPreviews);
+            generateReport(reportData);
         })
-        .catch(error => {
-            console.error('Erro ao buscar dados:', error);
-        });
+        .catch(error => console.error('Erro ao buscar dados:', error));
 }
 
-function generateReport(data, adPreviews = '') {
+function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
@@ -80,7 +78,6 @@ function generateReport(data, adPreviews = '') {
         <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
-        ${adPreviews}
     `;
 }
 
