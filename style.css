@@ -34,7 +34,7 @@ label {
     margin-bottom: 5px;
 }
 
-select, input[type="date"], input[type="text"], button {
+select, input[type="date"], button {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
@@ -57,16 +57,7 @@ button:hover {
     background-color: #45a049;
 }
 
-.input-field {
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    background-color: #fff;
-    color: #333;
-}
-
+/* Estilos do relatório */
 .report-container {
     margin-top: 20px;
     background-color: #f9f9f9;
@@ -80,7 +71,7 @@ button:hover {
     font-size: 18px;
 }
 
-report-container p {
+.report-container p {
     color: #555;
     font-size: 16px;
 }
