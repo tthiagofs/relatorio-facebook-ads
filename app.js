@@ -1,4 +1,4 @@
-// Versão anterior restaurada para exibir imagens de criativos com qualidade excelente e implementar prévias de vídeos
+// Código revertido para versão anterior que exibia corretamente as imagens dos criativos com qualidade excelente
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -86,21 +86,17 @@ function generateReport(data) {
 }
 
 function fetchTopCreatives(unitId) {
-    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{image_url,thumbnail_url,video_url}&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{image_url}&access_token=${accessToken}`;
     fetch(url)
         .then(response => response.json())
         .then(data => {
             const creativesContainer = document.getElementById('creativesContainer');
-            creativesContainer.innerHTML = data.data.map(ad => {
-                const preview = ad.creative.video_url ?
-                    `<iframe src="https://www.facebook.com/ads/library/?id=${ad.id}" frameborder="0" allowfullscreen style="width:100%; max-width:250px; height:200px; border-radius:8px;"></iframe>` :
-                    `<img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">`;
-                return `
-                    <div>
-                        <p>${ad.name}</p>
-                        ${preview}
-                    </div>`;
-            }).join('');
+            creativesContainer.innerHTML = data.data.map(ad => `
+                <div>
+                    <p>${ad.name}</p>
+                    <img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">
+                </div>
+            `).join('');
         })
         .catch(error => console.error('Erro ao buscar criativos:', error));
 }
