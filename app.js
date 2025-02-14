@@ -35,20 +35,24 @@ function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const campaignFilter = document.getElementById('campaignFilter').value.toLowerCase(); 
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+
+    let url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+
+    if (campaignFilter) {
+        url += `&filtering=[{"field":"adset.name","operator":"CONTAINS","value":"${campaignFilter}"}]`;
+    }
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
             console.log('Dados recebidos da API:', data);
-            const filteredData = data.data ? data.data.filter(item => campaignFilter === '' || (item.adset_name && item.adset_name.toLowerCase().includes(campaignFilter))) : [];
 
-            if (filteredData.length === 0) {
+            if (!data.data || data.data.length === 0) {
                 alert('Nenhum conjunto de anúncios encontrado com esse filtro.');
                 return;
             }
 
-            const campaignData = filteredData[0];
+            const campaignData = data.data[0];
             const actions = campaignData.actions || [];
             const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
             const spent = parseFloat(campaignData.spend) || 0;
