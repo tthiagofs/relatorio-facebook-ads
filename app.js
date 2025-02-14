@@ -1,4 +1,4 @@
-// Código revertido para versão anterior que exibia corretamente as imagens dos criativos com qualidade excelente
+// Código atualizado para imprimir o relatório em outra guia com layout mais bonito
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -64,41 +64,52 @@ function fetchCampaignData(unitId) {
                 reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR'),
                 unitId
             };
-            generateReport(reportData);
+            openPrintableReport(reportData);
         })
         .catch(error => console.error('Erro ao buscar dados:', error));
 }
 
-function generateReport(data) {
-    const reportContainer = document.getElementById('reportContainer');
-    reportContainer.innerHTML = `
-        <h2>📊 RELATÓRIO - ${data.unitName}</h2>
-        <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
-        <p><strong>Campanha:</strong> ${data.campaignName}</p>
-        <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
-        <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
-        <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
-        <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
-        <h3>🎨 Principais Criativos</h3>
-        <div id="creativesContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top:20px;"></div>
-    `;
-    fetchTopCreatives(data.unitId);
-}
-
-function fetchTopCreatives(unitId) {
-    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{image_url}&access_token=${accessToken}`;
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            const creativesContainer = document.getElementById('creativesContainer');
-            creativesContainer.innerHTML = data.data.map(ad => `
-                <div>
-                    <p>${ad.name}</p>
-                    <img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">
-                </div>
-            `).join('');
-        })
-        .catch(error => console.error('Erro ao buscar criativos:', error));
+function openPrintableReport(data) {
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+        <html>
+        <head>
+            <title>Relatório Facebook Ads</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background-color: #f9f9f9; }
+                h2 { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+                p { font-size: 16px; color: #555; }
+                .report-section { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+                .creative { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; }
+                .creative img { width: 200px; border-radius: 8px; border: 1px solid #ddd; }
+            </style>
+        </head>
+        <body>
+            <div class='report-section'>
+                <h2>📊 RELATÓRIO - ${data.unitName}</h2>
+                <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
+                <p><strong>Campanha:</strong> ${data.campaignName}</p>
+                <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
+                <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
+                <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
+                <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
+            </div>
+            <h3>🎨 Principais Criativos</h3>
+            <div class='creative' id='creativesContainer'></div>
+            <script>
+                const creatives = ${JSON.stringify(data.creatives || [])};
+                document.getElementById('creativesContainer').innerHTML = creatives.map(ad => `
+                    <div>
+                        <p>${ad.name}</p>
+                        <img src='${ad.image}' alt='${ad.name}'/>
+                    </div>
+                `).join('');
+                window.print();
+            </script>
+        </body>
+        </html>
+    `);
+    newWindow.document.close();
 }
 
 document.getElementById('form').addEventListener('submit', function(event) {
