@@ -43,13 +43,16 @@ function formatarData(data) {
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
+    const campaignFilter = document.getElementById('campaignFilter').value.toLowerCase(); // Novo filtro
     const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
             console.log('Dados recebidos da API:', data);
-            const campaignData = data.data && data.data.length > 0 ? data.data[0] : {};
+            const filteredData = data.data ? data.data.filter(item => campaignFilter === '' || item.campaign_name.toLowerCase().includes(campaignFilter)) : [];
+
+            const campaignData = filteredData.length > 0 ? filteredData[0] : {};
             const actions = campaignData.actions || [];
             const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
             const spent = parseFloat(campaignData.spend) || 0;
@@ -59,7 +62,7 @@ function fetchCampaignData(unitId) {
                 unitName: adAccountsMap[unitId] || unitId,
                 startDate: formatarData(startDate),
                 endDate: formatarData(endDate),
-                campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
+                campaignName: campaignData.campaign_name || 'Nenhuma campanha encontrada',
                 spent: formatarNumero(spent),
                 messages: messages.toLocaleString('pt-BR'),
                 cpc: formatarNumero(cpc),
