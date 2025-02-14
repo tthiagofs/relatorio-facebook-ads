@@ -1,4 +1,4 @@
-// app.js
+// app.js corrigido para exibir o relatório e criativos na mesma página
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -67,19 +67,43 @@ function fetchCampaignData(unitId) {
                 spent: spent.toFixed(2).replace('.', ','),
                 messages: messages.toLocaleString('pt-BR'),
                 cpc: cpc.toFixed(2).replace('.', ','),
-                reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR'),
-                unitId
+                reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
             };
-            openPrintableReport(reportData);
+            generateReport(reportData);
         })
         .catch(error => console.error('Erro ao buscar dados:', error));
 }
 
-function openPrintableReport(data) {
-    const newWindow = window.open('', '_blank');
-    newWindow.document.write(`<!DOCTYPE html>` + document.getElementById('reportTemplate').outerHTML);
-    newWindow.document.close();
-    newWindow.print();
+function generateReport(data) {
+    const reportContainer = document.getElementById('reportContainer');
+    reportContainer.innerHTML = `
+        <h2>📊 RELATÓRIO - ${data.unitName}</h2>
+        <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
+        <p><strong>Campanha:</strong> ${data.campaignName}</p>
+        <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
+        <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
+        <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
+        <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
+        <h3>🎨 Principais Criativos</h3>
+        <div id="creativesContainer"></div>
+    `;
+    fetchTopCreatives(data.unitId);
+}
+
+function fetchTopCreatives(unitId) {
+    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{image_url,video_url}&access_token=${accessToken}`;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const creativesContainer = document.getElementById('creativesContainer');
+            creativesContainer.innerHTML = data.data.map(ad => {
+                const preview = ad.creative.video_url ?
+                    `<video src="${ad.creative.video_url}" controls style="width:200px; border-radius:8px; margin:10px;"></video>` :
+                    `<img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:200px; border-radius:8px; margin:10px;">`;
+                return `<div>${preview}</div>`;
+            }).join('');
+        })
+        .catch(error => console.error('Erro ao buscar criativos:', error));
 }
 
 document.getElementById('form').addEventListener('submit', function(event) {
