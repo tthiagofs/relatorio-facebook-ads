@@ -1,4 +1,4 @@
-// app.js corrigido para manter imagens com qualidade excelente e exibir prévia de vídeos
+// app.js corrigido para exibir corretamente o relatório e os criativos (imagens e vídeos)
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -98,7 +98,7 @@ function fetchTopCreatives(unitId) {
             const creativesContainer = document.getElementById('creativesContainer');
             creativesContainer.innerHTML = data.data.map(ad => {
                 const preview = ad.creative.video_url ?
-                    `<iframe src="https://www.facebook.com/ads/library/?id=${ad.id}" frameborder="0" allowfullscreen style="width:200px; border-radius:8px; margin:10px;"></iframe>` :
+                    `<video src="${ad.creative.video_url}" controls style="width:200px; border-radius:8px; margin:10px;"></video>` :
                     `<img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:200px; border-radius:8px; margin:10px;">`;
                 return `<div>${preview}</div>`;
             }).join('');
