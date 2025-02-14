@@ -1,4 +1,5 @@
-// Código corrigido para garantir o funcionamento correto do login e impressão
+
+// app.js
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -64,26 +65,16 @@ function fetchCampaignData(unitId) {
                 reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR'),
                 unitId
             };
-            generateReport(reportData);
+            openPrintableReport(reportData);
         })
         .catch(error => console.error('Erro ao buscar dados:', error));
 }
 
-function generateReport(data) {
-    const reportWindow = window.open('', '_blank');
-    reportWindow.document.write(`
-        <html><head><title>Relatório Facebook Ads</title>
-        <style>body { font-family: Arial, sans-serif; margin: 40px; }</style></head><body>
-        <h2>📊 RELATÓRIO - ${data.unitName}</h2>
-        <p><strong>Período:</strong> ${data.startDate} a ${data.endDate}</p>
-        <p><strong>Campanha:</strong> ${data.campaignName}</p>
-        <p><strong>Investimento:</strong> R$ ${data.spent}</p>
-        <p><strong>Mensagens:</strong> ${data.messages}</p>
-        <p><strong>Custo/Mensagem:</strong> R$ ${data.cpc}</p>
-        <p><strong>Alcance:</strong> ${data.reach} pessoas</p>
-        </body></html>
-    `);
-    reportWindow.document.close();
+function openPrintableReport(data) {
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`<!DOCTYPE html>` + document.getElementById('reportTemplate').outerHTML);
+    newWindow.document.close();
+    newWindow.print();
 }
 
 document.getElementById('form').addEventListener('submit', function(event) {
