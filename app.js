@@ -38,12 +38,11 @@ function fetchCampaignData(unitId) {
 
     let url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
-    const params = new URLSearchParams();
     if (campaignFilter) {
-        params.append('filtering', JSON.stringify([{field: 'adset.name', operator: 'CONTAINS', value: campaignFilter}]));
+        url += `&filtering=${encodeURIComponent(JSON.stringify([{field: 'adset.name', operator: 'CONTAINS', value: campaignFilter}]))}`;
     }
 
-    fetch(`${url}&${params.toString()}`)
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             console.log('Dados recebidos da API:', data);
