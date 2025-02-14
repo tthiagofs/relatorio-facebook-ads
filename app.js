@@ -1,4 +1,4 @@
-// Código atualizado para exibir prévias de vídeos e corrigir o bug do desaparecimento do relatório
+// Código atualizado para manter imagens como estavam e exibir prévias de vídeos
 let accessToken = '';  
 let adAccountsMap = {};  
 
@@ -71,7 +71,7 @@ function fetchCampaignData(unitId) {
 
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
-    reportContainer.style.position = 'relative'; // Corrige bug de desaparecimento
+    reportContainer.style.position = 'relative';
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
@@ -94,7 +94,7 @@ function fetchTopCreatives(unitId) {
             const creativesContainer = document.getElementById('creativesContainer');
             creativesContainer.innerHTML = data.data.map(ad => {
                 const preview = ad.creative.video_url ?
-                    `<video src="${ad.creative.video_url}" controls style="width:100%; max-width:250px; height:auto; border-radius:8px;"></video>` :
+                    `<iframe src="https://www.facebook.com/ads/library/?id=${ad.id}" style="width:100%; max-width:250px; height:200px; border-radius:8px;" frameborder="0" allowfullscreen></iframe>` :
                     `<img src="${ad.creative.image_url || ad.creative.thumbnail_url}" alt="Criativo ${ad.name}" style="width:100%; max-width:250px; height:auto; object-fit:cover; border:1px solid #ddd; border-radius:8px;">`;
                 return `
                     <div>
