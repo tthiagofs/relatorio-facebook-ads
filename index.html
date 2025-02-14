@@ -22,10 +22,8 @@
     <div class="container">
         <h1>Gerar Relatório - Facebook Ads</h1>
 
-        <!-- Botão de login do Facebook -->
         <button id="loginBtn" onclick="loginWithFacebook()">Login com Facebook</button>
 
-        <!-- Formulário para gerar relatório (inicialmente oculto) -->
         <form id="form" style="display: none;">
             <label for="unitId">Selecione a Unidade:</label>
             <select id="unitId" required>
@@ -38,7 +36,10 @@
             <label for="endDate">Data Fim:</label>
             <input type="date" id="endDate" required>
 
-            <button type="submit">Gerar Relatório</button>
+            <label for="campaignFilter">Filtrar por Nome da Campanha:</label>
+            <input type="text" id="campaignFilter" placeholder="Digite o nome da campanha">
+
+            <button type="submit" id="generateBtn">Gerar Relatório</button>
         </form>
 
         <div id="reportContainer" class="report-container"></div>
