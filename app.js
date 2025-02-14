@@ -34,7 +34,7 @@ function fetchAdAccounts() {
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions,ad_id&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=adset_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
@@ -44,21 +44,7 @@ function fetchCampaignData(unitId) {
                 return;
             }
 
-            const sortedAds = data.data.sort((a, b) => {
-                const aMessages = a.actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
-                const bMessages = b.actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
-                return bMessages - aMessages;
-            });
-
-            const topAds = sortedAds.slice(0, 2);
-
-            let adPreviews = '';
-            topAds.forEach(ad => {
-                const adId = ad.ad_id;
-                adPreviews += `<iframe src="https://www.facebook.com/ads/library/?id=${adId}" style="width:100%; height:500px; border:none; margin-top:20px;"></iframe>`;
-            });
-
-            const campaignData = sortedAds[0];
+            const campaignData = data.data[0];
             const actions = campaignData.actions || [];
             const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
             const spent = parseFloat(campaignData.spend) || 0;
@@ -74,14 +60,14 @@ function fetchCampaignData(unitId) {
                 cpc: formatarNumero(cpc),
                 reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
             };
-            generateReport(reportData, adPreviews);
+            generateReport(reportData);
         })
         .catch(error => {
             console.error('Erro ao buscar dados:', error);
         });
 }
 
-function generateReport(data, adPreviews = '') {
+function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
@@ -91,7 +77,6 @@ function generateReport(data, adPreviews = '') {
         <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
-        ${adPreviews}
     `;
 }
 
