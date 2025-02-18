@@ -1,28 +1,19 @@
-// app.js corrigido para exibir corretamente o relatório e os criativos (imagens e vídeos)
-let accessToken = '';  
-let adAccountsMap = {};  
+let accessToken = '';  // Armazena o token de acesso do Facebook
+let adAccountsMap = {};  // Armazena os nomes das contas
 
 function loginWithFacebook() {
-    FB.init({
-        appId      : '618519427538646',
-        cookie     : true,
-        xfbml      : true,
-        version    : 'v18.0'
-    });
     FB.login(function(response) {
         if (response.authResponse) {
             accessToken = response.authResponse.accessToken;
             fetchAdAccounts();
             document.getElementById('form').style.display = 'block';
             document.getElementById('loginBtn').style.display = 'none';
-        } else {
-            alert('Falha no login com o Facebook');
         }
     }, { scope: 'ads_read,ads_management' });
 }
 
 function fetchAdAccounts() {
-    const url = `https://graph.facebook.com/v18.0/me/adaccounts?fields=id,name&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v12.0/me/adaccounts?fields=id,name&access_token=${accessToken}`;
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -37,44 +28,49 @@ function fetchAdAccounts() {
                     unitSelect.appendChild(option);
                 });
             }
-        })
-        .catch(error => console.error('Erro ao buscar contas de anúncios:', error));
+        });
 }
 
 function fetchCampaignData(unitId) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const url = `https://graph.facebook.com/v18.0/${unitId}/insights?fields=campaign_name,spend,reach,actions,ad_id&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+    const url = `https://graph.facebook.com/v12.0/${unitId}/insights?fields=campaign_name,spend,reach,actions,ad_id&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            if (!data.data || data.data.length === 0) {
-                generateReport({ unitName: adAccountsMap[unitId] || unitId, startDate, endDate, campaignName: 'Sem dados', spent: '0,00', messages: '0', cpc: '0,00', reach: '0' });
-                return;
-            }
-            const campaignData = data.data[0];
+            const campaignData = data.data && data.data.length > 0 ? data.data[0] : {};
             const actions = campaignData.actions || [];
-            const messages = actions.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
+            const messages = actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
             const spent = parseFloat(campaignData.spend) || 0;
             const cpc = messages > 0 ? (spent / messages) : 0;
 
+            const topAds = data.data.sort((a, b) => {
+                const aMessages = a.actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
+                const bMessages = b.actions.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
+                return bMessages - aMessages;
+            }).slice(0, 2);
+
+            let adPreviews = topAds.map(ad => `<iframe src="https://www.facebook.com/ads/library/?id=${ad.ad_id}" style="width:100%; height:500px; border:none; margin-top:20px;"></iframe>`).join('');
+
             const reportData = {
                 unitName: adAccountsMap[unitId] || unitId,
-                startDate,
-                endDate,
+                startDate: formatarData(startDate),
+                endDate: formatarData(endDate),
                 campaignName: campaignData.campaign_name || 'Campanha Desconhecida',
-                spent: spent.toFixed(2).replace('.', ','),
+                spent: formatarNumero(spent),
                 messages: messages.toLocaleString('pt-BR'),
-                cpc: cpc.toFixed(2).replace('.', ','),
+                cpc: formatarNumero(cpc),
                 reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
             };
-            generateReport(reportData);
+            generateReport(reportData, adPreviews);
         })
-        .catch(error => console.error('Erro ao buscar dados:', error));
+        .catch(error => {
+            console.error('Erro ao buscar dados:', error);
+        });
 }
 
-function generateReport(data) {
+function generateReport(data, adPreviews = '') {
     const reportContainer = document.getElementById('reportContainer');
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
@@ -84,26 +80,8 @@ function generateReport(data) {
         <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
-        <h3>🎨 Principais Criativos</h3>
-        <div id="creativesContainer"></div>
+        ${adPreviews}
     `;
-    fetchTopCreatives(data.unitId);
-}
-
-function fetchTopCreatives(unitId) {
-    const url = `https://graph.facebook.com/v18.0/${unitId}/ads?fields=id,name,creative{image_url,video_url}&access_token=${accessToken}`;
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            const creativesContainer = document.getElementById('creativesContainer');
-            creativesContainer.innerHTML = data.data.map(ad => {
-                const preview = ad.creative.video_url ?
-                    `<video src="${ad.creative.video_url}" controls style="width:200px; border-radius:8px; margin:10px;"></video>` :
-                    `<img src="${ad.creative.image_url}" alt="Criativo ${ad.name}" style="width:200px; border-radius:8px; margin:10px;">`;
-                return `<div>${preview}</div>`;
-            }).join('');
-        })
-        .catch(error => console.error('Erro ao buscar criativos:', error));
 }
 
 document.getElementById('form').addEventListener('submit', function(event) {
