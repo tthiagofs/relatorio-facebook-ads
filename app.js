@@ -58,7 +58,7 @@ function fetchCampaignData(unitId) {
         return;
     }
 
-    const url = `https://graph.facebook.com/v18.0/${unitId}/insights?fields=campaign_name,spend,reach,actions,ad_id&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+    const url = `https://graph.facebook.com/v18.0/${unitId}/insights?fields=campaign_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
 
     fetch(url)
         .then(response => response.json())
@@ -75,14 +75,6 @@ function fetchCampaignData(unitId) {
             const spent = parseFloat(campaignData.spend) || 0;
             const cpc = messages > 0 ? (spent / messages) : 0;
 
-            const topAds = data.data.sort((a, b) => {
-                const aMessages = a.actions?.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
-                const bMessages = b.actions?.find(action => action.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
-                return bMessages - aMessages;
-            }).slice(0, 2);
-
-            let adPreviews = topAds.map(ad => `<iframe src="https://www.facebook.com/ads/library/?id=${ad.ad_id}" style="width:100%; height:500px; border:none; margin-top:20px;"></iframe>`).join('');
-
             const reportData = {
                 unitName: adAccountsMap[unitId] || unitId,
                 startDate: formatarData(startDate),
@@ -93,7 +85,7 @@ function fetchCampaignData(unitId) {
                 cpc: formatarNumero(cpc),
                 reach: parseInt(campaignData.reach || 0).toLocaleString('pt-BR')
             };
-            generateReport(reportData, adPreviews);
+            generateReport(reportData);
         })
         .catch(error => {
             console.error('Erro ao buscar dados:', error);
@@ -102,7 +94,7 @@ function fetchCampaignData(unitId) {
 }
 
 // Função para gerar o relatório
-function generateReport(data, adPreviews = '') {
+function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
@@ -112,7 +104,6 @@ function generateReport(data, adPreviews = '') {
         <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
-        ${adPreviews}
     `;
 }
 
