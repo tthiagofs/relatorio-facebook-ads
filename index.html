@@ -5,6 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Relatório Facebook Ads</title>
     <link rel="stylesheet" href="style.css">
+    <script>
+        // Inicialização do SDK do Facebook
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : '618519427538646', // Substitua pelo seu App ID
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v12.0'
+            });
+
+            FB.AppEvents.logPageView();
+
+            // Verifica se o usuário já está logado
+            FB.getLoginStatus(function(response) {
+                if (response.status === 'connected') {
+                    accessToken = response.authResponse.accessToken;
+                    fetchAdAccounts();
+                    document.getElementById('form').style.display = 'block';
+                    document.getElementById('loginBtn').style.display = 'none';
+                }
+            });
+        };
+
+        // Carrega o SDK do Facebook
+        (function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s); js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    </script>
 </head>
 <body>
     <!-- Tela de Login -->
@@ -12,8 +44,8 @@
         <div class="login-box">
             <h1>Login</h1>
             <form id="loginForm">
-                <label for="login">Login:</label>
-                <input type="login" id="login" required placeholder="Digite seu login">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" required placeholder="Digite seu e-mail">
 
                 <label for="password">Senha:</label>
                 <input type="password" id="password" required placeholder="Digite sua senha">
