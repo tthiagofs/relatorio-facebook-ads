@@ -1,10 +1,7 @@
-# Salvando o arquivo corrigido para que o usuário possa baixá-lo
-file_path = "/mnt/data/app_fixed.js"
-
-# Ajustando o código para corrigir possíveis problemas na chamada da API do Facebook e no evento de clique do botão.
-corrected_code = """let accessToken = '';  // Armazena o token de acesso do Facebook
+let accessToken = '';  // Armazena o token de acesso do Facebook
 let adAccountsMap = {};  // Armazena os nomes das contas
 
+// Função para fazer login com o Facebook
 function loginWithFacebook() {
     FB.login(function(response) {
         if (response.authResponse) {
@@ -18,6 +15,7 @@ function loginWithFacebook() {
     }, { scope: 'ads_read,ads_management' });
 }
 
+// Função para buscar as contas de anúncios
 function fetchAdAccounts() {
     if (!accessToken) {
         console.error("Token de acesso não encontrado.");
@@ -45,6 +43,7 @@ function fetchAdAccounts() {
         .catch(error => console.error('Erro ao buscar contas de anúncios:', error));
 }
 
+// Função para buscar dados da campanha
 function fetchCampaignData(unitId) {
     if (!accessToken) {
         console.error("Token de acesso não encontrado.");
@@ -102,6 +101,7 @@ function fetchCampaignData(unitId) {
         });
 }
 
+// Função para gerar o relatório
 function generateReport(data, adPreviews = '') {
     const reportContainer = document.getElementById('reportContainer');
     reportContainer.innerHTML = `
@@ -116,6 +116,18 @@ function generateReport(data, adPreviews = '') {
     `;
 }
 
+// Função para formatar números
+function formatarNumero(numero) {
+    return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Função para formatar datas
+function formatarData(data) {
+    const date = new Date(data);
+    return date.toLocaleDateString('pt-BR');
+}
+
+// Evento de submit do formulário
 document.getElementById('form').addEventListener('submit', function(event) {
     event.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -124,11 +136,4 @@ document.getElementById('form').addEventListener('submit', function(event) {
     } else {
         alert("Por favor, selecione uma unidade.");
     }
-});"""
-
-# Salvando o código corrigido
-with open(file_path, "w") as file:
-    file.write(corrected_code)
-
-# Retornando o link para download
-file_path
+});
