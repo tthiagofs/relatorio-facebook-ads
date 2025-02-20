@@ -117,10 +117,17 @@ function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
 
     // Gera o conteúdo do relatório
-    reportContainer.innerHTML = `
+    let reportHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
-        <p><strong>Campanha:</strong> ${data.campaignName}</p>
+    `;
+
+    // Só adiciona a campanha se não for "Campanha Desconhecida"
+    if (data.campaignName !== "Campanha Desconhecida") {
+        reportHTML += `<p><strong>Campanha:</strong> ${data.campaignName}</p>`;
+    }
+
+    reportHTML += `
         <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
         <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
@@ -128,20 +135,25 @@ function generateReport(data) {
         <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
     `;
 
+    reportContainer.innerHTML = reportHTML;
+
     // Seleciona o botão após ser adicionado ao DOM
     const whatsappButton = document.getElementById('shareWhatsAppBtn');
 
-    // Formata a mensagem para o WhatsApp
-    const whatsappMessage = `📊 Relatório - ${data.unitName}\n` +
-        `Período: ${data.startDate} a ${data.endDate}\n` +
+    // Formata a mensagem para o WhatsApp com emojis corrigidos
+    const whatsappMessage = encodeURIComponent(
+        `📊 RELATÓRIO - ${data.unitName}\n` +
+        `📅 Período: ${data.startDate} a ${data.endDate}\n` +
+        (data.campaignName !== "Campanha Desconhecida" ? `🎯 Campanha: ${data.campaignName}\n` : '') +
         `💰 Investimento: R$ ${data.spent}\n` +
         `💬 Mensagens iniciadas: ${data.messages}\n` +
         `💵 Custo por mensagem: R$ ${data.cpc}\n` +
-        `📢 Alcance: ${data.reach} pessoas`;
+        `📢 Alcance: ${data.reach} pessoas`
+    );
 
-    // Configura o link do WhatsApp
+    // Configura o link do WhatsApp corretamente
     whatsappButton.onclick = function () {
-        window.open(`https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+        window.open(`https://wa.me/?text=${whatsappMessage}`, '_blank');
     };
 }
 
