@@ -1,4 +1,3 @@
-// Elementos DOM
 const appLoginScreen = document.getElementById('appLoginScreen');
 const reportSelectionScreen = document.getElementById('reportSelectionScreen');
 const loginScreen = document.getElementById('loginScreen');
@@ -11,7 +10,7 @@ const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 
-// Função para mostrar/esconder telas
+// Função para alternar telas
 function showScreen(screen) {
     appLoginScreen.style.display = 'none';
     reportSelectionScreen.style.display = 'none';
@@ -20,7 +19,7 @@ function showScreen(screen) {
     screen.style.display = 'block';
 }
 
-// Login do App
+// Login do app
 appLoginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value;
@@ -34,7 +33,7 @@ appLoginForm.addEventListener('submit', (e) => {
     }
 });
 
-// Seleção de Relatório Simplificado
+// Seleção de relatório simplificado
 simpleReportBtn.addEventListener('click', () => {
     showScreen(loginScreen);
 });
@@ -47,12 +46,15 @@ loginBtn.addEventListener('click', () => {
             FB.api('/me/adaccounts', function(response) {
                 if (response && !response.error) {
                     const unitSelect = document.getElementById('unitId');
+                    unitSelect.innerHTML = '<option value="">Escolha a unidade</option>'; // Limpa opções anteriores
                     response.data.forEach(account => {
                         const option = document.createElement('option');
                         option.value = account.id;
-                        option.text = account.name;
+                        option.text = account.name; // Nome correto da conta
                         unitSelect.appendChild(option);
                     });
+                } else {
+                    console.error('Erro ao carregar contas:', response.error);
                 }
             });
         } else {
@@ -62,12 +64,13 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Geração do relatório (lógica original mantida)
+// Geração do relatório (lógica ajustada para usar o nome correto)
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
+    const unitName = document.getElementById('unitId').selectedOptions[0].text; // Pega o nome da opção selecionada
 
     FB.api(
         `/${unitId}/insights`,
@@ -85,7 +88,7 @@ form.addEventListener('submit', (e) => {
                 const costPerMessage = messages > 0 ? (spend / messages).toFixed(2) : '0';
 
                 const reportHTML = `
-                    📊 RELATÓRIO - CA - ${document.getElementById('unitId').selectedOptions[0].text}
+                    📊 RELATÓRIO - CA - ${unitName}
                     📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}
                     💰 Investimento: R$ ${parseFloat(spend).toFixed(2).replace('.', ',')}
                     💬 Mensagens iniciadas: ${messages}
@@ -101,10 +104,11 @@ form.addEventListener('submit', (e) => {
     );
 });
 
-// Compartilhar no WhatsApp (lógica original)
+// Compartilhar no WhatsApp (corrigido para abrir seleção de contatos)
 shareWhatsAppBtn.addEventListener('click', () => {
     const reportText = reportContainer.innerText;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(reportText)}`;
+    const encodedText = encodeURIComponent(reportText);
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`; // Usando api.whatsapp.com
     window.open(whatsappUrl, '_blank');
 });
 
