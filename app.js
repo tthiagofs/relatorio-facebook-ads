@@ -10,6 +10,9 @@ const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 
+// Mapa para armazenar os nomes das contas
+const adAccountsMap = {};
+
 // Função para alternar telas
 function showScreen(screen) {
     appLoginScreen.style.display = 'none';
@@ -38,20 +41,27 @@ simpleReportBtn.addEventListener('click', () => {
     showScreen(loginScreen);
 });
 
-// Login com Facebook (lógica original)
+// Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', () => {
     FB.login(function(response) {
         if (response.authResponse) {
             showScreen(mainContent);
-            FB.api('/me/adaccounts', function(response) {
-                const unitSelect = document.getElementById('unitId');
-                unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-                response.data.forEach(account => {
-                    const option = document.createElement('option');
-                    option.value = account.id;
-                    option.text = account.name; // Nome correto das contas
-                    unitSelect.appendChild(option);
-                });
+            FB.api('/me/adaccounts', { fields: 'id,name' }, function(response) {
+                if (response && !response.error) {
+                    const unitSelect = document.getElementById('unitId');
+                    unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+                    response.data.forEach(account => {
+                        adAccountsMap[account.id] = account.name; // Armazena no mapa
+                        const option = document.createElement('option');
+                        option.value = account.id;
+                        option.textContent = account.name; // Nome correto no select
+                        unitSelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Erro ao carregar contas:', response.error);
+                    document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios.';
+                    document.getElementById('loginError').style.display = 'block';
+                }
             });
         } else {
             document.getElementById('loginError').textContent = 'Login cancelado ou falhou.';
@@ -60,11 +70,11 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Geração do relatório (corrigido com a variável correta)
+// Geração do relatório
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
-    const unitName = document.getElementById('unitId').options[document.getElementById('unitId').selectedIndex].text; // Nome correto
+    const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida'; // Usa o mapa para pegar o nome
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
@@ -82,7 +92,7 @@ form.addEventListener('submit', (e) => {
                 const actions = reportData.actions || [];
                 const reach = reportData.reach || '0';
 
-                // Busca a ação correta: onsite_conversion.messaging_conversation_started_7d
+                // Busca mensagens iniciadas com a variável correta
                 let conversations = 0;
                 actions.forEach(action => {
                     if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
@@ -90,7 +100,7 @@ form.addEventListener('submit', (e) => {
                     }
                 });
 
-                // Custo por mensagem (investimento / mensagens iniciadas)
+                // Custo por mensagem
                 const costPerConversation = conversations > 0 ? (spend / conversations).toFixed(2) : '0';
 
                 const startDateFormatted = startDate.split('-').reverse().join('/');
