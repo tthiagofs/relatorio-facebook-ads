@@ -45,6 +45,12 @@ function fetchAdAccounts() {
     fetch(url)
         .then(response => response.json())
         .then(data => {
+            console.log(data);  // Verifique o que está sendo retornado aqui
+            if (data.error) {
+                console.error('Erro ao buscar contas de anúncios:', data.error.message);
+                alert("Erro ao buscar contas de anúncios.");
+                return;
+            }
             if (data.data) {
                 const unitSelect = document.getElementById('unitId');
                 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
@@ -59,7 +65,10 @@ function fetchAdAccounts() {
                 console.error("Nenhuma conta de anúncios encontrada.");
             }
         })
-        .catch(error => console.error('Erro ao buscar contas de anúncios:', error));
+        .catch(error => {
+            console.error('Erro ao buscar contas de anúncios:', error);
+            alert("Erro ao buscar contas de anúncios. Tente novamente.");
+        });
 }
 
 // Função para buscar dados da campanha
@@ -68,7 +77,7 @@ function fetchCampaignData(unitId) {
         console.error("Token de acesso não encontrado.");
         return;
     }
-    
+
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
@@ -78,10 +87,17 @@ function fetchCampaignData(unitId) {
     }
 
     const url = `https://graph.facebook.com/v18.0/${unitId}/insights?fields=campaign_name,spend,reach,actions&access_token=${accessToken}&time_range=${encodeURIComponent(JSON.stringify({since: startDate, until: endDate}))}`;
+    console.log(url);  // Verifique o valor da URL antes de fazer a requisição
 
     fetch(url)
         .then(response => response.json())
         .then(data => {
+            console.log(data);  // Verifique o que está sendo retornado aqui
+            if (data.error) {
+                console.error('Erro ao buscar dados da campanha:', data.error.message);
+                alert("Erro ao buscar dados da campanha.");
+                return;
+            }
             if (!data || !data.data || data.data.length === 0) {
                 console.error("Nenhum dado de campanha encontrado.");
                 alert("Nenhum dado encontrado para esse período.");
@@ -156,10 +172,16 @@ function generateReport(data) {
         window.open(url, '_blank');
     };
 }
+
 // Função para formatar datas
 function formatarData(data) {
     const date = new Date(data);
     return date.toLocaleDateString('pt-BR');
+}
+
+// Função para formatar números
+function formatarNumero(numero) {
+    return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 // Evento de submit do formulário
