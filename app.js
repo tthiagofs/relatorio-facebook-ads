@@ -20,6 +20,9 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     }
 });
 
+// Adicionando evento ao botão de login do Facebook
+document.getElementById('loginBtn').addEventListener('click', loginWithFacebook);
+
 // Função para fazer login com o Facebook
 function loginWithFacebook() {
     FB.login(function(response) {
