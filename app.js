@@ -38,7 +38,7 @@ simpleReportBtn.addEventListener('click', () => {
     showScreen(loginScreen);
 });
 
-// Login com Facebook (lógica original do seu app)
+// Login com Facebook (lógica original)
 loginBtn.addEventListener('click', () => {
     FB.login(function(response) {
         if (response.authResponse) {
@@ -60,11 +60,11 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Geração do relatório (lógica restaurada do seu app.js original)
+// Geração do relatório (corrigido com a variável correta)
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
-    const unitName = document.getElementById('unitId').options[document.getElementById('unitId').selectedIndex].text; // Nome correto da unidade
+    const unitName = document.getElementById('unitId').options[document.getElementById('unitId').selectedIndex].text; // Nome correto
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
@@ -72,40 +72,47 @@ form.addEventListener('submit', (e) => {
         `/${unitId}/insights`,
         {
             fields: 'spend,actions,reach',
-            time_range: { since: startDate, until: endDate }
+            time_range: { since: startDate, until: endDate },
+            level: 'account'
         },
         function(response) {
-            const reportData = response.data[0];
-            const spend = reportData.spend;
-            const actions = reportData.actions;
-            const reach = reportData.reach;
-            let conversations = 0;
+            if (response && !response.error && response.data.length > 0) {
+                const reportData = response.data[0];
+                const spend = reportData.spend || '0';
+                const actions = reportData.actions || [];
+                const reach = reportData.reach || '0';
 
-            actions.forEach(action => {
-                if (action.action_type === 'messaging_conversation_started_7d') {
-                    conversations = action.value;
-                }
-            });
+                // Busca a ação correta: onsite_conversion.messaging_conversation_started_7d
+                let conversations = 0;
+                actions.forEach(action => {
+                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                        conversations = action.value;
+                    }
+                });
 
-            const costPerConversation = (spend / conversations).toFixed(2);
+                // Custo por mensagem (investimento / mensagens iniciadas)
+                const costPerConversation = conversations > 0 ? (spend / conversations).toFixed(2) : '0';
 
-            const startDateFormatted = startDate.split('-').reverse().join('/');
-            const endDateFormatted = endDate.split('-').reverse().join('/');
+                const startDateFormatted = startDate.split('-').reverse().join('/');
+                const endDateFormatted = endDate.split('-').reverse().join('/');
 
-            reportContainer.innerHTML = `
-                📊 RELATÓRIO - CA - ${unitName}
-                📅 Período: ${startDateFormatted} a ${endDateFormatted}
-                💰 Investimento: R$ ${parseFloat(spend).toFixed(2).replace('.', ',')}
-                💬 Mensagens iniciadas: ${conversations}
-                💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}
-                📢 Alcance: ${parseInt(reach).toLocaleString('pt-BR')} pessoas
-            `.replace(/\n/g, '<br>');
-            shareWhatsAppBtn.style.display = 'block';
+                reportContainer.innerHTML = `
+                    📊 RELATÓRIO - CA - ${unitName}
+                    📅 Período: ${startDateFormatted} a ${endDateFormatted}
+                    💰 Investimento: R$ ${parseFloat(spend).toFixed(2).replace('.', ',')}
+                    💬 Mensagens iniciadas: ${conversations}
+                    💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}
+                    📢 Alcance: ${parseInt(reach).toLocaleString('pt-BR')} pessoas
+                `.replace(/\n/g, '<br>');
+                shareWhatsAppBtn.style.display = 'block';
+            } else {
+                reportContainer.innerHTML = '<p>Erro ao gerar relatório ou sem dados para o período.</p>';
+            }
         }
     );
 });
 
-// Compartilhar no WhatsApp (já corrigido anteriormente)
+// Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {
     const reportText = reportContainer.innerText;
     const encodedText = encodeURIComponent(reportText);
