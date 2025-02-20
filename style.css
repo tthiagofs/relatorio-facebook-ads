@@ -211,3 +211,35 @@ body {
     width: 20px;
     height: 20px;
 }
+
+/* Estilos da tela de seleção de relatório */
+#reportSelectionScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+#simpleReportBtn {
+    background-color: #4CAF50; /* Verde */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#fullReportBtn {
+    background-color: #ccc; /* Cinza */
+    color: #666;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: not-allowed; /* Indica que não é clicável */
+}
+
+#fullReportBtn:hover {
+    background-color: #bbb; /* Tom mais escuro do cinza */
+}

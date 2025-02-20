@@ -1,28 +1,26 @@
-llet accessToken = '';  // Armazena o token de acesso do Facebook
+let accessToken = '';  // Armazena o token de acesso do Facebook
 let adAccountsMap = {};  // Armazena os nomes das contas
 
+// Função para validar o login
 document.getElementById('loginForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
+    // Validação simples (substitua por uma lógica segura no ambiente de produção)
     if (email === "usuario@exemplo.com" && password === "senha123") {
+        // Login bem-sucedido
         document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('selectionScreen').style.display = 'block';
+        document.getElementById('reportSelectionScreen').style.display = 'flex'; // Exibe a nova tela
     } else {
+        // Login falhou
         document.getElementById('loginError').textContent = "E-mail ou senha incorretos.";
         document.getElementById('loginError').style.display = 'block';
     }
 });
 
-function selectReport(type) {
-    if (type === 'simplificado') {
-        document.getElementById('selectionScreen').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
-    }
-}
-
+// Função para fazer login com o Facebook
 function loginWithFacebook() {
     FB.login(function(response) {
         if (response.authResponse) {
