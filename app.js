@@ -142,19 +142,20 @@ function generateReport(data) {
 
     // Mensagem para o WhatsApp
     const whatsappMessage =
-    `📊 RELATÓRIO - ${data.unitName}\n\n` +
-    `Período analisado: ${data.startDate} a ${data.endDate}\n\n` + // Dupla quebra de linha aqui
-    `💰 Investimento: R$ ${data.spent}\n\n` +
-    `💬 Mensagens iniciadas: ${data.messages}\n\n` +
-    `💵 Custo por mensagem: R$ ${data.cpc}\n\n` +
-    `📢 Alcance: ${data.reach} pessoas`;
+        `📊 RELATÓRIO - ${data.unitName}\n` +
+        `📅 Período: ${data.startDate} a ${data.endDate}\n\n` +
+        (data.campaignName !== "Campanha Desconhecida" ? `🎯 Campanha: ${data.campaignName}\n` : '') +
+        `💰 Investimento: R$ ${data.spent}\n` +
+        `💬 Mensagens iniciadas: ${data.messages}\n` +
+        `💵 Custo por mensagem: R$ ${data.cpc}\n` +
+        `📢 Alcance: ${data.reach} pessoas`;
 
-// Configura o link do WhatsApp corretamente
-whatsappButton.onclick = function () {
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`;
-    window.open(url, '_blank');
-};
-
+    // Configura o link do WhatsApp corretamente
+    whatsappButton.onclick = function () {
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`;
+        window.open(url, '_blank');
+    };
+}
 // Função para formatar datas
 function formatarData(data) {
     const date = new Date(data);
