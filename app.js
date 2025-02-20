@@ -142,24 +142,18 @@ function generateReport(data) {
 
     // Mensagem para o WhatsApp
     const whatsappMessage =
-        `📊 RELATÓRIO - ${data.unitName}\n` +
-        `📅 Período: ${data.startDate} a ${data.endDate}\n` +
-        (data.campaignName !== "Campanha Desconhecida" ? `🎯 Campanha: ${data.campaignName}\n` : '') +
-        `💰 Investimento: R$ ${data.spent}\n` +
-        `💬 Mensagens iniciadas: ${data.messages}\n` +
-        `💵 Custo por mensagem: R$ ${data.cpc}\n` +
-        `📢 Alcance: ${data.reach} pessoas`;
+    `📊 RELATÓRIO - ${data.unitName}\n\n` +
+    `Período analisado: ${data.startDate} a ${data.endDate}\n\n` + // Dupla quebra de linha aqui
+    `💰 Investimento: R$ ${data.spent}\n\n` +
+    `💬 Mensagens iniciadas: ${data.messages}\n\n` +
+    `💵 Custo por mensagem: R$ ${data.cpc}\n\n` +
+    `📢 Alcance: ${data.reach} pessoas`;
 
-    // Configura o link do WhatsApp corretamente
-    whatsappButton.onclick = function () {
-        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`;
-        window.open(url, '_blank');
-    };
-}
-// Função para formatar números
-function formatarNumero(numero) {
-    return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+// Configura o link do WhatsApp corretamente
+whatsappButton.onclick = function () {
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`;
+    window.open(url, '_blank');
+};
 
 // Função para formatar datas
 function formatarData(data) {
