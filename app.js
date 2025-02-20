@@ -20,9 +20,6 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     }
 });
 
-// Adicionando evento ao botão de login do Facebook
-document.getElementById('loginBtn').addEventListener('click', loginWithFacebook);
-
 // Função para fazer login com o Facebook
 function loginWithFacebook() {
     FB.login(function(response) {
@@ -140,8 +137,14 @@ function generateReport(data) {
         `📢 Alcance: ${data.reach} pessoas`;
 
     // Configura o link do WhatsApp
-    whatsappButton.href = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
+    whatsappButton.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`;
     whatsappButton.style.display = 'block'; // Exibe o botão
+
+    // Adiciona evento de clique para abrir o link em uma nova aba
+    whatsappButton.addEventListener('click', function(event) {
+        event.preventDefault();
+        window.open(this.href, '_blank');
+    });
 }
 
 // Função para formatar números
