@@ -116,9 +116,17 @@ function fetchCampaignData(unitId) {
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
 
+    // Define os emojis de forma compatível
+    const emojiReport = String.fromCodePoint(0x1F4CA); // 📊
+    const emojiCalendar = String.fromCodePoint(0x1F4C5); // 📅
+    const emojiMoney = String.fromCodePoint(0x1F4B0); // 💰
+    const emojiMessage = String.fromCodePoint(0x1F4AC); // 💬
+    const emojiCpc = String.fromCodePoint(0x1F4B5); // 💵
+    const emojiReach = String.fromCodePoint(0x1F4E2); // 📢
+
     // Gera o conteúdo do relatório
     let reportHTML = `
-        <h2>📊 RELATÓRIO - ${data.unitName}</h2>
+        <h2>${emojiReport} RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
     `;
 
@@ -128,10 +136,10 @@ function generateReport(data) {
     }
 
     reportHTML += `
-        <p>💰 <strong>Investimento:</strong> R$ ${data.spent}</p>
-        <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
-        <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
-        <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
+        <p>${emojiMoney} <strong>Investimento:</strong> R$ ${data.spent}</p>
+        <p>${emojiMessage} <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
+        <p>${emojiCpc} <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
+        <p>${emojiReach} <strong>Alcance:</strong> ${data.reach} pessoas</p>
         <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
     `;
 
@@ -142,13 +150,13 @@ function generateReport(data) {
 
     // Formata a mensagem para o WhatsApp com emojis corrigidos
     const whatsappMessage = encodeURIComponent(
-        `📊 RELATÓRIO - ${data.unitName}\n` +
-        `📅 Período: ${data.startDate} a ${data.endDate}\n` +
+        `${emojiReport} RELATÓRIO - ${data.unitName}\n` +
+        `${emojiCalendar} Período: ${data.startDate} a ${data.endDate}\n` +
         (data.campaignName !== "Campanha Desconhecida" ? `🎯 Campanha: ${data.campaignName}\n` : '') +
-        `💰 Investimento: R$ ${data.spent}\n` +
-        `💬 Mensagens iniciadas: ${data.messages}\n` +
-        `💵 Custo por mensagem: R$ ${data.cpc}\n` +
-        `📢 Alcance: ${data.reach} pessoas`
+        `${emojiMoney} Investimento: R$ ${data.spent}\n` +
+        `${emojiMessage} Mensagens iniciadas: ${data.messages}\n` +
+        `${emojiCpc} Custo por mensagem: R$ ${data.cpc}\n` +
+        `${emojiReach} Alcance: ${data.reach} pessoas`
     );
 
     // Configura o link do WhatsApp corretamente
@@ -156,7 +164,6 @@ function generateReport(data) {
         window.open(`https://wa.me/?text=${whatsappMessage}`, '_blank');
     };
 }
-
 // Função para formatar números
 function formatarNumero(numero) {
     return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
