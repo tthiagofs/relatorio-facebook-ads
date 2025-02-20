@@ -1,7 +1,7 @@
 /* Estilos gerais */
 body {
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #e0f7fa, #b2ebf2); /* Melhorado com gradiente */
+    background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
     margin: 0;
     padding: 0;
     display: flex;
@@ -31,12 +31,6 @@ body {
     width: 100%;
     max-width: 300px;
     text-align: center;
-    animation: fadeIn 0.5s ease; /* Adicionado animação */
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 .login-box h1 {
@@ -69,12 +63,11 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.3s ease, transform 0.2s ease; /* Adicionado transição */
+    transition: background-color 0.3s ease;
 }
 
 .login-box button:hover {
     background-color: #45a049;
-    transform: translateY(-2px); /* Efeito de elevação */
 }
 
 .error-message {
@@ -96,12 +89,11 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    transition: background-color 0.3s ease;
 }
 
 #loginBtn:hover {
     background-color: #165dbb;
-    transform: translateY(-2px);
 }
 
 #loginBtn::before {
@@ -121,7 +113,6 @@ body {
     width: 100%;
     max-width: 600px;
     margin: 20px;
-    animation: fadeIn 0.5s ease;
 }
 
 .container h1 {
@@ -141,12 +132,11 @@ body {
     cursor: pointer;
     font-size: 16px;
     margin: 10px 0;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    transition: background-color 0.3s ease;
 }
 
 .btn-primary:hover {
     background-color: #2980b9;
-    transform: translateY(-2px);
 }
 
 .btn-disabled {
@@ -186,19 +176,18 @@ body {
 
 #form button {
     width: 100%;
-    padding: 12px 20px; /* Aumentado para melhor visibilidade no mobile */
+    padding: 12px 20px;
     background-color: #4CAF50;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 18px; /* Aumentado para legibilidade */
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 18px;
+    transition: background-color 0.3s ease;
 }
 
 #form button:hover {
     background-color: #45a049;
-    transform: translateY(-2px);
 }
 
 /* Estilos do relatório */
@@ -216,6 +205,7 @@ body {
     margin: 10px 0;
 }
 
+/* Botão de compartilhar no WhatsApp */
 #shareWhatsAppBtn {
     background-color: #25d366;
     color: white;
@@ -228,13 +218,12 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+    transition: background-color 0.3s ease;
     margin-top: 20px;
 }
 
 #shareWhatsAppBtn:hover {
     background-color: #128c7e;
-    transform: translateY(-2px);
 }
 
 #shareWhatsAppBtn::before {
@@ -253,7 +242,7 @@ body {
     }
 
     #form button {
-        padding: 14px 20px; /* Ainda maior no mobile */
+        padding: 14px 20px;
         font-size: 16px;
     }
 

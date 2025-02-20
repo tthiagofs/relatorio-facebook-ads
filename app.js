@@ -38,24 +38,20 @@ simpleReportBtn.addEventListener('click', () => {
     showScreen(loginScreen);
 });
 
-// Login com Facebook (lógica original restaurada)
+// Login com Facebook (lógica original do seu app)
 loginBtn.addEventListener('click', () => {
     FB.login(function(response) {
         if (response.authResponse) {
             showScreen(mainContent);
             FB.api('/me/adaccounts', function(response) {
-                if (response && !response.error) {
-                    const unitSelect = document.getElementById('unitId');
-                    unitSelect.innerHTML = '<option value="">Escolha a unidade</option>'; // Limpa opções anteriores
-                    response.data.forEach(account => {
-                        const option = document.createElement('option');
-                        option.value = account.id;
-                        option.text = account.name; // Nome correto da conta
-                        unitSelect.appendChild(option);
-                    });
-                } else {
-                    console.error('Erro ao carregar contas:', response.error);
-                }
+                const unitSelect = document.getElementById('unitId');
+                unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+                response.data.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account.id;
+                    option.text = account.name; // Nome correto das contas
+                    unitSelect.appendChild(option);
+                });
             });
         } else {
             document.getElementById('loginError').textContent = 'Login cancelado ou falhou.';
@@ -64,51 +60,56 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Geração do relatório (lógica ajustada para usar o nome correto)
+// Geração do relatório (lógica restaurada do seu app.js original)
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
+    const unitName = document.getElementById('unitId').options[document.getElementById('unitId').selectedIndex].text; // Nome correto da unidade
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const unitName = document.getElementById('unitId').selectedOptions[0].text; // Pega o nome da opção selecionada
 
     FB.api(
         `/${unitId}/insights`,
         {
             fields: 'spend,actions,reach',
-            time_range: { since: startDate, until: endDate },
-            level: 'account'
+            time_range: { since: startDate, until: endDate }
         },
         function(response) {
-            if (response && !response.error && response.data.length > 0) {
-                const data = response.data[0];
-                const spend = data.spend || '0';
-                const messages = data.actions ? data.actions.find(action => action.action_type === 'conversation')?.value || '0' : '0';
-                const reach = data.reach || '0';
-                const costPerMessage = messages > 0 ? (spend / messages).toFixed(2) : '0';
+            const reportData = response.data[0];
+            const spend = reportData.spend;
+            const actions = reportData.actions;
+            const reach = reportData.reach;
+            let conversations = 0;
 
-                const reportHTML = `
-                    📊 RELATÓRIO - CA - ${unitName}
-                    📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}
-                    💰 Investimento: R$ ${parseFloat(spend).toFixed(2).replace('.', ',')}
-                    💬 Mensagens iniciadas: ${messages}
-                    💵 Custo por mensagem: R$ ${costPerMessage.replace('.', ',')}
-                    📢 Alcance: ${parseInt(reach).toLocaleString('pt-BR')} pessoas
-                `;
-                reportContainer.innerHTML = reportHTML.replace(/\n/g, '<br>');
-                shareWhatsAppBtn.style.display = 'block';
-            } else {
-                reportContainer.innerHTML = '<p>Erro ao gerar relatório ou sem dados para o período.</p>';
-            }
+            actions.forEach(action => {
+                if (action.action_type === 'messaging_conversation_started_7d') {
+                    conversations = action.value;
+                }
+            });
+
+            const costPerConversation = (spend / conversations).toFixed(2);
+
+            const startDateFormatted = startDate.split('-').reverse().join('/');
+            const endDateFormatted = endDate.split('-').reverse().join('/');
+
+            reportContainer.innerHTML = `
+                📊 RELATÓRIO - CA - ${unitName}
+                📅 Período: ${startDateFormatted} a ${endDateFormatted}
+                💰 Investimento: R$ ${parseFloat(spend).toFixed(2).replace('.', ',')}
+                💬 Mensagens iniciadas: ${conversations}
+                💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}
+                📢 Alcance: ${parseInt(reach).toLocaleString('pt-BR')} pessoas
+            `.replace(/\n/g, '<br>');
+            shareWhatsAppBtn.style.display = 'block';
         }
     );
 });
 
-// Compartilhar no WhatsApp (corrigido para abrir seleção de contatos)
+// Compartilhar no WhatsApp (já corrigido anteriormente)
 shareWhatsAppBtn.addEventListener('click', () => {
     const reportText = reportContainer.innerText;
     const encodedText = encodeURIComponent(reportText);
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`; // Usando api.whatsapp.com
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
     window.open(whatsappUrl, '_blank');
 });
 
