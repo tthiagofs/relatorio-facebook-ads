@@ -8,7 +8,7 @@
     <script>
         window.fbAsyncInit = function() {
             FB.init({
-                appId      : 'SEU_APP_ID_AQUI', // Substitua pelo seu App ID
+                appId      : '618519427538646', // App ID original do seu repositório
                 cookie     : true,
                 xfbml      : true,
                 version    : 'v12.0'
@@ -16,11 +16,11 @@
             FB.AppEvents.logPageView();
         };
 
-        (function(d, s, id) {
+        (function(d, s, id){
             var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) return;
+            if (d.getElementById(id)) {return;}
             js = d.createElement(s); js.id = id;
-            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            js.src = "https://connect.facebook.net/pt_BR/sdk.js";
             fjs.parentNode.insertBefore(js, fjs);
         }(document, 'script', 'facebook-jssdk'));
     </script>

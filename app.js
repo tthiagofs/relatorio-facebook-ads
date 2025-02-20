@@ -39,37 +39,30 @@ simpleReportBtn.addEventListener('click', () => {
     showScreen(loginScreen);
 });
 
-// Login com Facebook
+// Login com Facebook (lógica original restaurada)
 loginBtn.addEventListener('click', () => {
-    FB.login((response) => {
+    FB.login(function(response) {
         if (response.authResponse) {
             showScreen(mainContent);
-            loadAdAccounts();
-        } else {
-            document.getElementById('loginError').textContent = 'Erro ao fazer login. Tente novamente.';
-            document.getElementById('loginError').style.display = 'block';
-        }
-    }, { scope: 'ads_read' });
-});
-
-// Carregar contas de anúncios
-function loadAdAccounts() {
-    FB.api('/me/adaccounts', (response) => {
-        if (response && !response.error) {
-            const unitSelect = document.getElementById('unitId');
-            response.data.forEach(account => {
-                const option = document.createElement('option');
-                option.value = account.id;
-                option.textContent = account.name;
-                unitSelect.appendChild(option);
+            FB.api('/me/adaccounts', function(response) {
+                if (response && !response.error) {
+                    const unitSelect = document.getElementById('unitId');
+                    response.data.forEach(account => {
+                        const option = document.createElement('option');
+                        option.value = account.id;
+                        option.text = account.name;
+                        unitSelect.appendChild(option);
+                    });
+                }
             });
         } else {
-            console.error('Erro ao carregar contas de anúncios:', response.error);
+            document.getElementById('loginError').textContent = 'Login cancelado ou falhou.';
+            document.getElementById('loginError').style.display = 'block';
         }
-    });
-}
+    }, {scope: 'ads_read'});
+});
 
-// Geração do relatório (mantendo o formato original)
+// Geração do relatório (lógica original mantida)
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -79,12 +72,12 @@ form.addEventListener('submit', (e) => {
     FB.api(
         `/${unitId}/insights`,
         {
-            fields: 'spend,actions,reach', // Ajustado para os dados do seu exemplo
+            fields: 'spend,actions,reach',
             time_range: { since: startDate, until: endDate },
             level: 'account'
         },
-        (response) => {
-            if (response && !response.error) {
+        function(response) {
+            if (response && !response.error && response.data.length > 0) {
                 const data = response.data[0];
                 const spend = data.spend || '0';
                 const messages = data.actions ? data.actions.find(action => action.action_type === 'conversation')?.value || '0' : '0';
@@ -92,23 +85,23 @@ form.addEventListener('submit', (e) => {
                 const costPerMessage = messages > 0 ? (spend / messages).toFixed(2) : '0';
 
                 const reportHTML = `
-                    <p>📊 RELATÓRIO - CA - ${document.getElementById('unitId').selectedOptions[0].text}</p>
-                    <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
-                    <p>💰 Investimento: R$ ${parseFloat(spend).toFixed(2).replace('.', ',')}</p>
-                    <p>💬 Mensagens iniciadas: ${messages}</p>
-                    <p>💵 Custo por mensagem: R$ ${costPerMessage.replace('.', ',')}</p>
-                    <p>📢 Alcance: ${parseInt(reach).toLocaleString('pt-BR')} pessoas</p>
+                    📊 RELATÓRIO - CA - ${document.getElementById('unitId').selectedOptions[0].text}
+                    📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}
+                    💰 Investimento: R$ ${parseFloat(spend).toFixed(2).replace('.', ',')}
+                    💬 Mensagens iniciadas: ${messages}
+                    💵 Custo por mensagem: R$ ${costPerMessage.replace('.', ',')}
+                    📢 Alcance: ${parseInt(reach).toLocaleString('pt-BR')} pessoas
                 `;
-                reportContainer.innerHTML = reportHTML;
+                reportContainer.innerHTML = reportHTML.replace(/\n/g, '<br>');
                 shareWhatsAppBtn.style.display = 'block';
             } else {
-                reportContainer.innerHTML = '<p>Erro ao gerar relatório. Verifique os dados e tente novamente.</p>';
+                reportContainer.innerHTML = '<p>Erro ao gerar relatório ou sem dados para o período.</p>';
             }
         }
     );
 });
 
-// Compartilhar no WhatsApp
+// Compartilhar no WhatsApp (lógica original)
 shareWhatsAppBtn.addEventListener('click', () => {
     const reportText = reportContainer.innerText;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(reportText)}`;
