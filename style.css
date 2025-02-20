@@ -35,35 +35,44 @@ body {
 }
 
 /* Tela de Login */
+.login-container {
+    background-color: transparent; /* Remove o fundo escuro original */
+}
+
 .login-box {
     background-color: white;
     padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 400px;
     text-align: center;
+    position: relative;
 }
 
 .login-box h1 {
     color: #1a3a2a;
     margin-bottom: 20px;
+    font-size: 24px;
 }
 
 .login-box label {
     display: block;
     margin: 10px 0 5px;
     text-align: left;
-    color: #333;
+    color: #666;
+    font-size: 14px;
 }
 
 .login-box input {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     margin-bottom: 15px;
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 14px;
+    background-color: #f9f9f9;
+    color: #333;
 }
 
 .login-box button {
@@ -75,11 +84,23 @@ body {
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    margin-top: 10px;
+    margin-top: 15px;
 }
 
 .login-box button:hover {
     background-color: #0056b3;
+}
+
+.forgot-password {
+    display: block;
+    margin: 10px 0;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
 }
 
 .error-message {
@@ -129,7 +150,7 @@ body {
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    margin-top: 10px;
+    margin-top: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -153,13 +174,14 @@ body {
     color: #1a3a2a;
     margin-bottom: 20px;
     text-align: center;
+    font-size: 24px;
 }
 
 #mainContent form {
     background-color: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 600px;
 }
@@ -167,16 +189,19 @@ body {
 #mainContent label {
     display: block;
     margin: 10px 0 5px;
-    color: #333;
+    color: #666;
+    font-size: 14px;
 }
 
 #mainContent select, #mainContent input[type="date"] {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     margin-bottom: 15px;
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 14px;
+    background-color: #f9f9f9;
+    color: #333;
 }
 
 #mainContent button {
@@ -197,9 +222,9 @@ body {
 .report-container {
     margin-top: 20px;
     background-color: white;
-    padding: 15px;
+    padding: 20px;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     max-width: 800px;
     width: 100%;
 }
@@ -229,35 +254,4 @@ body {
     background-image: url('https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg');
     background-size: cover;
     width: 20px;
-    height: 20px;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .login-box, #mainContent form, .report-container {
-        width: 90%;
-        max-width: none;
-    }
-
-    .report-options {
-        flex-direction: column;
-    }
-
-    .report-options button {
-        min-width: 100%;
-    }
-
-    .logo-img {
-        width: 100px;
-    }
-
-    .app-header {
-        padding: 10px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .container, .login-container {
-        padding: 40px;
-    }
-}
+    height: 20
