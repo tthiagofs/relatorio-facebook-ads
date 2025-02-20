@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Facebook Ads</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : '618519427538646',
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v12.0'
+            });
+            FB.AppEvents.logPageView();
+        };
+
+        (function(d, s, id){
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) {return;}
+            js = d.createElement(s); js.id = id;
+            js.src = "https://connect.facebook.net/pt_BR/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    </script>
+</head>
+<body>
+    <div id="appLoginScreen" class="login-container">
+        <div class="login-box">
+            <h1>Login no App</h1>
+            <form id="appLoginForm">
+                <label for="username">Usuário:</label>
+                <input type="text" id="username" placeholder="@admin" required>
+                <label for="password">Senha:</label>
+                <input type="password" id="password" placeholder="Digite a senha" required>
+                <button type="submit">Entrar</button>
+                <p id="appLoginError" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="reportSelectionScreen" class="container" style="display: none;">
+        <h1>Escolha o Tipo de Relatório</h1>
+        <button id="simpleReportBtn" class="btn-primary">Relatório Simplificado</button>
+        <button id="fullReportBtn" class="btn-disabled" disabled title="Em breve">Relatório Completo</button>
+    </div>
+
+    <div id="loginScreen" class="login-container" style="display: none;">
+        <div class="login-box">
+            <h1>Login com Facebook</h1>
+            <button id="loginBtn">Login com Facebook</button>
+            <p id="loginError" class="error-message"></p>
+        </div>
+    </div>
+
+    <div id="mainContent" class="container" style="display: none;">
+        <h1>Gerar Relatório - Facebook Ads</h1>
+        <form id="form">
+            <label for="unitId">Selecione a Unidade:</label>
+            <select id="unitId" required>
+                <option value="">Escolha a unidade</option>
+            </select>
+            <label for="startDate">Data Início:</label>
+            <input type="date" id="startDate" required>
+            <label for="endDate">Data Fim:</label>
+            <input type="date" id="endDate" required>
+            <button type="submit">Gerar Relatório</button>
+        </form>
+        <div id="reportContainer" class="report-container"></div>
+        <button id="shareWhatsAppBtn" style="display: none;">Compartilhar no WhatsApp</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
