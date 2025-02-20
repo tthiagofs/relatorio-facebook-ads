@@ -6,29 +6,17 @@
     <title>Login - Relatório Facebook Ads</title>
     <link rel="stylesheet" href="style.css">
     <script>
-        // Inicialização do SDK do Facebook
         window.fbAsyncInit = function() {
             FB.init({
-                appId      : '618519427538646', // Substitua pelo seu App ID
+                appId      : '618519427538646',
                 cookie     : true,
                 xfbml      : true,
                 version    : 'v12.0'
             });
 
             FB.AppEvents.logPageView();
-
-            // Verifica se o usuário já está logado
-            FB.getLoginStatus(function(response) {
-                if (response.status === 'connected') {
-                    accessToken = response.authResponse.accessToken;
-                    fetchAdAccounts();
-                    document.getElementById('form').style.display = 'block';
-                    document.getElementById('loginBtn').style.display = 'none';
-                }
-            });
         };
 
-        // Carrega o SDK do Facebook
         (function(d, s, id) {
             var js, fjs = d.getElementsByTagName(s)[0];
             if (d.getElementById(id)) return;
@@ -39,50 +27,43 @@
     </script>
 </head>
 <body>
-    <!-- Tela de Login -->
     <div id="loginScreen" class="login-container">
         <div class="login-box">
             <h1>Login</h1>
             <form id="loginForm">
                 <label for="email">E-mail:</label>
                 <input type="email" id="email" required placeholder="Digite seu e-mail">
-
                 <label for="password">Senha:</label>
                 <input type="password" id="password" required placeholder="Digite sua senha">
-
                 <button type="submit">Entrar</button>
             </form>
             <p id="loginError" class="error-message"></p>
         </div>
     </div>
 
-    <!-- Conteúdo Principal (inicialmente oculto) -->
+    <!-- Nova Tela de Seleção -->
+    <div id="selectionScreen" class="container" style="display: none;">
+        <h1>Escolha o Tipo de Relatório</h1>
+        <button onclick="selectReport('simplificado')" class="btn-primary">Relatório Simplificado</button>
+        <button class="btn-disabled" title="Em breve" disabled>Relatório Completo</button>
+    </div>
+
+    <!-- Tela Principal -->
     <div id="mainContent" class="container" style="display: none;">
         <h1>Gerar Relatório - Facebook Ads</h1>
-
-        <!-- Botão de login do Facebook -->
         <button id="loginBtn" onclick="loginWithFacebook()">Login com Facebook</button>
-
-        <!-- Formulário para gerar relatório (inicialmente oculto) -->
         <form id="form" style="display: none;">
             <label for="unitId">Selecione a Unidade:</label>
             <select id="unitId" required>
                 <option value="">Escolha a unidade</option>
             </select>
-
             <label for="startDate">Data Início:</label>
             <input type="date" id="startDate" required>
-
             <label for="endDate">Data Fim:</label>
             <input type="date" id="endDate" required>
-
             <button type="submit">Gerar Relatório</button>
         </form>
-
-        <div id="reportContainer" class="report-container">
-            <!-- Conteúdo do relatório será gerado aqui -->
-            <button id="shareWhatsAppBtn" style="display: none;">Compartilhar no WhatsApp</button>
-        </div>
+        <div id="reportContainer" class="report-container"></div>
     </div>
 
     <script src="app.js"></script>
