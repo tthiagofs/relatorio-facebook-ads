@@ -115,7 +115,6 @@ function fetchCampaignData(unitId) {
 // Função para gerar o relatório
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
-    const whatsappButton = document.getElementById('shareWhatsAppBtn');
 
     // Gera o conteúdo do relatório
     reportContainer.innerHTML = `
@@ -126,7 +125,11 @@ function generateReport(data) {
         <p>💬 <strong>Mensagens iniciadas:</strong> ${data.messages}</p>
         <p>💵 <strong>Custo por mensagem:</strong> R$ ${data.cpc}</p>
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
+        <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
     `;
+
+    // Seleciona o botão após ser adicionado ao DOM
+    const whatsappButton = document.getElementById('shareWhatsAppBtn');
 
     // Formata a mensagem para o WhatsApp
     const whatsappMessage = `📊 Relatório - ${data.unitName}\n` +
@@ -137,8 +140,9 @@ function generateReport(data) {
         `📢 Alcance: ${data.reach} pessoas`;
 
     // Configura o link do WhatsApp
-    whatsappButton.href = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
-    whatsappButton.style.display = 'block'; // Exibe o botão
+    whatsappButton.onclick = function () {
+        window.open(`https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`, '_blank');
+    };
 }
 
 // Função para formatar números
