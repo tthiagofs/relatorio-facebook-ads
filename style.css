@@ -1,45 +1,59 @@
-body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+* {
     margin: 0;
     padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
 }
 
-.login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    width: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+body {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+/* Cabeçalho com a logo */
+.app-header {
+    background-color: #1a3a2a; /* Verde escuro da logo */
+    padding: 15px;
+    text-align: center;
     position: fixed;
+    width: 100%;
     top: 0;
-    left: 0;
+    z-index: 1000;
 }
 
-.login-box {
-    background-color: #fff;
+.logo-img {
+    width: 120px; /* Ajuste o tamanho da logo conforme necessário */
+}
+
+/* Containers gerais */
+.container, .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 60px); /* Ajusta para o cabeçalho */
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Tela de Login */
+.login-box {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 300px;
+    max-width: 400px;
     text-align: center;
 }
 
 .login-box h1 {
+    color: #1a3a2a;
     margin-bottom: 20px;
-    color: #333;
 }
 
 .login-box label {
     display: block;
+    margin: 10px 0 5px;
     text-align: left;
-    margin-bottom: 5px;
     color: #333;
 }
 
@@ -47,46 +61,79 @@ body {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
     font-size: 14px;
 }
 
 .login-box button {
     width: 100%;
-    padding: 10px;
-    background-color: #4CAF50;
+    padding: 12px;
+    background-color: #007bff; /* Azul da logo */
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.3s ease;
+    margin-top: 10px;
 }
 
 .login-box button:hover {
-    background-color: #45a049;
+    background-color: #0056b3;
 }
 
 .error-message {
-    color: red;
+    color: #dc3545;
     margin-top: 10px;
-    display: none;
+    font-size: 14px;
 }
 
-#loginBtn {
-    background-color: #1877f2;
+/* Tela de Seleção de Relatórios */
+.report-options {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.report-options button {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px;
+    background-color: #007bff; /* Azul da logo */
     color: white;
-    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
-    font-size: 16px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+.report-options button:hover {
+    background-color: #0056b3;
+}
+
+.report-options .btn-disabled {
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+
+/* Tela de Login com Facebook */
+#loginBtn {
+    width: 100%;
+    padding: 12px;
+    background-color: #1877f2; /* Azul do Facebook */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: background-color 0.3s ease;
 }
 
 #loginBtn:hover {
@@ -101,117 +148,76 @@ body {
     height: 20px;
 }
 
-.container {
-    background-color: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+/* Tela de Geração de Relatórios */
+.container h1 {
+    color: #1a3a2a;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#mainContent form {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 600px;
-    margin: 20px;
 }
 
-.container h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
-}
-
-.btn-primary {
-    width: 100%;
-    padding: 12px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin: 10px 0;
-    transition: background-color 0.3s ease;
-}
-
-.btn-primary:hover {
-    background-color: #2980b9;
-}
-
-.btn-disabled {
-    width: 100%;
-    padding: 12px;
-    background-color: #bdc3c7;
-    color: #7f8c8d;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: not-allowed;
-    margin: 10px 0;
-}
-
-#form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-#form label {
-    font-weight: bold;
+#mainContent label {
+    display: block;
+    margin: 10px 0 5px;
     color: #333;
 }
 
-#form select,
-#form input[type="date"] {
+#mainContent select, #mainContent input[type="date"] {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
     font-size: 14px;
-    background-color: #fff;
-    color: #333;
 }
 
-#form button {
+#mainContent button {
     width: 100%;
-    padding: 12px 20px;
-    background-color: #4CAF50;
+    padding: 12px;
+    background-color: #007bff; /* Azul da logo */
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 18px;
-    transition: background-color 0.3s ease;
+    font-size: 16px;
 }
 
-#form button:hover {
-    background-color: #45a049;
+#mainContent button:hover {
+    background-color: #0056b3;
 }
 
 .report-container {
     margin-top: 20px;
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.report-container p {
-    color: #555;
-    font-size: 16px;
-    margin: 10px 0;
+    background-color: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    width: 100%;
 }
 
 #shareWhatsAppBtn {
-    background-color: #25d366;
+    width: 100%;
+    padding: 12px;
+    background-color: #25d366; /* Verde do WhatsApp */
     color: white;
-    padding: 12px 20px;
     border: none;
-    border-radius: 4px;
-    font-size: 16px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 16px;
+    margin-top: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: background-color 0.3s ease;
-    margin-top: 20px;
 }
 
 #shareWhatsAppBtn:hover {
@@ -226,19 +232,32 @@ body {
     height: 20px;
 }
 
-@media (max-width: 480px) {
-    .login-box, .container {
-        max-width: 90%;
-        padding: 15px;
+/* Responsividade */
+@media (max-width: 768px) {
+    .login-box, #mainContent form, .report-container {
+        width: 90%;
+        max-width: none;
     }
 
-    #form button {
-        padding: 14px 20px;
-        font-size: 16px;
+    .report-options {
+        flex-direction: column;
     }
 
-    #shareWhatsAppBtn {
-        padding: 14px 20px;
-        font-size: 16px;
+    .report-options button {
+        min-width: 100%;
+    }
+
+    .logo-img {
+        width: 100px;
+    }
+
+    .app-header {
+        padding: 10px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .container, .login-container {
+        padding: 40px;
     }
 }
