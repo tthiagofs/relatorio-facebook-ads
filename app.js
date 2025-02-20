@@ -11,8 +11,9 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     // Validação simples (substitua por uma lógica segura no ambiente de produção)
     if (email === "usuario@exemplo.com" && password === "senha123") {
         // Login bem-sucedido
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('reportSelectionScreen').style.display = 'flex'; // Exibe a nova tela
+        document.getElementById('loginScreen').style.display = 'none'; // Oculta a tela de login
+        document.getElementById('mainContent').style.display = 'block'; // Exibe o conteúdo principal
+        document.getElementById('reportSelectionScreen').style.display = 'flex'; // Exibe a nova tela de seleção de relatório
     } else {
         // Login falhou
         document.getElementById('loginError').textContent = "E-mail ou senha incorretos.";

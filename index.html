@@ -22,8 +22,8 @@
                 if (response.status === 'connected') {
                     accessToken = response.authResponse.accessToken;
                     fetchAdAccounts();
-                    document.getElementById('form').style.display = 'block';
-                    document.getElementById('loginBtn').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
+                    document.getElementById('reportSelectionScreen').style.display = 'flex';
                 }
             });
         };
@@ -60,12 +60,12 @@
     <div id="mainContent" class="container" style="display: none;">
         <h1>Gerar Relatório - Facebook Ads</h1>
 
-<!-- Tela de Seleção de Relatório (inicialmente oculta) -->
-<div id="reportSelectionScreen" class="container" style="display: none;">
-    <h1>Selecione o Tipo de Relatório</h1>
-    <button id="simpleReportBtn" onclick="loginWithFacebook()">Relatório Simplificado</button>
-    <button id="fullReportBtn" class="disabled" title="Em breve">Relatório Completo</button>
-</div>
+        <!-- Tela de Seleção de Relatório (inicialmente oculta) -->
+        <div id="reportSelectionScreen" class="container" style="display: none;">
+            <h1>Selecione o Tipo de Relatório</h1>
+            <button id="simpleReportBtn" onclick="loginWithFacebook()">Relatório Simplificado</button>
+            <button id="fullReportBtn" class="disabled" title="Em breve">Relatório Completo</button>
+        </div>
 
         <!-- Botão de login do Facebook -->
         <button id="loginBtn" onclick="loginWithFacebook()">Login com Facebook</button>
