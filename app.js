@@ -5,22 +5,18 @@ let adAccountsMap = {};  // Armazena os nomes das contas
 document.getElementById('loginForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
-    const email = document.getElementById('email').value;
+    const login = document.getElementById('login').value;
     const password = document.getElementById('password').value;
 
-    // Validação simples (substitua por uma lógica segura no ambiente de produção)
-    if (email === "usuario@exemplo.com" && password === "senha123") {
-        // Login bem-sucedido
+    if (login === "@admin" && password === "134679") {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
     } else {
-        // Login falhou
-        document.getElementById('loginError').textContent = "E-mail ou senha incorretos.";
+        document.getElementById('loginError').textContent = "Usuário ou senha incorretos.";
         document.getElementById('loginError').style.display = 'block';
     }
 });
 
-// Função para fazer login com o Facebook
 function loginWithFacebook() {
     FB.login(function(response) {
         if (response.authResponse) {
@@ -34,7 +30,6 @@ function loginWithFacebook() {
     }, { scope: 'ads_read,ads_management' });
 }
 
-// Função para buscar as contas de anúncios
 function fetchAdAccounts() {
     if (!accessToken) {
         console.error("Token de acesso não encontrado.");
@@ -62,7 +57,6 @@ function fetchAdAccounts() {
         .catch(error => console.error('Erro ao buscar contas de anúncios:', error));
 }
 
-// Função para buscar dados da campanha
 function fetchCampaignData(unitId) {
     if (!accessToken) {
         console.error("Token de acesso não encontrado.");
@@ -112,12 +106,10 @@ function fetchCampaignData(unitId) {
         });
 }
 
-// Função para gerar o relatório
 function generateReport(data) {
     const reportContainer = document.getElementById('reportContainer');
     const whatsappButton = document.getElementById('shareWhatsAppBtn');
 
-    // Gera o conteúdo do relatório
     reportContainer.innerHTML = `
         <h2>📊 RELATÓRIO - ${data.unitName}</h2>
         <p><strong>Período analisado:</strong> ${data.startDate} a ${data.endDate}</p>
@@ -128,7 +120,6 @@ function generateReport(data) {
         <p>📢 <strong>Alcance:</strong> ${data.reach} pessoas</p>
     `;
 
-    // Formata a mensagem para o WhatsApp
     const whatsappMessage = `📊 Relatório - ${data.unitName}\n` +
         `Período: ${data.startDate} a ${data.endDate}\n` +
         `💰 Investimento: R$ ${data.spent}\n` +
@@ -136,23 +127,10 @@ function generateReport(data) {
         `💵 Custo por mensagem: R$ ${data.cpc}\n` +
         `📢 Alcance: ${data.reach} pessoas`;
 
-    // Configura o link do WhatsApp
     whatsappButton.href = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
-    whatsappButton.style.display = 'block'; // Exibe o botão
+    whatsappButton.style.display = 'block'; 
 }
 
-// Função para formatar números
-function formatarNumero(numero) {
-    return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// Função para formatar datas
-function formatarData(data) {
-    const date = new Date(data);
-    return date.toLocaleDateString('pt-BR');
-}
-
-// Evento de submit do formulário
 document.getElementById('form').addEventListener('submit', function(event) {
     event.preventDefault();
     const unitId = document.getElementById('unitId').value;

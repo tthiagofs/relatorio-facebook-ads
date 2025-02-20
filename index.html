@@ -6,10 +6,9 @@
     <title>Login - Relatório Facebook Ads</title>
     <link rel="stylesheet" href="style.css">
     <script>
-        // Inicialização do SDK do Facebook
         window.fbAsyncInit = function() {
             FB.init({
-                appId      : '618519427538646', // Substitua pelo seu App ID
+                appId      : '618519427538646',
                 cookie     : true,
                 xfbml      : true,
                 version    : 'v12.0'
@@ -17,7 +16,6 @@
 
             FB.AppEvents.logPageView();
 
-            // Verifica se o usuário já está logado
             FB.getLoginStatus(function(response) {
                 if (response.status === 'connected') {
                     accessToken = response.authResponse.accessToken;
@@ -28,7 +26,6 @@
             });
         };
 
-        // Carrega o SDK do Facebook
         (function(d, s, id) {
             var js, fjs = d.getElementsByTagName(s)[0];
             if (d.getElementById(id)) return;
@@ -39,13 +36,12 @@
     </script>
 </head>
 <body>
-    <!-- Tela de Login -->
     <div id="loginScreen" class="login-container">
         <div class="login-box">
             <h1>Login</h1>
             <form id="loginForm">
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" required placeholder="Digite seu e-mail">
+                <label for="login">Login:</label>
+                <input type="login" id="login" required placeholder="Digite seu usuário">
 
                 <label for="password">Senha:</label>
                 <input type="password" id="password" required placeholder="Digite sua senha">
@@ -56,14 +52,11 @@
         </div>
     </div>
 
-    <!-- Conteúdo Principal (inicialmente oculto) -->
     <div id="mainContent" class="container" style="display: none;">
         <h1>Gerar Relatório - Facebook Ads</h1>
 
-        <!-- Botão de login do Facebook -->
         <button id="loginBtn" onclick="loginWithFacebook()">Login com Facebook</button>
 
-        <!-- Formulário para gerar relatório (inicialmente oculto) -->
         <form id="form" style="display: none;">
             <label for="unitId">Selecione a Unidade:</label>
             <select id="unitId" required>
@@ -79,10 +72,9 @@
             <button type="submit">Gerar Relatório</button>
         </form>
 
-      <div id="reportContainer" class="report-container">
-    <!-- Conteúdo do relatório será gerado aqui -->
-    <button id="shareWhatsAppBtn" style="display: none;">Compartilhar no WhatsApp</button>
-</div>
+        <div id="reportContainer" class="report-container">
+            <button id="shareWhatsAppBtn" style="display: none;">Compartilhar no WhatsApp</button>
+        </div>
     </div>
 
     <script src="app.js"></script>
