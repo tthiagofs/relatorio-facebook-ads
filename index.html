@@ -26,10 +26,6 @@
     </script>
 </head>
 <body>
-    <header class="app-header">
-        <img src="logo_sem_fundo.png" alt="InsightFlow" class="logo-img">
-    </header>
-
     <div id="appLoginScreen" class="login-container">
         <div class="login-box">
             <h1>Login no App</h1>
@@ -38,7 +34,6 @@
                 <input type="text" id="username" placeholder="@admin" required>
                 <label for="password">Senha:</label>
                 <input type="password" id="password" placeholder="Digite a senha" required>
-                <a href="#" class="forgot-password">Esqueceu a senha?</a>
                 <button type="submit">Entrar</button>
                 <p id="appLoginError" class="error-message"></p>
             </form>
@@ -47,10 +42,8 @@
 
     <div id="reportSelectionScreen" class="container" style="display: none;">
         <h1>Escolha o Tipo de Relatório</h1>
-        <div class="report-options">
-            <button id="simpleReportBtn" class="btn-primary">Relatório Simplificado</button>
-            <button id="fullReportBtn" class="btn-disabled" disabled title="Em breve">Relatório Completo</button>
-        </div>
+        <button id="simpleReportBtn" class="btn-primary">Relatório Simplificado</button>
+        <button id="fullReportBtn" class="btn-disabled" disabled title="Em breve">Relatório Completo</button>
     </div>
 
     <div id="loginScreen" class="login-container" style="display: none;">
