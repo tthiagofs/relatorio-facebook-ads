@@ -70,7 +70,7 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Geração do relatório com filtragem opcional
+// Geração do relatório com filtragem opcional corrigida
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -80,7 +80,7 @@ form.addEventListener('submit', (e) => {
     const adSetNameFilter = document.getElementById('adSetName').value.trim(); // Nome para filtrar (opcional)
 
     if (!unitId || !startDate || !endDate) {
-        reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios.</p>';
+        reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
         return;
     }
 
@@ -93,10 +93,14 @@ form.addEventListener('submit', (e) => {
     // Se o filtro de nome do conjunto de anúncios não estiver vazio, aplica a filtragem
     if (adSetNameFilter) {
         apiCall.filtering = [{
-            field: 'adset_name', // Especifica explicitamente o campo adset_name
+            field: 'adset_name',
             operator: 'CONTAINS',
             value: adSetNameFilter
         }];
+    } else {
+        // Sem filtragem, ajusta para nivel de conta para somar todos os adsets
+        apiCall.level = 'account';
+        delete apiCall.filtering; // Garante que não há filtro
     }
 
     FB.api(
@@ -110,30 +114,50 @@ form.addEventListener('submit', (e) => {
                 let reportHTML = '';
 
                 response.data.forEach(data => {
-                    const spend = parseFloat(data.spend || 0);
-                    const actions = data.actions || [];
-                    const reach = parseInt(data.reach || 0);
-                    const adSetName = data.adset_name || 'Conjunto Desconhecido';
-
-                    // Busca mensagens iniciadas com a variável correta
+                    let spend = 0;
                     let conversations = 0;
-                    actions.forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            conversations = action.value;
-                        }
-                    });
+                    let reach = 0;
+                    let adSetName = 'Conjunto Desconhecido';
+
+                    if (apiCall.level === 'adset') {
+                        // Quando filtrando por adset, usa os dados diretos
+                        spend = parseFloat(data.spend || 0);
+                        const actions = data.actions || [];
+                        reach = parseInt(data.reach || 0);
+                        adSetName = data.adset_name || 'Conjunto Desconhecido';
+
+                        actions.forEach(action => {
+                            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                                conversations = action.value;
+                            }
+                        });
+                    } else {
+                        // Quando no nível da conta (sem filtro), soma todos os adsets
+                        spend = parseFloat(data.spend || 0);
+                        const actions = data.actions || [];
+                        reach = parseInt(data.reach || 0);
+
+                        actions.forEach(action => {
+                            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                                conversations = action.value;
+                            }
+                        });
+                    }
 
                     totalSpend += spend;
                     totalConversations += conversations;
                     totalReach += reach;
 
-                    reportHTML += `
-                        <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
-                        <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
-                        <p>💬 Mensagens iniciadas: ${conversations}</p>
-                        <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
-                        <hr>
-                    `;
+                    if (apiCall.level === 'adset') {
+                        // Mostra detalhes apenas quando filtrando por adset
+                        reportHTML += `
+                            <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
+                            <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
+                            <p>💬 Mensagens iniciadas: ${conversations}</p>
+                            <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
+                            <hr>
+                        `;
+                    }
                 });
 
                 const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
