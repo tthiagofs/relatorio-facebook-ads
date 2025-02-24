@@ -153,7 +153,7 @@ form.addEventListener('submit', (e) => {
                         reportHTML += `
                             <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
                             <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
-                            <p>💬 Mensagens iniciadas: ${conversations}</p>
+                            <p>💬 Mensagens iniciadas: ${conversations.toString()}</p> <!-- Corrigido para remover zeros à esquerda -->
                             <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
                             <hr>
                         `;
@@ -166,7 +166,7 @@ form.addEventListener('submit', (e) => {
                     📊 RELATÓRIO - CA - ${unitName}
                     📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}
                     💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}
-                    💬 Mensagens iniciadas: ${totalConversations}
+                    💬 Mensagens iniciadas: ${totalConversations.toString()} <!-- Corrigido para remover zeros à esquerda -->
                     💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}
                     📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas
                     ${reportHTML}
