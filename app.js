@@ -70,32 +70,38 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Geração do relatório com filtragem
+// Geração do relatório com filtragem opcional
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida'; // Usa o mapa para pegar o nome
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const adSetNameFilter = document.getElementById('adSetName').value.trim(); // Nome para filtrar
+    const adSetNameFilter = document.getElementById('adSetName').value.trim(); // Nome para filtrar (opcional)
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios.</p>';
         return;
     }
 
+    let apiCall = {
+        fields: 'spend,actions,reach,adset_name',
+        time_range: { since: startDate, until: endDate },
+        level: 'adset'
+    };
+
+    // Se o filtro de nome do conjunto de anúncios não estiver vazio, aplica a filtragem
+    if (adSetNameFilter) {
+        apiCall.filtering = [{
+            field: 'adset_name', // Especifica explicitamente o campo adset_name
+            operator: 'CONTAINS',
+            value: adSetNameFilter
+        }];
+    }
+
     FB.api(
         `/${unitId}/insights`,
-        {
-            fields: 'spend,actions,reach,adset_name', // Adicionado adset_name para filtragem
-            time_range: { since: startDate, until: endDate },
-            level: 'adset', // Mudado para 'adset' para filtrar por conjuntos de anúncios
-            filtering: [{
-                field: 'string',
-                operator: 'CONTAINS',
-                value: adSetNameFilter
-            }]
-        },
+        apiCall,
         function(response) {
             if (response && !response.error && response.data.length > 0) {
                 let totalSpend = 0;
