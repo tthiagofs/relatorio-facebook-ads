@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório Facebook Ads</title>
+    <title>InsightFlow - Relatório Facebook Ads</title>
     <link rel="stylesheet" href="style.css">
     <script>
         window.fbAsyncInit = function() {
@@ -26,6 +26,7 @@
     </script>
 </head>
 <body>
+    <!-- Tela de Login do App -->
     <div id="appLoginScreen" class="login-container">
         <div class="login-box">
             <h1>Login no App</h1>
@@ -40,12 +41,14 @@
         </div>
     </div>
 
+    <!-- Tela de Seleção de Relatórios -->
     <div id="reportSelectionScreen" class="container" style="display: none;">
         <h1>Escolha o Tipo de Relatório</h1>
         <button id="simpleReportBtn" class="btn-primary">Relatório Simplificado</button>
         <button id="fullReportBtn" class="btn-disabled" disabled title="Em breve">Relatório Completo</button>
     </div>
 
+    <!-- Tela de Login do Facebook -->
     <div id="loginScreen" class="login-container" style="display: none;">
         <div class="login-box">
             <h1>Login com Facebook</h1>
@@ -54,6 +57,7 @@
         </div>
     </div>
 
+    <!-- Tela de Geração de Relatório -->
     <div id="mainContent" class="container" style="display: none;">
         <h1>Gerar Relatório - Facebook Ads</h1>
         <form id="form">
@@ -65,6 +69,8 @@
             <input type="date" id="startDate" required>
             <label for="endDate">Data Fim:</label>
             <input type="date" id="endDate" required>
+            <label for="adSetName">Nome do Conjunto de Anúncios:</label>
+            <input type="text" id="adSetName" placeholder="Digite parte do nome" required>
             <button type="submit">Gerar Relatório</button>
         </form>
         <div id="reportContainer" class="report-container"></div>

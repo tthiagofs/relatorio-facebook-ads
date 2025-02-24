@@ -158,7 +158,8 @@ body {
 }
 
 #form select,
-#form input[type="date"] {
+#form input[type="date"],
+#form input[type="text"] {
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
@@ -166,6 +167,13 @@ body {
     font-size: 14px;
     background-color: #fff;
     color: #333;
+}
+
+#form select:focus,
+#form input[type="date"]:focus,
+#form input[type="text"]:focus {
+    border-color: #1877f2;
+    outline: none;
 }
 
 #form button {

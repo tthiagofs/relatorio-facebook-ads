@@ -70,53 +70,80 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Geração do relatório
+// Geração do relatório com filtragem
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida'; // Usa o mapa para pegar o nome
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
+    const adSetNameFilter = document.getElementById('adSetName').value.trim(); // Nome para filtrar
+
+    if (!unitId || !startDate || !endDate) {
+        reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios.</p>';
+        return;
+    }
 
     FB.api(
         `/${unitId}/insights`,
         {
-            fields: 'spend,actions,reach',
+            fields: 'spend,actions,reach,adset_name', // Adicionado adset_name para filtragem
             time_range: { since: startDate, until: endDate },
-            level: 'account'
+            level: 'adset', // Mudado para 'adset' para filtrar por conjuntos de anúncios
+            filtering: [{
+                field: 'string',
+                operator: 'CONTAINS',
+                value: adSetNameFilter
+            }]
         },
         function(response) {
             if (response && !response.error && response.data.length > 0) {
-                const reportData = response.data[0];
-                const spend = reportData.spend || '0';
-                const actions = reportData.actions || [];
-                const reach = reportData.reach || '0';
+                let totalSpend = 0;
+                let totalConversations = 0;
+                let totalReach = 0;
+                let reportHTML = '';
 
-                // Busca mensagens iniciadas com a variável correta
-                let conversations = 0;
-                actions.forEach(action => {
-                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                        conversations = action.value;
-                    }
+                response.data.forEach(data => {
+                    const spend = parseFloat(data.spend || 0);
+                    const actions = data.actions || [];
+                    const reach = parseInt(data.reach || 0);
+                    const adSetName = data.adset_name || 'Conjunto Desconhecido';
+
+                    // Busca mensagens iniciadas com a variável correta
+                    let conversations = 0;
+                    actions.forEach(action => {
+                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                            conversations = action.value;
+                        }
+                    });
+
+                    totalSpend += spend;
+                    totalConversations += conversations;
+                    totalReach += reach;
+
+                    reportHTML += `
+                        <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
+                        <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
+                        <p>💬 Mensagens iniciadas: ${conversations}</p>
+                        <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
+                        <hr>
+                    `;
                 });
 
-                // Custo por mensagem
-                const costPerConversation = conversations > 0 ? (spend / conversations).toFixed(2) : '0';
-
-                const startDateFormatted = startDate.split('-').reverse().join('/');
-                const endDateFormatted = endDate.split('-').reverse().join('/');
+                const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
                 reportContainer.innerHTML = `
                     📊 RELATÓRIO - CA - ${unitName}
-                    📅 Período: ${startDateFormatted} a ${endDateFormatted}
-                    💰 Investimento: R$ ${parseFloat(spend).toFixed(2).replace('.', ',')}
-                    💬 Mensagens iniciadas: ${conversations}
+                    📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}
+                    💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}
+                    💬 Mensagens iniciadas: ${totalConversations}
                     💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}
-                    📢 Alcance: ${parseInt(reach).toLocaleString('pt-BR')} pessoas
+                    📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas
+                    ${reportHTML}
                 `.replace(/\n/g, '<br>');
                 shareWhatsAppBtn.style.display = 'block';
             } else {
-                reportContainer.innerHTML = '<p>Erro ao gerar relatório ou sem dados para o período.</p>';
+                reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
             }
         }
     );
