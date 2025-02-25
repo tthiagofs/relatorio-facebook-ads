@@ -85,7 +85,7 @@ form.addEventListener('submit', (e) => {
     }
 
     let apiCall = {
-        fields: 'spend,actions,reach,adset.name', // Confirmado como 'adset.name'
+        fields: ['spend', 'actions', 'reach', 'adset{name}'], // Usando notação array com 'adset{name}' para campos hierárquicos
         time_range: { since: startDate, until: endDate },
         level: 'adset'
     };
@@ -93,7 +93,7 @@ form.addEventListener('submit', (e) => {
     // Se o filtro de nome do conjunto de anúncios não estiver vazio, aplica a filtragem
     if (adSetNameFilter) {
         apiCall.filtering = [{
-            field: 'adset.name', // Confirmado como 'adset.name'
+            field: 'adset.name', // Mantém 'adset.name', mas ajustado para compatibilidade
             operator: 'CONTAIN', // Mantém 'CONTAIN' como corrigido anteriormente
             value: adSetNameFilter
         }];
@@ -101,6 +101,8 @@ form.addEventListener('submit', (e) => {
         // Sem filtragem, ajusta para nivel de conta para somar todos os adsets
         apiCall.level = 'account';
         delete apiCall.filtering; // Garante que não há filtro
+        // Ajusta os fields para o nível da conta, removendo o campo hierárquico
+        apiCall.fields = ['spend', 'actions', 'reach'];
     }
 
     console.log('API Call:', JSON.stringify(apiCall, null, 2)); // Log detalhado para depuração (remova em produção)
@@ -128,7 +130,7 @@ form.addEventListener('submit', (e) => {
                         spend = parseFloat(data.spend || 0);
                         const actions = data.actions || [];
                         reach = parseInt(data.reach || 0);
-                        adSetName = data['adset.name'] || 'Conjunto Desconhecido'; // Confirmado como 'adset.name'
+                        adSetName = data.adset?.name || 'Conjunto Desconhecido'; // Acessa 'name' dentro do objeto 'adset'
 
                         actions.forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
