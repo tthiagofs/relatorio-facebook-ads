@@ -90,8 +90,29 @@ document.getElementById('unitId').addEventListener('change', function() {
     }
 });
 
-// Geração do relatório com filtragem local corrigida
-form.addEventListener('submit', (e) => {
+// Função para obter insights de um único ad set
+async function getAdSetInsights(adSetId, startDate, endDate) {
+    return new Promise((resolve, reject) => {
+        FB.api(
+            `/${adSetId}/insights`,
+            {
+                fields: ['spend', 'actions', 'reach', 'name'],
+                time_range: { since: startDate, until: endDate }
+            },
+            function(response) {
+                if (response && !response.error) {
+                    resolve(response.data[0] || {});
+                } else {
+                    console.error(`Erro ao carregar insights para ad set ${adSetId}:`, response.error);
+                    resolve({});
+                }
+            }
+        );
+    });
+}
+
+// Geração do relatório com filtragem local e chamadas individuais
+form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida'; // Usa o mapa para pegar o nome
@@ -119,108 +140,109 @@ form.addEventListener('submit', (e) => {
         }
     }
 
-    let apiCall = {
-        fields: ['spend', 'actions', 'reach', 'name'], // Usando 'name' diretamente no nível adset
-        time_range: { since: startDate, until: endDate },
-        level: 'adset'
-    };
+    let totalSpend = 0;
+    let totalConversations = 0;
+    let totalReach = 0;
+    let reportHTML = '';
 
-    // Se houver filtro, aplica apenas aos IDs filtrados
     if (adSetIds.length > 0) {
-        apiCall.filtering = [{
-            field: 'id',
-            operator: 'IN',
-            value: adSetIds
-        }];
-    } else {
-        // Sem filtragem, ajusta para nivel de conta para somar todos os adsets
-        apiCall.level = 'account';
-        delete apiCall.filtering; // Garante que não há filtro
-        apiCall.fields = ['spend', 'actions', 'reach']; // Remove 'name' no nível da conta
-    }
+        // Faz chamadas individuais para os insights de cada ad set filtrado
+        for (const adSetId of adSetIds) {
+            const insights = await getAdSetInsights(adSetId, startDate, endDate);
+            if (insights) {
+                const spend = parseFloat(insights.spend || 0);
+                const actions = insights.actions || [];
+                const reach = parseInt(insights.reach || 0);
+                const adSetName = insights.name || 'Conjunto Desconhecido';
 
-    console.log('API Call:', JSON.stringify(apiCall, null, 2)); // Log detalhado para depuração (remova em produção)
-
-    FB.api(
-        `/${unitId}/insights`,
-        apiCall,
-        function(response) {
-            console.log('API Response:', JSON.stringify(response, null, 2)); // Log detalhado para depuração (remova em produção)
-
-            if (response && !response.error && response.data.length > 0) {
-                let totalSpend = 0;
-                let totalConversations = 0;
-                let totalReach = 0;
-                let reportHTML = '';
-
-                response.data.forEach(data => {
-                    let spend = 0;
-                    let conversations = 0;
-                    let reach = 0;
-                    let adSetName = 'Conjunto Desconhecido';
-
-                    if (apiCall.level === 'adset') {
-                        // Quando filtrando por adset, usa os dados diretos
-                        spend = parseFloat(data.spend || 0);
-                        const actions = data.actions || [];
-                        reach = parseInt(data.reach || 0);
-                        adSetName = data.name || 'Conjunto Desconhecido'; // Usa 'name' diretamente
-
-                        actions.forEach(action => {
-                            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                                conversations = parseInt(action.value) || 0; // Garante que é um número inteiro
-                            }
-                        });
-                    } else {
-                        // Quando no nível da conta (sem filtro), soma todos os adsets
-                        spend = parseFloat(data.spend || 0);
-                        const actions = data.actions || [];
-                        reach = parseInt(data.reach || 0);
-
-                        actions.forEach(action => {
-                            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                                conversations = parseInt(action.value) || 0; // Garante que é um número inteiro
-                            }
-                        });
-                    }
-
-                    totalSpend += spend;
-                    totalConversations += conversations;
-                    totalReach += reach;
-
-                    if (apiCall.level === 'adset') {
-                        // Mostra detalhes apenas quando filtrando por adset
-                        reportHTML += `
-                            <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
-                            <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
-                            <p>💬 Mensagens iniciadas: ${conversations}</p>
-                            <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
-                            <hr>
-                        `;
+                let conversations = 0;
+                actions.forEach(action => {
+                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                        conversations = parseInt(action.value) || 0; // Garante que é um número inteiro
                     }
                 });
 
-                const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
+                totalSpend += spend;
+                totalConversations += conversations;
+                totalReach += reach;
 
-                // Mantém o relatório contínuo com <p> para cada linha
-                reportContainer.innerHTML = `
-                    <p>📊 RELATÓRIO - CA - ${unitName}</p>
-                    <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
-                    <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
-                    <p>💬 Mensagens iniciadas: ${totalConversations}</p>
-                    <p>💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
-                    <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
-                    ${reportHTML}
+                // Mostra detalhes para cada ad set filtrado
+                reportHTML += `
+                    <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
+                    <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
+                    <p>💬 Mensagens iniciadas: ${conversations}</p>
+                    <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
+                    <hr>
                 `;
-                shareWhatsAppBtn.style.display = 'block';
-            } else {
-                reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
-                if (response.error) {
-                    console.error('Erro da API:', response.error);
-                }
             }
         }
-    );
+    } else {
+        // Sem filtragem, usa o nível da conta para somar todos os adsets
+        FB.api(
+            `/${unitId}/insights`,
+            {
+                fields: ['spend', 'actions', 'reach'],
+                time_range: { since: startDate, until: endDate },
+                level: 'account'
+            },
+            function(response) {
+                if (response && !response.error && response.data.length > 0) {
+                    response.data.forEach(data => {
+                        const spend = parseFloat(data.spend || 0);
+                        const actions = data.actions || [];
+                        const reach = parseInt(data.reach || 0);
+
+                        let conversations = 0;
+                        actions.forEach(action => {
+                            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                                conversations = parseInt(action.value) || 0; // Garante que é um número inteiro
+                            }
+                        });
+
+                        totalSpend += spend;
+                        totalConversations += conversations;
+                        totalReach += reach;
+                    });
+
+                    const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
+
+                    // Mantém o relatório contínuo com <p> para cada linha
+                    reportContainer.innerHTML = `
+                        <p>📊 RELATÓRIO - CA - ${unitName}</p>
+                        <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
+                        <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
+                        <p>💬 Mensagens iniciadas: ${totalConversations}</p>
+                        <p>💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
+                        <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
+                        ${reportHTML}
+                    `;
+                    shareWhatsAppBtn.style.display = 'block';
+                } else {
+                    reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
+                    if (response.error) {
+                        console.error('Erro da API:', response.error);
+                    }
+                    shareWhatsAppBtn.style.display = 'none';
+                }
+            }
+        );
+        return; // Sai da função para evitar duplicação
+    }
+
+    // Após processar todos os ad sets filtrados
+    const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
+
+    // Mantém o relatório contínuo com <p> para cada linha
+    reportContainer.innerHTML = `
+        <p>📊 RELATÓRIO - CA - ${unitName}</p>
+        <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
+        <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
+        <p>💬 Mensagens iniciadas: ${totalConversations}</p>
+        <p>💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
+        <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
+        ${reportHTML}
+    `;
+    shareWhatsAppBtn.style.display = 'block';
 });
 
 // Compartilhar no WhatsApp
