@@ -13,7 +13,7 @@ const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
 const adSetsMap = {}; // Mapa para armazenar IDs e nomes dos ad sets
-const campaignsMap = {}; // Novo mapa para armazenar IDs e nomes das campanhas
+const campaignsMap = {}; // Mapa para armazenar IDs e nomes das campanhas
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -77,15 +77,15 @@ loginBtn.addEventListener('click', () => {
 document.getElementById('unitId').addEventListener('change', function() {
     const unitId = this.value;
     if (unitId) {
-        // Carrega os ad sets
+        // Carrega os ad sets com informações das campanhas
         FB.api(`/${unitId}/adsets`, { fields: 'id,name,campaign{id,name}' }, function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
                 adSetsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
+                campaignsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
                 adSetResponse.data.forEach(adSet => {
                     adSetsMap[unitId][adSet.id] = adSet.name.toLowerCase(); // Armazena IDs e nomes dos ad sets em minúsculas
-                    // Armazena a relação entre ad set e campanha no campaignsMap, se não existir
+                    // Armazena a relação entre ad set e campanha no campaignsMap
                     if (adSet.campaign && adSet.campaign.id) {
-                        if (!campaignsMap[unitId]) campaignsMap[unitId] = {};
                         campaignsMap[unitId][adSet.campaign.id] = adSet.campaign.name.toLowerCase();
                     }
                 });
@@ -120,7 +120,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     });
 }
 
-// Geração do relatório com soma consolidada dos ad sets filtrados por campanha e conjunto
+// Geração do relatório com soma consolidada dos ad sets filtrados por campanha e conjunto com lógica AND
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -128,7 +128,7 @@ form.addEventListener('submit', async (e) => {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const adSetNameFilter = document.getElementById('adSetName').value.trim().toLowerCase(); // Nome do conjunto para filtrar (opcional)
-    const campaignNameFilter = document.getElementById('campaignName').value.trim().toLowerCase(); // Novo: Nome da campanha para filtrar (opcional)
+    const campaignNameFilter = document.getElementById('campaignName').value.trim().toLowerCase(); // Nome da campanha para filtrar (opcional)
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
@@ -151,14 +151,14 @@ form.addEventListener('submit', async (e) => {
             .filter(([id, adSetName]) => {
                 // Filtra pelo nome do conjunto, se fornecido
                 const matchesAdSetName = !adSetNameFilter || adSetName.includes(adSetNameFilter);
-                // Verifica a campanha associada ao ad set
+                // Encontra a campanha associada a este ad set pelo ID
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => {
-                    const adSetsInCampaign = adSetResponse.data.filter(adSet => adSet.campaign.id === campId);
-                    return adSetsInCampaign.some(adSet => adSet.id === id);
+                    // Verifica se o ad set está associado a essa campanha (baseado no carregamento inicial)
+                    return adSetsMap[unitId][id] && campaignsMap[unitId][campId] && Object.values(adSetsMap[unitId]).some(setName => setName === adSetName && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
                 });
                 const campaignName = campaignId ? campaignsMap[unitId][campaignId] : '';
                 const matchesCampaignName = !campaignNameFilter || (campaignName && campaignName.includes(campaignNameFilter));
-                // Retorna true apenas se ambos os filtros (se fornecidos) coincidirem
+                // Retorna true apenas se ambos os filtros (se fornecidos) coincidirem (lógica AND)
                 return matchesAdSetName && matchesCampaignName;
             })
             .map(([id]) => id);
