@@ -103,10 +103,14 @@ form.addEventListener('submit', (e) => {
         delete apiCall.filtering; // Garante que não há filtro
     }
 
+    console.log('API Call:', apiCall); // Log para depuração (remova em produção)
+
     FB.api(
         `/${unitId}/insights`,
         apiCall,
         function(response) {
+            console.log('API Response:', response); // Log para depuração (remova em produção)
+
             if (response && !response.error && response.data.length > 0) {
                 let totalSpend = 0;
                 let totalConversations = 0;
@@ -128,7 +132,7 @@ form.addEventListener('submit', (e) => {
 
                         actions.forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                                conversations = action.value;
+                                conversations = parseInt(action.value) || 0; // Garante que é um número inteiro
                             }
                         });
                     } else {
@@ -139,7 +143,7 @@ form.addEventListener('submit', (e) => {
 
                         actions.forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                                conversations = action.value;
+                                conversations = parseInt(action.value) || 0; // Garante que é um número inteiro
                             }
                         });
                     }
@@ -153,7 +157,7 @@ form.addEventListener('submit', (e) => {
                         reportHTML += `
                             <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
                             <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
-                            <p>💬 Mensagens iniciadas: ${conversations.toString()}</p> <!-- Corrigido para remover zeros à esquerda -->
+                            <p>💬 Mensagens iniciadas: ${conversations}</p> <!-- Exibe apenas o número puro -->
                             <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
                             <hr>
                         `;
@@ -166,7 +170,7 @@ form.addEventListener('submit', (e) => {
                     📊 RELATÓRIO - CA - ${unitName}
                     📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}
                     💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}
-                    💬 Mensagens iniciadas: ${totalConversations.toString()} <!-- Corrigido para remover zeros à esquerda -->
+                    💬 Mensagens iniciadas: ${totalConversations}</p> <!-- Exibe apenas o número puro -->
                     💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}
                     📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas
                     ${reportHTML}
