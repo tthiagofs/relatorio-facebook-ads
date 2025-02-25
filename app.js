@@ -94,7 +94,7 @@ form.addEventListener('submit', (e) => {
     if (adSetNameFilter) {
         apiCall.filtering = [{
             field: 'adset_name',
-            operator: 'CONTAINS',
+            operator: 'CONTAIN', // Corrigido de 'CONTAINS' para 'CONTAIN'
             value: adSetNameFilter
         }];
     } else {
@@ -103,13 +103,13 @@ form.addEventListener('submit', (e) => {
         delete apiCall.filtering; // Garante que não há filtro
     }
 
-    console.log('API Call:', apiCall); // Log para depuração (remova em produção)
+    console.log('API Call:', JSON.stringify(apiCall, null, 2)); // Log detalhado para depuração (remova em produção)
 
     FB.api(
         `/${unitId}/insights`,
         apiCall,
         function(response) {
-            console.log('API Response:', response); // Log para depuração (remova em produção)
+            console.log('API Response:', JSON.stringify(response, null, 2)); // Log detalhado para depuração (remova em produção)
 
             if (response && !response.error && response.data.length > 0) {
                 let totalSpend = 0;
@@ -166,7 +166,7 @@ form.addEventListener('submit', (e) => {
 
                 const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
-                // Corrige a quebra de linha no relatório, usando <br> apenas onde necessário
+                // Mantém o relatório contínuo com <p> para cada linha
                 reportContainer.innerHTML = `
                     <p>📊 RELATÓRIO - CA - ${unitName}</p>
                     <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
@@ -179,6 +179,9 @@ form.addEventListener('submit', (e) => {
                 shareWhatsAppBtn.style.display = 'block';
             } else {
                 reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
+                if (response.error) {
+                    console.error('Erro da API:', response.error);
+                }
             }
         }
     );
