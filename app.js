@@ -96,7 +96,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
         FB.api(
             `/${adSetId}/insights`,
             {
-                fields: ['spend', 'actions', 'reach'], // Confirmado que 'name' não é válido, apenas métricas
+                fields: ['spend', 'actions', 'reach'], // Apenas métricas válidas, removido 'name'
                 time_range: { since: startDate, until: endDate }
             },
             function(response) {
@@ -112,7 +112,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     });
 }
 
-// Geração do relatório com filtragem local e chamadas individuais corrigidas
+// Geração do relatório com soma consolidada dos ad sets filtrados
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -129,7 +129,6 @@ form.addEventListener('submit', async (e) => {
     let totalSpend = 0;
     let totalConversations = 0;
     let totalReach = 0;
-    let reportHTML = '';
 
     if (adSetNameFilter) {
         // Filtra localmente os IDs dos ad sets cujo nome contém o texto digitado
@@ -157,7 +156,6 @@ form.addEventListener('submit', async (e) => {
                 const spend = parseFloat(insights.spend || 0) || 0; // Garantir valor padrão 0 se ausente
                 const actions = insights.actions || [];
                 const reach = parseInt(insights.reach || 0) || 0; // Garantir valor padrão 0 se ausente
-                const adSetName = adSetsMap[unitId][adSetId] || `Conjunto Desconhecido (ID: ${adSetId})`; // Obtém o nome do adSetsMap
 
                 let conversations = 0;
                 actions.forEach(action => {
@@ -166,20 +164,11 @@ form.addEventListener('submit', async (e) => {
                     }
                 });
 
-                // Verificar se há pelo menos um dado válido antes de adicionar ao relatório
+                // Verificar se há pelo menos um dado válido antes de adicionar ao total
                 if (spend > 0 || conversations > 0 || reach > 0) {
                     totalSpend += spend;
                     totalConversations += conversations;
                     totalReach += reach;
-
-                    // Mostra detalhes para cada ad set filtrado com dados válidos
-                    reportHTML += `
-                        <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
-                        <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
-                        <p>💬 Mensagens iniciadas: ${conversations}</p>
-                        <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
-                        <hr>
-                    `;
                 } else {
                     console.warn(`Nenhum dado válido retornado para ad set ${adSetId}`);
                 }
@@ -218,7 +207,7 @@ form.addEventListener('submit', async (e) => {
 
                     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
-                    // Mantém o relatório contínuo com <p> para cada linha
+                    // Gera relatório consolidado sem detalhes individuais
                     reportContainer.innerHTML = `
                         <p>📊 RELATÓRIO - CA - ${unitName}</p>
                         <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
@@ -226,7 +215,6 @@ form.addEventListener('submit', async (e) => {
                         <p>💬 Mensagens iniciadas: ${totalConversations}</p>
                         <p>💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
                         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
-                        ${reportHTML}
                     `;
                     shareWhatsAppBtn.style.display = 'block';
                 } else {
@@ -241,10 +229,10 @@ form.addEventListener('submit', async (e) => {
         return; // Sai da função para evitar duplicação
     }
 
-    // Após processar todos os ad sets filtrados (ou sem filtro)
+    // Após processar todos os ad sets filtrados
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
-    // Mantém o relatório contínuo com <p> para cada linha
+    // Gera relatório consolidado sem detalhes individuais
     reportContainer.innerHTML = `
         <p>📊 RELATÓRIO - CA - ${unitName}</p>
         <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
@@ -252,7 +240,6 @@ form.addEventListener('submit', async (e) => {
         <p>💬 Mensagens iniciadas: ${totalConversations}</p>
         <p>💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
-        ${reportHTML}
     `;
     shareWhatsAppBtn.style.display = 'block';
 });
