@@ -100,6 +100,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
                 time_range: { since: startDate, until: endDate }
             },
             function(response) {
+                console.log(`Insights para ad set ${adSetId}:`, JSON.stringify(response, null, 2)); // Log detalhado para depuração (remova em produção)
                 if (response && !response.error) {
                     resolve(response.data[0] || {});
                 } else {
@@ -111,7 +112,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     });
 }
 
-// Geração do relatório com filtragem local e chamadas individuais
+// Geração do relatório com filtragem local e chamadas individuais corrigidas
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -125,35 +126,38 @@ form.addEventListener('submit', async (e) => {
         return;
     }
 
-    let adSetIds = [];
-    if (adSetNameFilter) {
-        // Filtra localmente os IDs dos ad sets cujo nome contém o texto digitado
-        if (adSetsMap[unitId]) {
-            adSetIds = Object.entries(adSetsMap[unitId])
-                .filter(([id, name]) => name.includes(adSetNameFilter))
-                .map(([id]) => id);
-        }
-        if (adSetIds.length === 0) {
-            reportContainer.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para o filtro especificado.</p>';
-            shareWhatsAppBtn.style.display = 'none';
-            return;
-        }
-    }
-
     let totalSpend = 0;
     let totalConversations = 0;
     let totalReach = 0;
     let reportHTML = '';
 
-    if (adSetIds.length > 0) {
+    if (adSetNameFilter) {
+        // Filtra localmente os IDs dos ad sets cujo nome contém o texto digitado
+        if (!adSetsMap[unitId] || Object.keys(adSetsMap[unitId]).length === 0) {
+            reportContainer.innerHTML = '<p>Carregue os conjuntos de anúncios selecionando a unidade novamente.</p>';
+            shareWhatsAppBtn.style.display = 'none';
+            return;
+        }
+
+        const adSetIds = Object.entries(adSetsMap[unitId])
+            .filter(([id, name]) => name.includes(adSetNameFilter))
+            .map(([id]) => id);
+
+        if (adSetIds.length === 0) {
+            reportContainer.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para o filtro especificado.</p>';
+            shareWhatsAppBtn.style.display = 'none';
+            return;
+        }
+
         // Faz chamadas individuais para os insights de cada ad set filtrado
         for (const adSetId of adSetIds) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            if (insights) {
+            console.log(`Insights processados para ad set ${adSetId}:`, insights); // Log para depuração (remova em produção)
+            if (insights && Object.keys(insights).length > 0) {
                 const spend = parseFloat(insights.spend || 0);
                 const actions = insights.actions || [];
                 const reach = parseInt(insights.reach || 0);
-                const adSetName = insights.name || 'Conjunto Desconhecido';
+                const adSetName = insights.name || `Conjunto Desconhecido (ID: ${adSetId})`; // Nome ou ID como fallback
 
                 let conversations = 0;
                 actions.forEach(action => {
@@ -174,6 +178,8 @@ form.addEventListener('submit', async (e) => {
                     <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
                     <hr>
                 `;
+            } else {
+                console.warn(`Nenhum dado válido retornado para ad set ${adSetId}`);
             }
         }
     } else {
@@ -186,6 +192,7 @@ form.addEventListener('submit', async (e) => {
                 level: 'account'
             },
             function(response) {
+                console.log('Resposta insights da conta:', JSON.stringify(response, null, 2)); // Log para depuração (remova em produção)
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
                         const spend = parseFloat(data.spend || 0);
@@ -229,7 +236,7 @@ form.addEventListener('submit', async (e) => {
         return; // Sai da função para evitar duplicação
     }
 
-    // Após processar todos os ad sets filtrados
+    // Após processar todos os ad sets filtrados (ou sem filtro)
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
     // Mantém o relatório contínuo com <p> para cada linha
