@@ -96,7 +96,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
         FB.api(
             `/${adSetId}/insights`,
             {
-                fields: ['spend', 'actions', 'reach'], // Removido 'name', pois não é válido para /insights
+                fields: ['spend', 'actions', 'reach'], // Confirmado que 'name' não é válido, apenas métricas
                 time_range: { since: startDate, until: endDate }
             },
             function(response) {
@@ -154,9 +154,9 @@ form.addEventListener('submit', async (e) => {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
             console.log(`Insights processados para ad set ${adSetId}:`, insights); // Log para depuração (remova em produção)
             if (insights && Object.keys(insights).length > 0) {
-                const spend = parseFloat(insights.spend || 0);
+                const spend = parseFloat(insights.spend || 0) || 0; // Garantir valor padrão 0 se ausente
                 const actions = insights.actions || [];
-                const reach = parseInt(insights.reach || 0);
+                const reach = parseInt(insights.reach || 0) || 0; // Garantir valor padrão 0 se ausente
                 const adSetName = adSetsMap[unitId][adSetId] || `Conjunto Desconhecido (ID: ${adSetId})`; // Obtém o nome do adSetsMap
 
                 let conversations = 0;
@@ -166,18 +166,23 @@ form.addEventListener('submit', async (e) => {
                     }
                 });
 
-                totalSpend += spend;
-                totalConversations += conversations;
-                totalReach += reach;
+                // Verificar se há pelo menos um dado válido antes de adicionar ao relatório
+                if (spend > 0 || conversations > 0 || reach > 0) {
+                    totalSpend += spend;
+                    totalConversations += conversations;
+                    totalReach += reach;
 
-                // Mostra detalhes para cada ad set filtrado
-                reportHTML += `
-                    <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
-                    <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
-                    <p>💬 Mensagens iniciadas: ${conversations}</p>
-                    <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
-                    <hr>
-                `;
+                    // Mostra detalhes para cada ad set filtrado com dados válidos
+                    reportHTML += `
+                        <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
+                        <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
+                        <p>💬 Mensagens iniciadas: ${conversations}</p>
+                        <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
+                        <hr>
+                    `;
+                } else {
+                    console.warn(`Nenhum dado válido retornado para ad set ${adSetId}`);
+                }
             } else {
                 console.warn(`Nenhum dado válido retornado para ad set ${adSetId}`);
             }
@@ -195,9 +200,9 @@ form.addEventListener('submit', async (e) => {
                 console.log('Resposta insights da conta:', JSON.stringify(response, null, 2)); // Log para depuração (remova em produção)
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
-                        const spend = parseFloat(data.spend || 0);
+                        const spend = parseFloat(data.spend || 0) || 0; // Garantir valor padrão 0 se ausente
                         const actions = data.actions || [];
-                        const reach = parseInt(data.reach || 0);
+                        const reach = parseInt(data.reach || 0) || 0; // Garantir valor padrão 0 se ausente
 
                         let conversations = 0;
                         actions.forEach(action => {
