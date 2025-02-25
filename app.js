@@ -10,8 +10,9 @@ const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 
-// Mapa para armazenar os nomes das contas
+// Mapa para armazenar os nomes das contas e IDs dos ad sets
 const adAccountsMap = {};
+const adSetsMap = {}; // Novo mapa para armazenar IDs e nomes dos ad sets
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -46,11 +47,12 @@ loginBtn.addEventListener('click', () => {
     FB.login(function(response) {
         if (response.authResponse) {
             showScreen(mainContent);
-            FB.api('/me/adaccounts', { fields: 'id,name' }, function(response) {
-                if (response && !response.error) {
+            // Carrega as contas de anúncios
+            FB.api('/me/adaccounts', { fields: 'id,name' }, function(accountResponse) {
+                if (accountResponse && !accountResponse.error) {
                     const unitSelect = document.getElementById('unitId');
                     unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-                    response.data.forEach(account => {
+                    accountResponse.data.forEach(account => {
                         adAccountsMap[account.id] = account.name; // Armazena no mapa
                         const option = document.createElement('option');
                         option.value = account.id;
@@ -58,7 +60,7 @@ loginBtn.addEventListener('click', () => {
                         unitSelect.appendChild(option);
                     });
                 } else {
-                    console.error('Erro ao carregar contas:', response.error);
+                    console.error('Erro ao carregar contas:', accountResponse.error);
                     document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios.';
                     document.getElementById('loginError').style.display = 'block';
                 }
@@ -70,7 +72,25 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Geração do relatório com filtragem opcional corrigida
+// Carrega os ad sets quando uma unidade é selecionada
+document.getElementById('unitId').addEventListener('change', function() {
+    const unitId = this.value;
+    if (unitId) {
+        FB.api(`/${unitId}/adsets`, { fields: 'id,name' }, function(adSetResponse) {
+            if (adSetResponse && !adSetResponse.error) {
+                adSetsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
+                adSetResponse.data.forEach(adSet => {
+                    adSetsMap[unitId][adSet.id] = adSet.name.toLowerCase(); // Armazena IDs e nomes em minúsculas para filtragem
+                });
+                console.log('Ad Sets carregados:', adSetsMap[unitId]); // Log para depuração (remova em produção)
+            } else {
+                console.error('Erro ao carregar ad sets:', adSetResponse.error);
+            }
+        });
+    }
+});
+
+// Geração do relatório com filtragem local corrigida
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -84,25 +104,39 @@ form.addEventListener('submit', (e) => {
         return;
     }
 
+    let adSetIds = [];
+    if (adSetNameFilter) {
+        // Filtra localmente os IDs dos ad sets cujo nome contém o texto digitado
+        if (adSetsMap[unitId]) {
+            adSetIds = Object.entries(adSetsMap[unitId])
+                .filter(([id, name]) => name.includes(adSetNameFilter))
+                .map(([id]) => id);
+        }
+        if (adSetIds.length === 0) {
+            reportContainer.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para o filtro especificado.</p>';
+            shareWhatsAppBtn.style.display = 'none';
+            return;
+        }
+    }
+
     let apiCall = {
-        fields: ['spend', 'actions', 'reach', 'name'], // Atualizado para 'name' (sem 'adset.')
+        fields: ['spend', 'actions', 'reach', 'name'], // Usando 'name' diretamente no nível adset
         time_range: { since: startDate, until: endDate },
         level: 'adset'
     };
 
-    // Se o filtro de nome do conjunto de anúncios não estiver vazio, aplica a filtragem
-    if (adSetNameFilter) {
+    // Se houver filtro, aplica apenas aos IDs filtrados
+    if (adSetIds.length > 0) {
         apiCall.filtering = [{
-            field: 'name', // Atualizado para 'name' (sem 'adset.')
-            operator: 'CONTAIN', // Mantém 'CONTAIN' como corrigido anteriormente
-            value: adSetNameFilter
+            field: 'id',
+            operator: 'IN',
+            value: adSetIds
         }];
     } else {
         // Sem filtragem, ajusta para nivel de conta para somar todos os adsets
         apiCall.level = 'account';
         delete apiCall.filtering; // Garante que não há filtro
-        // Ajusta os fields para o nível da conta, removendo o campo hierárquico
-        apiCall.fields = ['spend', 'actions', 'reach'];
+        apiCall.fields = ['spend', 'actions', 'reach']; // Remove 'name' no nível da conta
     }
 
     console.log('API Call:', JSON.stringify(apiCall, null, 2)); // Log detalhado para depuração (remova em produção)
@@ -130,7 +164,7 @@ form.addEventListener('submit', (e) => {
                         spend = parseFloat(data.spend || 0);
                         const actions = data.actions || [];
                         reach = parseInt(data.reach || 0);
-                        adSetName = data.name || 'Conjunto Desconhecido'; // Atualizado para 'name' (sem 'adset.')
+                        adSetName = data.name || 'Conjunto Desconhecido'; // Usa 'name' diretamente
 
                         actions.forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
