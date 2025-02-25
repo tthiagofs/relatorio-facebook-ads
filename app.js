@@ -77,7 +77,7 @@ form.addEventListener('submit', (e) => {
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida'; // Usa o mapa para pegar o nome
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const adSetNameFilter = document.getElementById('adSetName').value.trim(); // Nome para filtrar (opcional)
+    const adSetNameFilter = document.getElementById('adSetName').value.trim().toLowerCase(); // Nome para filtrar (opcional), convertido para minúsculas
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
@@ -157,7 +157,7 @@ form.addEventListener('submit', (e) => {
                         reportHTML += `
                             <p><strong>Conjunto de Anúncios:</strong> ${adSetName}</p>
                             <p>💰 Investimento: R$ ${spend.toFixed(2).replace('.', ',')}</p>
-                            <p>💬 Mensagens iniciadas: ${conversations}</p> <!-- Exibe apenas o número puro -->
+                            <p>💬 Mensagens iniciadas: ${conversations}</p>
                             <p>📢 Alcance: ${reach.toLocaleString('pt-BR')} pessoas</p>
                             <hr>
                         `;
@@ -166,15 +166,16 @@ form.addEventListener('submit', (e) => {
 
                 const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
+                // Corrige a quebra de linha no relatório, usando <br> apenas onde necessário
                 reportContainer.innerHTML = `
-                    📊 RELATÓRIO - CA - ${unitName}
-                    📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}
-                    💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}
-                    💬 Mensagens iniciadas: ${totalConversations}</p> <!-- Exibe apenas o número puro -->
-                    💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}
-                    📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas
+                    <p>📊 RELATÓRIO - CA - ${unitName}</p>
+                    <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
+                    <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
+                    <p>💬 Mensagens iniciadas: ${totalConversations}</p>
+                    <p>💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
+                    <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
                     ${reportHTML}
-                `.replace(/\n/g, '<br>');
+                `;
                 shareWhatsAppBtn.style.display = 'block';
             } else {
                 reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
