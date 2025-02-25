@@ -96,7 +96,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
         FB.api(
             `/${adSetId}/insights`,
             {
-                fields: ['spend', 'actions', 'reach', 'name'],
+                fields: ['spend', 'actions', 'reach'], // Removido 'name', pois não é válido para /insights
                 time_range: { since: startDate, until: endDate }
             },
             function(response) {
@@ -157,7 +157,7 @@ form.addEventListener('submit', async (e) => {
                 const spend = parseFloat(insights.spend || 0);
                 const actions = insights.actions || [];
                 const reach = parseInt(insights.reach || 0);
-                const adSetName = insights.name || `Conjunto Desconhecido (ID: ${adSetId})`; // Nome ou ID como fallback
+                const adSetName = adSetsMap[unitId][adSetId] || `Conjunto Desconhecido (ID: ${adSetId})`; // Obtém o nome do adSetsMap
 
                 let conversations = 0;
                 actions.forEach(action => {
