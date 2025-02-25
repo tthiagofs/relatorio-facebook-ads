@@ -10,9 +10,10 @@ const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 
-// Mapa para armazenar os nomes das contas e IDs dos ad sets
+// Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
-const adSetsMap = {}; // Novo mapa para armazenar IDs e nomes dos ad sets
+const adSetsMap = {}; // Mapa para armazenar IDs e nomes dos ad sets
+const campaignsMap = {}; // Novo mapa para armazenar IDs e nomes das campanhas
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -72,17 +73,24 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Carrega os ad sets quando uma unidade é selecionada
+// Carrega os ad sets e campanhas quando uma unidade é selecionada
 document.getElementById('unitId').addEventListener('change', function() {
     const unitId = this.value;
     if (unitId) {
-        FB.api(`/${unitId}/adsets`, { fields: 'id,name' }, function(adSetResponse) {
+        // Carrega os ad sets
+        FB.api(`/${unitId}/adsets`, { fields: 'id,name,campaign{id,name}' }, function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
                 adSetsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
                 adSetResponse.data.forEach(adSet => {
-                    adSetsMap[unitId][adSet.id] = adSet.name.toLowerCase(); // Armazena IDs e nomes em minúsculas para filtragem
+                    adSetsMap[unitId][adSet.id] = adSet.name.toLowerCase(); // Armazena IDs e nomes dos ad sets em minúsculas
+                    // Armazena a relação entre ad set e campanha no campaignsMap, se não existir
+                    if (adSet.campaign && adSet.campaign.id) {
+                        if (!campaignsMap[unitId]) campaignsMap[unitId] = {};
+                        campaignsMap[unitId][adSet.campaign.id] = adSet.campaign.name.toLowerCase();
+                    }
                 });
                 console.log('Ad Sets carregados:', adSetsMap[unitId]); // Log para depuração (remova em produção)
+                console.log('Campanhas carregadas:', campaignsMap[unitId]); // Log para depuração (remova em produção)
             } else {
                 console.error('Erro ao carregar ad sets:', adSetResponse.error);
             }
@@ -112,14 +120,15 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     });
 }
 
-// Geração do relatório com soma consolidada dos ad sets filtrados
+// Geração do relatório com soma consolidada dos ad sets filtrados por campanha e conjunto
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida'; // Usa o mapa para pegar o nome
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const adSetNameFilter = document.getElementById('adSetName').value.trim().toLowerCase(); // Nome para filtrar (opcional), convertido para minúsculas
+    const adSetNameFilter = document.getElementById('adSetName').value.trim().toLowerCase(); // Nome do conjunto para filtrar (opcional)
+    const campaignNameFilter = document.getElementById('campaignName').value.trim().toLowerCase(); // Novo: Nome da campanha para filtrar (opcional)
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
@@ -130,20 +139,32 @@ form.addEventListener('submit', async (e) => {
     let totalConversations = 0;
     let totalReach = 0;
 
-    if (adSetNameFilter) {
-        // Filtra localmente os IDs dos ad sets cujo nome contém o texto digitado
-        if (!adSetsMap[unitId] || Object.keys(adSetsMap[unitId]).length === 0) {
-            reportContainer.innerHTML = '<p>Carregue os conjuntos de anúncios selecionando a unidade novamente.</p>';
+    if (adSetNameFilter || campaignNameFilter) {
+        // Verifica se os mapas estão carregados
+        if (!adSetsMap[unitId] || Object.keys(adSetsMap[unitId]).length === 0 || !campaignsMap[unitId] || Object.keys(campaignsMap[unitId]).length === 0) {
+            reportContainer.innerHTML = '<p>Carregue os conjuntos de anúncios e campanhas selecionando a unidade novamente.</p>';
             shareWhatsAppBtn.style.display = 'none';
             return;
         }
 
         const adSetIds = Object.entries(adSetsMap[unitId])
-            .filter(([id, name]) => name.includes(adSetNameFilter))
+            .filter(([id, adSetName]) => {
+                // Filtra pelo nome do conjunto, se fornecido
+                const matchesAdSetName = !adSetNameFilter || adSetName.includes(adSetNameFilter);
+                // Verifica a campanha associada ao ad set
+                const campaignId = Object.keys(campaignsMap[unitId]).find(campId => {
+                    const adSetsInCampaign = adSetResponse.data.filter(adSet => adSet.campaign.id === campId);
+                    return adSetsInCampaign.some(adSet => adSet.id === id);
+                });
+                const campaignName = campaignId ? campaignsMap[unitId][campaignId] : '';
+                const matchesCampaignName = !campaignNameFilter || (campaignName && campaignName.includes(campaignNameFilter));
+                // Retorna true apenas se ambos os filtros (se fornecidos) coincidirem
+                return matchesAdSetName && matchesCampaignName;
+            })
             .map(([id]) => id);
 
         if (adSetIds.length === 0) {
-            reportContainer.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para o filtro especificado.</p>';
+            reportContainer.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para os filtros especificados.</p>';
             shareWhatsAppBtn.style.display = 'none';
             return;
         }
@@ -177,7 +198,7 @@ form.addEventListener('submit', async (e) => {
             }
         }
     } else {
-        // Sem filtragem, usa o nível da conta para somar todos os adsets
+        // Sem filtros, usa o nível da conta para somar todos os adsets
         FB.api(
             `/${unitId}/insights`,
             {
