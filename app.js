@@ -85,7 +85,7 @@ form.addEventListener('submit', (e) => {
     }
 
     let apiCall = {
-        fields: 'spend,actions,reach,adset_name',
+        fields: 'spend,actions,reach,adset.name', // Atualizado para 'adset.name'
         time_range: { since: startDate, until: endDate },
         level: 'adset'
     };
@@ -93,8 +93,8 @@ form.addEventListener('submit', (e) => {
     // Se o filtro de nome do conjunto de anúncios não estiver vazio, aplica a filtragem
     if (adSetNameFilter) {
         apiCall.filtering = [{
-            field: 'adset_name',
-            operator: 'CONTAIN', // Corrigido de 'CONTAINS' para 'CONTAIN'
+            field: 'adset.name', // Atualizado para 'adset.name'
+            operator: 'CONTAIN', // Mantém 'CONTAIN' como corrigido anteriormente
             value: adSetNameFilter
         }];
     } else {
@@ -128,7 +128,7 @@ form.addEventListener('submit', (e) => {
                         spend = parseFloat(data.spend || 0);
                         const actions = data.actions || [];
                         reach = parseInt(data.reach || 0);
-                        adSetName = data.adset_name || 'Conjunto Desconhecido';
+                        adSetName = data['adset.name'] || 'Conjunto Desconhecido'; // Atualizado para 'adset.name'
 
                         actions.forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
