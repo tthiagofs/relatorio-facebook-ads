@@ -69,21 +69,21 @@
             <input type="date" id="startDate" required>
             <label for="endDate">Data Fim:</label>
             <input type="date" id="endDate" required>
-            <label>Filtrar por:</label>
-            <button type="button" id="filterCampaigns" class="btn-primary">Campanhas</button>
-            <button type="button" id="filterAdSets" class="btn-primary">Conjuntos</button>
-            <div id="campaignsModal" class="modal" style="display: none;">
+            <label>Filtro:</label>
+            <button type="button" id="filterBtn" class="btn-primary">Selecionar Filtro</button>
+            <div id="filterSelectionModal" class="modal" style="display: none;">
                 <div class="modal-content">
-                    <h2>Selecione as Campanhas</h2>
-                    <div id="campaignsList"></div>
-                    <button type="button" id="closeCampaignsModal" class="btn-primary">Fechar</button>
+                    <h2>Escolha o Tipo de Filtro</h2>
+                    <label><input type="radio" id="filterCampaign" name="filterType"> Nome da Campanha</label><br>
+                    <label><input type="radio" id="filterAdSet" name="filterType"> Nome do Conjunto de Anúncios</label><br>
+                    <button type="button" id="closeFilterSelectionModal" class="btn-primary">Fechar</button>
                 </div>
             </div>
-            <div id="adSetsModal" class="modal" style="display: none;">
+            <div id="optionsModal" class="modal" style="display: none;">
                 <div class="modal-content">
-                    <h2>Selecione os Conjuntos de Anúncios</h2>
-                    <div id="adSetsList"></div>
-                    <button type="button" id="closeAdSetsModal" class="btn-primary">Fechar</button>
+                    <h2>Selecione as Opções</h2>
+                    <div id="optionsList"></div>
+                    <button type="button" id="closeOptionsModal" class="btn-primary">Fechar</button>
                 </div>
             </div>
             <button type="submit">Gerar Relatório</button>

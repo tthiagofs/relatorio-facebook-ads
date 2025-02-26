@@ -118,7 +118,7 @@ body {
 }
 
 .btn-primary {
-    width: 48%;
+    width: 100%;
     padding: 10px;
     background-color: #3498db;
     color: white;
@@ -283,7 +283,7 @@ body {
     text-align: center;
 }
 
-#mainContent #campaignsList, #mainContent #adSetsList {
+#mainContent #optionsList {
     margin: 10px 0;
     max-height: 50vh;
     overflow-y: auto;
