@@ -41,7 +41,7 @@ function toggleModal(modal, show) {
 function renderOptions(containerId, options, selectedSet, callback) {
     const container = document.getElementById(containerId);
     container.innerHTML = '';
-    if (options.length === 0) {
+    if (options.length === 0 && selectedSet.size === 0) {
         container.innerHTML = '<p>Nenhuma opção disponível para o período selecionado.</p>';
         return;
     }
@@ -124,6 +124,8 @@ form.addEventListener('input', async function(e) {
         // Limpa os mapas antes de carregar novos dados
         campaignsMap[unitId] = {};
         adSetsMap[unitId] = {};
+        selectedCampaigns.clear();
+        selectedAdSets.clear();
         // Carrega campanhas e ad sets com base no período
         await Promise.all([
             loadCampaigns(unitId, startDate, endDate),
@@ -167,20 +169,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
                         console.log(`Insights para ad set ${adSetId} da campanha ${campaignId} no período ${startDate} a ${endDate} (spend: ${insights.spend}, data completa: ${JSON.stringify(insights)}, date_start: ${insights.date_start}, date_stop: ${insights.date_stop}):`, insights); // Log de depuração detalhado
                         if (insights.spend !== undefined && insights.spend !== null) {
                             const spendValue = parseFloat(insights.spend);
-                            if (spendValue > 0) {
-                                // Verifica se o período dos insights está dentro ou cobre o período filtrado, lidando com ausência de date_start/date_stop
-                                const insightStart = insights.date_start ? new Date(insights.date_start) : null;
-                                const insightEnd = insights.date_stop ? new Date(insights.date_stop) : null;
-                                const filterStart = new Date(startDate);
-                                const filterEnd = new Date(endDate);
-
-                                if (!insightStart || !insightEnd) {
-                                    console.log(`Ad Set ${adSetId} usando período filtrado por falta de date_start/date_stop`);
-                                    return true; // Assume válido se não houver período, já que o time_range da API foi aplicado
-                                }
-
-                                return insightStart <= filterEnd && insightEnd >= filterStart;
-                            }
+                            return spendValue > 0; // Confia no time_range da API para o período
                         }
                         return false;
                     });
@@ -256,32 +245,13 @@ async function loadAdSets(unitId, startDate, endDate) {
                                         if (insights && insights.spend !== undefined && insights.spend !== null) {
                                             const spendValue = parseFloat(insights.spend);
                                             if (spendValue > 0) {
-                                                // Verifica se o período dos insights está dentro ou cobre o período filtrado, lidando com ausência de date_start/date_stop
-                                                const insightStart = insights.date_start ? new Date(insights.date_start) : null;
-                                                const insightEnd = insights.date_stop ? new Date(insights.date_stop) : null;
-                                                const filterStart = new Date(startDate);
-                                                const filterEnd = new Date(endDate);
-
-                                                if (!insightStart || !insightEnd) {
-                                                    console.log(`Ad Set ${id} usando período filtrado por falta de date_start/date_stop`);
-                                                    validIds.push(id);
-                                                    const adSet = adSetResponse.data.find(set => set.id === id);
-                                                    adSetsMap[unitId][id] = {
-                                                        name: adSet.name.toLowerCase(),
-                                                        campaignId: adSet.campaign ? adSet.campaign.id.toString() : null,
-                                                        insights: insights // Armazena os insights para depuração
-                                                    };
-                                                } else if (insightStart <= filterEnd && insightEnd >= filterStart) {
-                                                    validIds.push(id);
-                                                    const adSet = adSetResponse.data.find(set => set.id === id);
-                                                    adSetsMap[unitId][id] = {
-                                                        name: adSet.name.toLowerCase(),
-                                                        campaignId: adSet.campaign ? adSet.campaign.id.toString() : null,
-                                                        insights: insights // Armazena os insights para depuração
-                                                    };
-                                                } else {
-                                                    console.log(`Ad Set ${id} ignorado por período fora do intervalo ${startDate} a ${endDate} (insight: ${insights.date_start} a ${insights.date_stop})`); // Log de depuração
-                                                }
+                                                validIds.push(id);
+                                                const adSet = adSetResponse.data.find(set => set.id === id);
+                                                adSetsMap[unitId][id] = {
+                                                    name: adSet.name.toLowerCase(),
+                                                    campaignId: adSet.campaign ? adSet.campaign.id.toString() : null,
+                                                    insights: insights // Armazena os insights para depuração
+                                                };
                                             } else {
                                                 console.log(`Ad Set ${id} ignorado por spend = 0 (spend: ${insights.spend})`); // Log de depuração
                                             }
@@ -344,20 +314,7 @@ async function updateAdSets(selectedCampaigns) {
                 if (insights && insights.spend !== undefined && insights.spend !== null) {
                     const spendValue = parseFloat(insights.spend);
                     if (spendValue > 0) {
-                        // Verifica se o período dos insights está dentro ou cobre o período filtrado, lidando com ausência de date_start/date_stop
-                        const insightStart = insights.date_start ? new Date(insights.date_start) : null;
-                        const insightEnd = insights.date_stop ? new Date(insights.date_stop) : null;
-                        const filterStart = new Date(startDate);
-                        const filterEnd = new Date(endDate);
-
-                        if (!insightStart || !insightEnd) {
-                            console.log(`Ad Set ${id} usando período filtrado por falta de date_start/date_stop`);
-                            validIds.push(id);
-                        } else if (insightStart <= filterEnd && insightEnd >= filterStart) {
-                            validIds.push(id);
-                        } else {
-                            console.log(`Ad Set ${id} ignorado por período fora do intervalo ${startDate} a ${endDate} (insight: ${insights.date_start} a ${insights.date_stop})`); // Log de depuração
-                        }
+                        validIds.push(id);
                     } else {
                         console.log(`Ad Set ${id} ignorado por spend = 0 (spend: ${insights.spend})`); // Log de depuração
                     }
@@ -368,15 +325,15 @@ async function updateAdSets(selectedCampaigns) {
             return validIds;
         };
 
-        // Filtra ad sets com spend > 0 no período exato, apenas entre os válidos (pertencentes às campanhas selecionadas)
+        // Filtra ad sets com spend > 0 no período, apenas entre os válidos (pertencentes às campanhas selecionadas)
         fetchInsights(validAdSetIds).then(validAdSetIdsWithSpend => {
-            console.log('Ad Sets válidos com gastos no período exato (após filtro por campanhas, spend e período, com insights):', validAdSetIdsWithSpend.map(id => ({
+            console.log('Ad Sets válidos com gastos no período (após filtro por campanhas e spend, com insights):', validAdSetIdsWithSpend.map(id => ({
                 id,
                 spend: adSetsMap[unitId][id]?.insights?.spend || 'ausente',
                 period: `${adSetsMap[unitId][id]?.insights?.date_start} a ${adSetsMap[unitId][id]?.insights?.date_stop}`
             }))); // Log para depuração (remova em produção)
             if (validAdSetIdsWithSpend.length === 0 && selectedCampaigns.size > 0) {
-                console.info('Nenhum ad set encontrado com gastos no período exato para as campanhas selecionadas'); // Mantém como info
+                console.info('Nenhum ad set encontrado com gastos no período para as campanhas selecionadas'); // Mantém como info
             }
             const adSetOptions = validAdSetIdsWithSpend.map(id => ({
                 value: id,
@@ -423,11 +380,11 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
                 time_range: { since: startDate, until: endDate }
             },
             function(response) {
-                console.log(`Insights para ad set ${adSetId} no período ${startDate} a ${endDate}:`, JSON.stringify(response, null, 2));
-                if (response && !response.error) {
-                    resolve(response.data[0] || {});
+                console.log(`Insights detalhados para ad set ${adSetId} no período ${startDate} a ${endDate}:`, JSON.stringify(response, null, 2));
+                if (response && !response.error && response.data && response.data.length > 0) {
+                    resolve(response.data[0]);
                 } else {
-                    console.error(`Erro ao carregar insights para ad set ${adSetId}:`, response.error);
+                    console.warn(`Nenhum insight válido retornado para ad set ${adSetId} no período ${startDate} a ${endDate}:`, response.error || 'Dados ausentes');
                     resolve({});
                 }
             }
@@ -507,28 +464,15 @@ form.addEventListener('submit', async (e) => {
             }))); // Log de depuração
         }
 
-        // Verifica se há ad sets com gastos no período exato antes de processar
+        // Verifica se há ad sets com gastos no período antes de processar
         const adSetsWithSpend = [];
         for (const adSetId of adSetIdsToProcess) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
             console.log(`Insights para ad set ${adSetId} no período ${startDate} a ${endDate} (spend: ${insights?.spend || 'ausente'}, data completa: ${JSON.stringify(insights)}):`, insights); // Log de depuração
-            if (insights && insights.spend !== undefined && insights.spend !== null) {
+            if (insights && (insights.spend !== undefined && insights.spend !== null)) {
                 const spendValue = parseFloat(insights.spend);
                 if (spendValue > 0) {
-                    // Verifica se o período dos insights está dentro ou cobre o período filtrado, lidando com ausência de date_start/date_stop
-                    const insightStart = insights.date_start ? new Date(insights.date_start) : null;
-                    const insightEnd = insights.date_stop ? new Date(insights.date_stop) : null;
-                    const filterStart = new Date(startDate);
-                    const filterEnd = new Date(endDate);
-
-                    if (!insightStart || !insightEnd) {
-                        console.log(`Ad Set ${adSetId} usando período filtrado por falta de date_start/date_stop`);
-                        adSetsWithSpend.push(adSetId);
-                    } else if (insightStart <= filterEnd && insightEnd >= filterStart) {
-                        adSetsWithSpend.push(adSetId);
-                    } else {
-                        console.log(`Ad Set ${adSetId} ignorado por período fora do intervalo ${startDate} a ${endDate} (insight: ${insights.date_start} a ${insights.date_stop})`); // Log de depuração
-                    }
+                    adSetsWithSpend.push(adSetId);
                 } else {
                     console.log(`Ad Set ${adSetId} ignorado por spend = 0 (spend: ${insights.spend})`); // Log de depuração
                 }
@@ -537,7 +481,7 @@ form.addEventListener('submit', async (e) => {
             }
         }
 
-        console.log(`Ad Sets a processar no relatório após verificar gastos no período exato (com insights):`, adSetsWithSpend.map(id => ({
+        console.log(`Ad Sets a processar no relatório após verificar gastos (com insights):`, adSetsWithSpend.map(id => ({
             id,
             spend: adSetsMap[unitId][id]?.insights?.spend || 'ausente',
             period: `${adSetsMap[unitId][id]?.insights?.date_start} a ${adSetsMap[unitId][id]?.insights?.date_stop}`
@@ -549,7 +493,7 @@ form.addEventListener('submit', async (e) => {
             return;
         }
 
-        // Faz chamadas individuais para os insights de cada ad set filtrado com gastos no período exato
+        // Faz chamadas individuais para os insights de cada ad set filtrado com gastos
         for (const adSetId of adSetsWithSpend) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
             console.log(`Insights processados para ad set ${adSetId} no período ${startDate} a ${endDate}:`, insights);
