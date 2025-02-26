@@ -126,12 +126,18 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    margin: 10px 0;
+    margin: 5px 0;
     transition: background-color 0.3s ease;
 }
 
 .btn-primary:hover {
     background-color: #2980b9;
+}
+
+.btn-primary:disabled {
+    background-color: #bdc3c7;
+    color: #7f8c8d;
+    cursor: not-allowed;
 }
 
 .btn-disabled {
@@ -287,6 +293,9 @@ body {
     cursor: pointer;
     background-color: #fff;
     transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 #mainContent .filter-option.selected {
@@ -316,7 +325,7 @@ body {
 }
 
 #mainContent #filterCampaigns, #mainContent #filterAdSets {
-    width: 100%;
+    width: 48%;
     padding: 10px;
     background-color: #3498db;
     color: white;
