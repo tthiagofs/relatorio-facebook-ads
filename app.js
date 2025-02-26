@@ -131,12 +131,12 @@ form.addEventListener('input', async function(e) {
 // Função para carregar campanhas com spend > 0 no período
 async function loadCampaigns(unitId, startDate, endDate) {
     console.log(`Carregando campanhas com gastos no período ${startDate} a ${endDate} para unitId: ${unitId}`); // Log de depuração
-    // Primeiro, carrega apenas os insights no período para filtrar campanhas com gastos
+    // Carrega apenas os insights no período para filtrar campanhas com gastos
     FB.api(
         `/${unitId}/campaigns`,
         {
             fields: 'id,name',
-            filter: 'active' // Inclui todas (ativas, pausadas, arquivadas) para análise histórica
+            filter: 'all' // Inclui todas (ativas, pausadas, arquivadas) para análise histórica
         },
         async function(campaignResponse) {
             if (campaignResponse && !campaignResponse.error) {
@@ -155,17 +155,17 @@ async function loadCampaigns(unitId, startDate, endDate) {
                 const fetchBatchInsights = async (batchIds) => {
                     const timeRange = { since: startDate, until: endDate };
                     const idsString = batchIds.join(',');
-                    console.log(`Processando lote de campanhas para insights: ${idsString}`); // Log de depuração
+                    console.log(`Processando lote de campanhas para insights no período ${startDate} a ${endDate}: ${idsString}`); // Log de depuração
                     return new Promise((resolve, reject) => {
                         FB.api(
                             `/?ids=${idsString}&fields=insights{spend,actions,reach}&time_range=${JSON.stringify(timeRange)}`,
                             function(response) {
-                                console.log(`Resposta do lote de campanhas com insights:`, JSON.stringify(response, null, 2)); // Log de depuração
+                                console.log(`Resposta do lote de campanhas com insights no período ${startDate} a ${endDate}:`, JSON.stringify(response, null, 2)); // Log de depuração
                                 if (response && !response.error) {
                                     const validIds = [];
                                     for (const id in response) {
                                         const insights = response[id].insights?.data?.[0] || {};
-                                        console.log(`Insights para campanha ${id} no período ${startDate} a ${endDate}:`, insights); // Log de depuração
+                                        console.log(`Insights detalhados para campanha ${id} no período ${startDate} a ${endDate} (spend: ${insights.spend}, data completa: ${JSON.stringify(insights)}):`, insights); // Log de depuração detalhado
                                         if (insights && insights.spend !== undefined && parseFloat(insights.spend) > 0) {
                                             validIds.push(id);
                                             campaignsMap[unitId][id] = {
@@ -173,7 +173,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
                                                 insights: insights // Armazena os insights para depuração
                                             };
                                         } else {
-                                            console.log(`Campanha ${id} ignorada por spend = 0 ou ausente no período`); // Log de depuração
+                                            console.log(`Campanha ${id} ignorada por spend = 0, ausente ou período inválido (spend: ${insights.spend})`); // Log de depuração
                                         }
                                     }
                                     resolve(validIds);
@@ -209,7 +209,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
 // Função para carregar ad sets com spend > 0 no período
 async function loadAdSets(unitId, startDate, endDate) {
     console.log(`Carregando ad sets com gastos no período ${startDate} a ${endDate} para unitId: ${unitId}`); // Log de depuração
-    // Primeiro, carrega apenas os insights no período para filtrar ad sets com gastos
+    // Carrega apenas os insights no período para filtrar ad sets com gastos
     FB.api(
         `/${unitId}/adsets`,
         {
@@ -233,17 +233,17 @@ async function loadAdSets(unitId, startDate, endDate) {
                 const fetchBatchInsights = async (batchIds) => {
                     const timeRange = { since: startDate, until: endDate };
                     const idsString = batchIds.join(',');
-                    console.log(`Processando lote de ad sets para insights: ${idsString}`); // Log de depuração
+                    console.log(`Processando lote de ad sets para insights no período ${startDate} a ${endDate}: ${idsString}`); // Log de depuração
                     return new Promise((resolve, reject) => {
                         FB.api(
                             `/?ids=${idsString}&fields=insights{spend,actions,reach}&time_range=${JSON.stringify(timeRange)}`,
                             function(response) {
-                                console.log(`Resposta do lote de ad sets com insights:`, JSON.stringify(response, null, 2)); // Log de depuração
+                                console.log(`Resposta do lote de ad sets com insights no período ${startDate} a ${endDate}:`, JSON.stringify(response, null, 2)); // Log de depuração
                                 if (response && !response.error) {
                                     const validIds = [];
                                     for (const id in response) {
                                         const insights = response[id].insights?.data?.[0] || {};
-                                        console.log(`Insights para ad set ${id} no período ${startDate} a ${endDate}:`, insights); // Log de depuração
+                                        console.log(`Insights detalhados para ad set ${id} no período ${startDate} a ${endDate} (spend: ${insights.spend}, data completa: ${JSON.stringify(insights)}):`, insights); // Log de depuração detalhado
                                         if (insights && insights.spend !== undefined && parseFloat(insights.spend) > 0) {
                                             validIds.push(id);
                                             const adSet = adSetResponse.data.find(set => set.id === id);
@@ -253,7 +253,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                                                 insights: insights // Armazena os insights para depuração
                                             };
                                         } else {
-                                            console.log(`Ad Set ${id} ignorado por spend = 0 ou ausente no período`); // Log de depuração
+                                            console.log(`Ad Set ${id} ignorado por spend = 0 ou ausente no período (spend: ${insights.spend})`); // Log de depuração
                                         }
                                     }
                                     resolve(validIds);
