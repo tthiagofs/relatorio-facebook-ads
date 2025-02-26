@@ -228,6 +228,14 @@ async function loadAdSets(unitId, startDate, endDate) {
                                     if (parseFloat(insights.spend || 0) > 0) {
                                         validIds.push(id);
                                         adSetsMap[unitId][id] = adSetResponse.data.find(set => set.id === id).name.toLowerCase();
+                                        // Armazena a campanha associada ao ad set
+                                        const adSet = adSetResponse.data.find(set => set.id === id);
+                                        if (adSet && adSet.campaign && adSet.campaign.id) {
+                                            adSetsMap[unitId][id] = {
+                                                name: adSet.name.toLowerCase(),
+                                                campaignId: adSet.campaign.id
+                                            };
+                                        }
                                     } else {
                                         console.log(`Ad Set ${id} ignorado por spend = 0 ou ausente`); // Log de depuração
                                     }
@@ -264,11 +272,10 @@ async function updateAdSets(selectedCampaigns) {
         if (selectedCampaigns.size > 0) {
             // Filtra apenas os ad sets que pertencem às campanhas selecionadas
             validAdSetIds = validAdSetIds.filter(id => {
-                const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
-                    selectedCampaigns.has(campId) && 
-                    Object.keys(adSetsMap[unitId]).some(setId => setId === id && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase()));
+                const adSetData = adSetsMap[unitId][id];
+                const campaignId = adSetData && adSetData.campaignId ? adSetData.campaignId : null;
                 console.log(`Verificando ad set ${id}, campanha associada: ${campaignId}`); // Log de depuração
-                return campaignId && selectedCampaigns.has(campaignId);
+                return campaignId && selectedCampaigns.has(campaignId.toString());
             });
             console.log(`Ad Sets válidos após filtro por campanhas:`, validAdSetIds); // Log de depuração
         }
@@ -295,7 +302,7 @@ async function updateAdSets(selectedCampaigns) {
             }
             const adSetOptions = validAdSetIdsWithSpend.map(id => ({
                 value: id,
-                label: adSetsMap[unitId][id]
+                label: adSetsMap[unitId][id].name || adSetsMap[unitId][id] // Usa o nome do ad set
             }));
             renderOptions('adSetsList', adSetOptions, selectedAdSets, () => {});
         });
@@ -384,11 +391,10 @@ form.addEventListener('submit', async (e) => {
         console.log(`Ad Sets disponíveis antes do filtro no relatório:`, adSetIdsToProcess); // Log de depuração
         if (selectedCampaigns.size > 0) {
             adSetIdsToProcess = adSetIdsToProcess.filter(id => {
-                const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
-                    selectedCampaigns.has(campId) && 
-                    Object.keys(adSetsMap[unitId]).some(setId => setId === id && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase()));
+                const adSetData = adSetsMap[unitId][id];
+                const campaignId = adSetData && adSetData.campaignId ? adSetData.campaignId : null;
                 console.log(`Verificando ad set ${id} para campanha ${campaignId}: ${campaignId ? 'Pertence' : 'Não pertence'}`); // Log de depuração
-                return campaignId && selectedCampaigns.has(campaignId);
+                return campaignId && selectedCampaigns.has(campaignId.toString());
             });
             console.log(`Ad Sets válidos após filtro por campanhas no relatório:`, adSetIdsToProcess); // Log de depuração
         }
