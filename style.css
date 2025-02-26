@@ -118,8 +118,8 @@ body {
 }
 
 .btn-primary {
-    width: 100%;
-    padding: 12px;
+    width: 48%;
+    padding: 10px;
     background-color: #3498db;
     color: white;
     border: none;
@@ -247,6 +247,10 @@ body {
         padding: 14px 20px;
         font-size: 16px;
     }
+
+    #mainContent .btn-primary {
+        width: 100%;
+    }
 }
 
 /* Novos estilos específicos para a tela de relatório (#mainContent) */
@@ -305,38 +309,4 @@ body {
 
 #mainContent .filter-option:hover {
     background-color: #e0e0e0;
-}
-
-#mainContent #closeCampaignsModal, #mainContent #closeAdSetsModal {
-    width: 100%;
-    padding: 10px;
-    background-color: #f44336;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-    transition: background-color 0.3s ease;
-}
-
-#mainContent #closeCampaignsModal:hover, #mainContent #closeAdSetsModal:hover {
-    background-color: #da190b;
-}
-
-#mainContent #filterCampaigns, #mainContent #filterAdSets {
-    width: 48%;
-    padding: 10px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin: 5px 0;
-    transition: background-color 0.3s ease;
-}
-
-#mainContent #filterCampaigns:hover, #mainContent #filterAdSets:hover {
-    background-color: #2980b9;
 }

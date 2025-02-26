@@ -144,21 +144,23 @@ async function loadCampaigns(unitId, startDate, endDate) {
     FB.api(
         `/${unitId}/campaigns`,
         { fields: 'id,name' },
-        function(campaignResponse) {
+        async function(campaignResponse) {
             if (campaignResponse && !campaignResponse.error) {
                 campaignsMap[unitId] = {};
                 const campaignIds = campaignResponse.data.map(camp => camp.id);
-                campaignIds.forEach(campaignId => {
+                for (const campaignId of campaignIds) {
+                    const insights = await getCampaignInsights(campaignId, startDate, endDate);
+                    const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
                     campaignsMap[unitId][campaignId] = {
                         name: campaignResponse.data.find(camp => camp.id === campaignId).name.toLowerCase(),
-                        insights: {}
+                        insights: { spend: spend }
                     };
-                });
+                }
                 if (!isAdSetFilterActive) {
                     const campaignOptions = campaignIds.map(id => ({
                         value: id,
                         label: campaignsMap[unitId][id].name,
-                        spend: '0.00' // Valor padrão, atualizado se houver ad sets
+                        spend: campaignsMap[unitId][id].insights.spend
                     }));
                     renderOptions('campaignsList', campaignOptions, selectedCampaigns, updateAdSets);
                 }
@@ -189,7 +191,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                     const idsString = batchIds.join(',');
                     return new Promise((resolve, reject) => {
                         FB.api(
-                            `/?ids=${idsString}&fields=insights{spend}&time_range=${JSON.stringify(timeRange)}`,
+                            `/?ids=${idsString}&fields=insights{spend,actions,reach}&time_range=${JSON.stringify(timeRange)}`,
                             function(response) {
                                 if (response && !response.error) {
                                     const validIds = [];
@@ -202,12 +204,8 @@ async function loadAdSets(unitId, startDate, endDate) {
                                             adSetsMap[unitId][id] = {
                                                 name: adSet.name.toLowerCase(),
                                                 campaignId: adSet.campaign ? adSet.campaign.id.toString() : null,
-                                                insights: { spend: spend }
+                                                insights: { spend: spend, actions: insights.actions || [], reach: insights.reach || 0 }
                                             };
-                                            // Atualiza o spend da campanha associada
-                                            if (adSetsMap[unitId][id].campaignId && campaignsMap[unitId][adSetsMap[unitId][id].campaignId]) {
-                                                campaignsMap[unitId][adSetsMap[unitId][id].campaignId].insights.spend = spend;
-                                            }
                                         }
                                     }
                                     resolve(validIds);
@@ -242,8 +240,7 @@ function updateAdSets(selectedCampaigns) {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
-    if (unitId && startDate && endDate) {
-        if (isAdSetFilterActive) return; // Não atualiza se o filtro de ad sets estiver ativo
+    if (unitId && startDate && endDate && !isAdSetFilterActive) {
         let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
         validAdSetIds = validAdSetIds.filter(id => {
             const adSetData = adSetsMap[unitId][id];
@@ -265,7 +262,7 @@ async function getCampaignInsights(campaignId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${campaignId}/insights`,
-            { fields: ['spend'], time_range: { since: startDate, until: endDate }, level: 'campaign' },
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'campaign' },
             function(response) {
                 if (response && !response.error) {
                     resolve(response.data[0] || {});
@@ -282,20 +279,20 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${adSetId}/insights`,
-            { fields: ['spend'], time_range: { since: startDate, until: endDate } },
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate } },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
                     resolve(response.data[0]);
                 } else {
                     console.warn(`Nenhum insight válido retornado para ad set ${adSetId}:`, response.error || 'Dados ausentes');
-                    resolve({ spend: '0' });
+                    resolve({ spend: '0', actions: [], reach: '0' });
                 }
             }
         );
     });
 }
 
-// Configurar eventos para os botões de filtro com exclusão mútua
+// Configurar eventos para os botões de filtro com exclusão mútua e desativação
 filterCampaignsBtn.addEventListener('click', () => {
     if (isAdSetFilterActive) {
         selectedAdSets.clear();
@@ -318,8 +315,37 @@ filterAdSetsBtn.addEventListener('click', () => {
     toggleModal(adSetsModal, true);
 });
 
-closeCampaignsModalBtn.addEventListener('click', () => toggleModal(campaignsModal, false));
-closeAdSetsModalBtn.addEventListener('click', () => toggleModal(adSetsModal, false));
+closeCampaignsModalBtn.addEventListener('click', () => {
+    const disableFilterBtn = document.createElement('button');
+    disableFilterBtn.textContent = 'Desativar Filtro de Campanhas';
+    disableFilterBtn.className = 'btn-primary';
+    disableFilterBtn.addEventListener('click', () => {
+        selectedCampaigns.clear();
+        isCampaignFilterActive = false;
+        filterCampaignsBtn.disabled = false;
+        filterAdSetsBtn.disabled = false;
+        toggleModal(campaignsModal, false);
+        updateAdSets(new Set()); // Limpa o modal de ad sets
+    });
+    campaignsModal.querySelector('.modal-content').appendChild(disableFilterBtn);
+    toggleModal(campaignsModal, false);
+});
+
+closeAdSetsModalBtn.addEventListener('click', () => {
+    const disableFilterBtn = document.createElement('button');
+    disableFilterBtn.textContent = 'Desativar Filtro de Conjuntos';
+    disableFilterBtn.className = 'btn-primary';
+    disableFilterBtn.addEventListener('click', () => {
+        selectedAdSets.clear();
+        isAdSetFilterActive = false;
+        filterCampaignsBtn.disabled = false;
+        filterAdSetsBtn.disabled = false;
+        toggleModal(adSetsModal, false);
+        updateAdSets(new Set()); // Limpa o modal de ad sets
+    });
+    adSetsModal.querySelector('.modal-content').appendChild(disableFilterBtn);
+    toggleModal(adSetsModal, false);
+});
 
 // Geração do relatório com soma consolidada dos ad sets filtrados
 form.addEventListener('submit', async (e) => {
@@ -346,16 +372,24 @@ form.addEventListener('submit', async (e) => {
         });
         for (const adSetId of adSetIds) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            if (insights.spend !== undefined && insights.spend !== null) {
-                totalSpend += parseFloat(insights.spend) || 0;
-            }
+            totalSpend += parseFloat(insights.spend || 0) || 0;
+            totalReach += parseInt(insights.reach || 0) || 0;
+            (insights.actions || []).forEach(action => {
+                if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                    totalConversations += parseInt(action.value) || 0;
+                }
+            });
         }
     } else if (selectedAdSets.size > 0) {
         for (const adSetId of selectedAdSets) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            if (insights.spend !== undefined && insights.spend !== null) {
-                totalSpend += parseFloat(insights.spend) || 0;
-            }
+            totalSpend += parseFloat(insights.spend || 0) || 0;
+            totalReach += parseInt(insights.reach || 0) || 0;
+            (insights.actions || []).forEach(action => {
+                if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                    totalConversations += parseInt(action.value) || 0;
+                }
+            });
         }
     } else {
         FB.api(
@@ -365,9 +399,8 @@ form.addEventListener('submit', async (e) => {
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
                         totalSpend += parseFloat(data.spend || 0) || 0;
-                        const actions = data.actions || [];
                         totalReach += parseInt(data.reach || 0) || 0;
-                        actions.forEach(action => {
+                        (data.actions || []).forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                                 totalConversations += parseInt(action.value) || 0;
                             }
