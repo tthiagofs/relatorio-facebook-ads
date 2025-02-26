@@ -42,9 +42,8 @@ function toggleModal(modal, show) {
 // Função para criar e gerenciar opções clicáveis nos modals com valor gasto e limpeza
 function renderOptions(containerId, options, selectedSet, callback) {
     const container = document.getElementById(containerId);
-    container.innerHTML = options.length > 0 ? '' : '<p>Buscando...</p>'; // Mostra "Buscando..." enquanto carrega
-    if (options.length > 0 && options.some(option => option.spend > 0)) {
-        container.innerHTML = ''; // Limpa "Buscando..." quando há opções
+    container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : ''; // Mostra "Buscando..." enquanto carrega
+    if (options.length > 0) {
         options.forEach(option => {
             const div = document.createElement('div');
             div.className = `filter-option ${selectedSet.has(option.value) ? 'selected' : ''}`;
@@ -145,114 +144,101 @@ form.addEventListener('input', async function(e) {
             loadCampaigns(unitId, startDate, endDate),
             loadAdSets(unitId, startDate, endDate)
         ]);
-        // Re-renderiza os modais com "Buscando..." enquanto os dados são processados
-        if (!isAdSetFilterActive) {
-            renderOptions('campaignsList', [], selectedCampaigns, updateAdSets);
-        }
-        if (!isCampaignFilterActive) {
-            renderOptions('adSetsList', [], selectedAdSets, () => {});
-        }
     }
 });
 
 // Função para carregar campanhas
 async function loadCampaigns(unitId, startDate, endDate) {
-    return new Promise((resolve) => {
-        FB.api(
-            `/${unitId}/campaigns`,
-            { fields: 'id,name' },
-            async function(campaignResponse) {
-                if (campaignResponse && !campaignResponse.error) {
-                    campaignsMap[unitId] = {};
-                    const campaignIds = campaignResponse.data.map(camp => camp.id);
-                    for (const campaignId of campaignIds) {
-                        const insights = await getCampaignInsights(campaignId, startDate, endDate);
-                        const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
-                        campaignsMap[unitId][campaignId] = {
-                            name: campaignResponse.data.find(camp => camp.id === campaignId).name.toLowerCase(),
-                            insights: { spend: spend }
-                        };
-                    }
-                    if (!isAdSetFilterActive) {
-                        const campaignOptions = campaignIds.map(id => ({
-                            value: id,
-                            label: campaignsMap[unitId][id].name,
-                            spend: campaignsMap[unitId][id].insights.spend
-                        }));
-                        renderOptions('campaignsList', campaignOptions, selectedCampaigns, updateAdSets);
-                    }
-                } else {
-                    console.error('Erro ao carregar campanhas:', campaignResponse.error);
+    FB.api(
+        `/${unitId}/campaigns`,
+        { fields: 'id,name' },
+        async function(campaignResponse) {
+            if (campaignResponse && !campaignResponse.error) {
+                campaignsMap[unitId] = {};
+                const campaignIds = campaignResponse.data.map(camp => camp.id);
+                for (const campaignId of campaignIds) {
+                    const insights = await getCampaignInsights(campaignId, startDate, endDate);
+                    const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
+                    campaignsMap[unitId][campaignId] = {
+                        name: campaignResponse.data.find(camp => camp.id === campaignId).name.toLowerCase(),
+                        insights: { spend: spend }
+                    };
                 }
-                resolve();
+                if (!isAdSetFilterActive) {
+                    const campaignOptions = campaignIds.map(id => ({
+                        value: id,
+                        label: campaignsMap[unitId][id].name,
+                        spend: campaignsMap[unitId][id].insights.spend
+                    }));
+                    renderOptions('campaignsList', campaignOptions, selectedCampaigns, updateAdSets);
+                }
+            } else {
+                console.error('Erro ao carregar campanhas:', campaignResponse.error);
             }
-        );
-    });
+        }
+    );
 }
 
 // Função para carregar ad sets
 async function loadAdSets(unitId, startDate, endDate) {
-    return new Promise((resolve) => {
-        FB.api(
-            `/${unitId}/adsets`,
-            { fields: 'id,name' },
-            async function(adSetResponse) {
-                if (adSetResponse && !adSetResponse.error) {
-                    adSetsMap[unitId] = {};
-                    const adSetIds = adSetResponse.data.map(set => set.id);
-                    const batchSize = 50;
-                    const batches = [];
-                    for (let i = 0; i < adSetIds.length; i += batchSize) {
-                        batches.push(adSetIds.slice(i, i + batchSize));
-                    }
-
-                    const fetchBatchInsights = async (batchIds) => {
-                        const timeRange = { since: startDate, until: endDate };
-                        const idsString = batchIds.join(',');
-                        return new Promise((resolveBatch) => {
-                            FB.api(
-                                `/?ids=${idsString}&fields=insights{spend,actions,reach}&time_range=${JSON.stringify(timeRange)}`,
-                                function(response) {
-                                    if (response && !response.error) {
-                                        const validIds = [];
-                                        for (const id in response) {
-                                            const insights = response[id].insights?.data?.[0] || {};
-                                            const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
-                                            if (spend > 0) {
-                                                validIds.push(id);
-                                                const adSet = adSetResponse.data.find(set => set.id === id);
-                                                adSetsMap[unitId][id] = {
-                                                    name: adSet.name.toLowerCase(),
-                                                    insights: { spend: spend, actions: insights.actions || [], reach: insights.reach || 0 }
-                                                };
-                                            }
-                                        }
-                                        resolveBatch(validIds);
-                                    } else {
-                                        console.error('Erro ao carregar insights batch para ad sets:', response.error);
-                                        resolveBatch([]);
-                                    }
-                                }
-                            );
-                        });
-                    };
-
-                    await Promise.all(batches.map(batch => fetchBatchInsights(batch)));
-                    if (!isCampaignFilterActive) {
-                        const adSetOptions = Object.keys(adSetsMap[unitId] || {}).map(id => ({
-                            value: id,
-                            label: adSetsMap[unitId][id].name,
-                            spend: adSetsMap[unitId][id].insights.spend
-                        }));
-                        renderOptions('adSetsList', adSetOptions, selectedAdSets, () => {});
-                    }
-                } else {
-                    console.error('Erro ao carregar ad sets:', adSetResponse.error);
+    FB.api(
+        `/${unitId}/adsets`,
+        { fields: 'id,name' },
+        async function(adSetResponse) {
+            if (adSetResponse && !adSetResponse.error) {
+                adSetsMap[unitId] = {};
+                const adSetIds = adSetResponse.data.map(set => set.id);
+                const batchSize = 50;
+                const batches = [];
+                for (let i = 0; i < adSetIds.length; i += batchSize) {
+                    batches.push(adSetIds.slice(i, i + batchSize));
                 }
-                resolve();
+
+                const fetchBatchInsights = async (batchIds) => {
+                    const timeRange = { since: startDate, until: endDate };
+                    const idsString = batchIds.join(',');
+                    return new Promise((resolve, reject) => {
+                        FB.api(
+                            `/?ids=${idsString}&fields=insights{spend,actions,reach}&time_range=${JSON.stringify(timeRange)}`,
+                            function(response) {
+                                if (response && !response.error) {
+                                    const validIds = [];
+                                    for (const id in response) {
+                                        const insights = response[id].insights?.data?.[0] || {};
+                                        const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
+                                        if (spend > 0) {
+                                            validIds.push(id);
+                                            const adSet = adSetResponse.data.find(set => set.id === id);
+                                            adSetsMap[unitId][id] = {
+                                                name: adSet.name.toLowerCase(),
+                                                insights: { spend: spend, actions: insights.actions || [], reach: insights.reach || 0 }
+                                            };
+                                        }
+                                    }
+                                    resolve(validIds);
+                                } else {
+                                    console.error('Erro ao carregar insights batch para ad sets:', response.error);
+                                    resolve([]);
+                                }
+                            }
+                        );
+                    });
+                };
+
+                const validAdSetIds = [].concat(...(await Promise.all(batches.map(batch => fetchBatchInsights(batch)))));
+                if (!isCampaignFilterActive) {
+                    const adSetOptions = validAdSetIds.map(id => ({
+                        value: id,
+                        label: adSetsMap[unitId][id].name,
+                        spend: adSetsMap[unitId][id].insights.spend
+                    }));
+                    renderOptions('adSetsList', adSetOptions, selectedAdSets, () => {});
+                }
+            } else {
+                console.error('Erro ao carregar ad sets:', adSetResponse.error);
             }
-        );
-    });
+        }
+    );
 }
 
 // Função para atualizar as opções de ad sets com base nas campanhas selecionadas
@@ -337,7 +323,7 @@ filterAdSetsBtn.addEventListener('click', () => {
 
 closeCampaignsModalBtn.addEventListener('click', () => {
     // Remove botões antigos para evitar duplicação
-    const existingButtons = campaignsModal.querySelectorAll('.btn-primary, .btn-clear');
+    const existingButtons = campaignsModal.querySelectorAll('.btn-primary');
     existingButtons.forEach(button => {
         if (button.textContent === 'Desativar Filtro de Campanhas' || button.textContent === 'Limpar Seleção') {
             button.remove();
@@ -375,7 +361,7 @@ closeCampaignsModalBtn.addEventListener('click', () => {
 
 closeAdSetsModalBtn.addEventListener('click', () => {
     // Remove botões antigos para evitar duplicação
-    const existingButtons = adSetsModal.querySelectorAll('.btn-primary, .btn-clear');
+    const existingButtons = adSetsModal.querySelectorAll('.btn-primary');
     existingButtons.forEach(button => {
         if (button.textContent === 'Desativar Filtro de Conjuntos' || button.textContent === 'Limpar Seleção') {
             button.remove();
