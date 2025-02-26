@@ -173,8 +173,8 @@ async function updateAdSets(selectedCampaigns) {
             // Filtra apenas os ad sets que pertencem às campanhas selecionadas
             validAdSetIds = validAdSetIds.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
-                    campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
-                return campaignId && selectedCampaigns.has(campId);
+                    campaignsMap[unitId][campId] && adSetsMap[unitId][id] && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
+                return campaignId && selectedCampaigns.has(campaignId);
             });
         }
 
@@ -198,6 +198,9 @@ async function updateAdSets(selectedCampaigns) {
             }));
             renderOptions('adSetsList', adSetOptions, selectedAdSets, () => {});
         });
+    } else {
+        // Se não houver unidade ou período, limpa as opções de ad sets
+        renderOptions('adSetsList', [], selectedAdSets, () => {});
     }
 }
 
@@ -279,8 +282,8 @@ form.addEventListener('submit', async (e) => {
         if (selectedCampaigns.size > 0) {
             adSetIdsToProcess = adSetIdsToProcess.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
-                    campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
-                return campaignId && selectedCampaigns.has(campId);
+                    campaignsMap[unitId][campId] && adSetsMap[unitId][id] && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
+                return campaignId && selectedCampaigns.has(campaignId);
             });
         }
         if (selectedAdSets.size > 0) {
