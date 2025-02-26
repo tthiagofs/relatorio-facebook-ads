@@ -132,7 +132,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
             campaignsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
             const campaignIds = campaignResponse.data.map(camp => camp.id);
             
-            // Otimiza chamadas agrupando os IDs em lotes (máximo 50 por chamada, conforme limite da API)
+            // Otimiza chamadas agrupando os IDs em lotes (máximo 50 por chamada)
             const batchSize = 50;
             const batches = [];
             for (let i = 0; i < campaignIds.length; i += batchSize) {
@@ -140,10 +140,11 @@ async function loadCampaigns(unitId, startDate, endDate) {
             }
 
             const fetchBatchInsights = async (batchIds) => {
+                const timeRange = { since: startDate, until: endDate };
                 const idsString = batchIds.join(',');
                 return new Promise((resolve, reject) => {
                     FB.api(
-                        `/?ids=${idsString}&fields=insights.time_range({since:${startDate},until:${endDate}}){spend,actions,reach}`,
+                        `/?ids=${idsString}&fields=insights{spend,actions,reach}&time_range=${JSON.stringify(timeRange)}`,
                         function(response) {
                             console.log(`Insights batch para campanhas:`, JSON.stringify(response, null, 2));
                             if (response && !response.error) {
@@ -197,10 +198,11 @@ async function loadAdSets(unitId, startDate, endDate) {
             }
 
             const fetchBatchInsights = async (batchIds) => {
+                const timeRange = { since: startDate, until: endDate };
                 const idsString = batchIds.join(',');
                 return new Promise((resolve, reject) => {
                     FB.api(
-                        `/?ids=${idsString}&fields=insights.time_range({since:${startDate},until:${endDate}}){spend,actions,reach}`,
+                        `/?ids=${idsString}&fields=insights{spend,actions,reach}&time_range=${JSON.stringify(timeRange)}`,
                         function(response) {
                             console.log(`Insights batch para ad sets:`, JSON.stringify(response, null, 2));
                             if (response && !response.error) {
