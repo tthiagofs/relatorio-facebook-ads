@@ -117,49 +117,74 @@ form.addEventListener('input', async function(e) {
     const endDate = document.getElementById('endDate').value;
 
     if (unitId && startDate && endDate) {
-        // Carrega ad sets e campanhas
-        FB.api(`/${unitId}/adsets`, { fields: 'id,name,campaign{id,name}' }, function(adSetResponse) {
-            if (adSetResponse && !adSetResponse.error) {
-                adSetsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
-                campaignsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
-
-                adSetResponse.data.forEach(adSet => {
-                    adSetsMap[unitId][adSet.id] = adSet.name.toLowerCase(); // Armazena IDs e nomes dos ad sets
-                    if (adSet.campaign && adSet.campaign.id) {
-                        campaignsMap[unitId][adSet.campaign.id] = adSet.campaign.name.toLowerCase();
-                    }
-                });
-
-                // Carrega insights temporariamente para filtrar por spend > 0
-                const fetchInsights = async (ids, type) => {
-                    const validIds = [];
-                    for (const id of ids) {
-                        const insights = await (type === 'campaign' ? getCampaignInsights : getAdSetInsights)(id, startDate, endDate);
-                        if (insights && parseFloat(insights.spend || 0) > 0) {
-                            validIds.push(id);
-                        }
-                    }
-                    return validIds;
-                };
-
-                // Filtra campanhas com spend > 0
-                const campaignIds = Object.keys(campaignsMap[unitId] || {});
-                fetchInsights(campaignIds, 'campaign').then(validCampaignIds => {
-                    const campaignOptions = validCampaignIds.map(id => ({
-                        value: id,
-                        label: campaignsMap[unitId][id]
-                    }));
-                    renderOptions('campaignsList', campaignOptions, selectedCampaigns, updateAdSets);
-
-                    // Atualiza ad sets imediatamente com base nas campanhas (mesmo sem seleção inicial)
-                    updateAdSets(selectedCampaigns);
-                });
-            } else {
-                console.error('Erro ao carregar ad sets:', adSetResponse.error);
-            }
-        });
+        // Carrega campanhas e ad sets
+        await Promise.all([
+            loadCampaigns(unitId, startDate, endDate),
+            loadAdSets(unitId, startDate, endDate)
+        ]);
     }
 });
+
+// Função para carregar campanhas com spend > 0 no período
+async function loadCampaigns(unitId, startDate, endDate) {
+    FB.api(`/${unitId}/campaigns`, { fields: 'id,name' }, function(campaignResponse) {
+        if (campaignResponse && !campaignsResponse.error) {
+            campaignsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
+            const fetchInsights = async (ids) => {
+                const validIds = [];
+                for (const id of ids) {
+                    const insights = await getCampaignInsights(id, startDate, endDate);
+                    if (insights && parseFloat(insights.spend || 0) > 0) {
+                        validIds.push(id);
+                        campaignsMap[unitId][id] = campaignResponse.data.find(camp => camp.id === id).name.toLowerCase();
+                    }
+                }
+                return validIds;
+            };
+
+            const campaignIds = campaignResponse.data.map(camp => camp.id);
+            fetchInsights(campaignIds).then(validCampaignIds => {
+                const campaignOptions = validCampaignIds.map(id => ({
+                    value: id,
+                    label: campaignsMap[unitId][id]
+                }));
+                renderOptions('campaignsList', campaignOptions, selectedCampaigns, updateAdSets);
+
+                // Atualiza ad sets com base nas campanhas (mesmo sem seleção inicial)
+                updateAdSets(selectedCampaigns);
+            });
+        } else {
+            console.error('Erro ao carregar campanhas:', campaignResponse.error);
+        }
+    });
+}
+
+// Função para carregar ad sets com spend > 0 no período
+async function loadAdSets(unitId, startDate, endDate) {
+    FB.api(`/${unitId}/adsets`, { fields: 'id,name,campaign{id}' }, function(adSetResponse) {
+        if (adSetResponse && !adSetResponse.error) {
+            adSetsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
+            const fetchInsights = async (ids) => {
+                const validIds = [];
+                for (const id of ids) {
+                    const insights = await getAdSetInsights(id, startDate, endDate);
+                    if (insights && parseFloat(insights.spend || 0) > 0) {
+                        validIds.push(id);
+                        adSetsMap[unitId][id] = adSetResponse.data.find(set => set.id === id).name.toLowerCase();
+                    }
+                }
+                return validIds;
+            };
+
+            const adSetIds = adSetResponse.data.map(set => set.id);
+            fetchInsights(adSetIds).then(validAdSetIds => {
+                console.log('Ad Sets válidos com gastos no período:', validAdSetIds); // Log para depuração (remova em produção)
+            });
+        } else {
+            console.error('Erro ao carregar ad sets:', adSetResponse.error);
+        }
+    });
+}
 
 // Função para atualizar as opções de ad sets com base nas campanhas selecionadas
 async function updateAdSets(selectedCampaigns) {
@@ -173,7 +198,8 @@ async function updateAdSets(selectedCampaigns) {
             // Filtra apenas os ad sets que pertencem às campanhas selecionadas
             validAdSetIds = validAdSetIds.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
-                    campaignsMap[unitId][campId] && adSetsMap[unitId][id] && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
+                    campaignsMap[unitId][campId] && adSetsMap[unitId][id] && 
+                    adSetResponse.data.find(set => set.id === id && set.campaign.id === campId));
                 return campaignId && selectedCampaigns.has(campaignId);
             });
         }
@@ -191,7 +217,7 @@ async function updateAdSets(selectedCampaigns) {
 
         // Filtra ad sets com spend > 0 no período, apenas entre os válidos (pertencentes às campanhas selecionadas)
         fetchInsights(validAdSetIds).then(validAdSetIdsWithSpend => {
-            console.log('Ad Sets válidos com gastos no período:', validAdSetIdsWithSpend); // Log para depuração (remova em produção)
+            console.log('Ad Sets válidos com gastos no período (após filtro por campanhas):', validAdSetIdsWithSpend); // Log para depuração (remova em produção)
             const adSetOptions = validAdSetIdsWithSpend.map(id => ({
                 value: id,
                 label: adSetsMap[unitId][id]
@@ -282,7 +308,8 @@ form.addEventListener('submit', async (e) => {
         if (selectedCampaigns.size > 0) {
             adSetIdsToProcess = adSetIdsToProcess.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
-                    campaignsMap[unitId][campId] && adSetsMap[unitId][id] && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
+                    campaignsMap[unitId][campId] && adSetsMap[unitId][id] && 
+                    adSetResponse.data.find(set => set.id === id && set.campaign.id === campId));
                 return campaignId && selectedCampaigns.has(campaignId);
             });
         }
