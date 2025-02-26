@@ -247,7 +247,7 @@ async function updateAdSets(selectedCampaigns) {
             validAdSetIds = validAdSetIds.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
                     campaignsMap[unitId][campId] && adSetsMap[unitId][id] && 
-                    adSetResponse.data.find(set => set.id === id && set.campaign.id === campId));
+                    Object.keys(adSetsMap[unitId]).some(setId => setId === id && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase()));
                 return campaignId && selectedCampaigns.has(campaignId);
             });
         }
@@ -357,7 +357,7 @@ form.addEventListener('submit', async (e) => {
             adSetIdsToProcess = adSetIdsToProcess.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
                     campaignsMap[unitId][campId] && adSetsMap[unitId][id] && 
-                    adSetResponse.data.find(set => set.id === id && set.campaign.id === campId));
+                    Object.keys(adSetsMap[unitId]).some(setId => setId === id && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase()));
                 return campaignId && selectedCampaigns.has(campaignId);
             });
         }
