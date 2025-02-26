@@ -17,7 +17,7 @@ const closeFilterSelectionModalBtn = document.getElementById('closeFilterSelecti
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
-const adSetsMap = {}; // Mapa para armazenar IDs, nomes, campaignId e insights dos ad sets
+const adSetsMap = {}; // Mapa para armazenar IDs, nomes e insights dos ad sets
 const campaignsMap = {}; // Mapa para armazenar IDs, nomes e insights das campanhas
 let selectedOptions = new Set(); // Conjunto para armazenar opções selecionadas (campanhas ou ad sets)
 let activeFilter = null; // 'campaign' ou 'adset'
@@ -162,7 +162,7 @@ async function loadAdSets(unitId, startDate, endDate) {
     return new Promise((resolve) => {
         FB.api(
             `/${unitId}/adsets`,
-            { fields: 'id,name,campaign{id}' },
+            { fields: 'id,name' }, // Removido campaign{id} para independência
             async function(adSetResponse) {
                 if (adSetResponse && !adSetResponse.error) {
                     adSetsMap[unitId] = {};
@@ -190,7 +190,6 @@ async function loadAdSets(unitId, startDate, endDate) {
                                                 const adSet = adSetResponse.data.find(set => set.id === id);
                                                 adSetsMap[unitId][id] = {
                                                     name: adSet.name.toLowerCase(),
-                                                    campaignId: adSet.campaign ? adSet.campaign.id.toString() : null,
                                                     insights: { spend: spend, actions: insights.actions || [], reach: insights.reach || 0 }
                                                 };
                                             }
@@ -221,16 +220,16 @@ function updateOptions() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
-    if (unitId && startDate && endDate && (activeFilter === 'campaign' || activeFilter === 'adset')) {
+    if (unitId && startDate && endDate && activeFilter) {
         let options = [];
-        if (activeFilter === 'campaign') {
-            options = Object.keys(campaignsMap[unitId] || {}).map(id => ({
+        if (activeFilter === 'campaign' && Object.keys(campaignsMap[unitId] || {}).length > 0) {
+            options = Object.keys(campaignsMap[unitId]).map(id => ({
                 value: id,
                 label: campaignsMap[unitId][id].name,
                 spend: campaignsMap[unitId][id].insights.spend
             }));
-        } else if (activeFilter === 'adset') {
-            options = Object.keys(adSetsMap[unitId] || {}).map(id => ({
+        } else if (activeFilter === 'adset' && Object.keys(adSetsMap[unitId] || {}).length > 0) {
+            options = Object.keys(adSetsMap[unitId]).map(id => ({
                 value: id,
                 label: adSetsMap[unitId][id].name,
                 spend: adSetsMap[unitId][id].insights.spend
@@ -331,13 +330,8 @@ form.addEventListener('submit', async (e) => {
 
     if (selectedOptions.size > 0) {
         if (activeFilter === 'campaign') {
-            const adSetIds = Object.keys(adSetsMap[unitId] || {}).filter(id => {
-                const adSetData = adSetsMap[unitId][id];
-                const campaignId = adSetData && adSetData.campaignId ? adSetData.campaignId.toString() : null;
-                return campaignId && selectedOptions.has(campaignId);
-            });
-            for (const adSetId of adSetIds) {
-                const insights = await getAdSetInsights(adSetId, startDate, endDate);
+            for (const campaignId of selectedOptions) {
+                const insights = await getCampaignInsights(campaignId, startDate, endDate);
                 totalSpend += parseFloat(insights.spend || 0) || 0;
                 totalReach += parseInt(insights.reach || 0) || 0;
                 (insights.actions || []).forEach(action => {
