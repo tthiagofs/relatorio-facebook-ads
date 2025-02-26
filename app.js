@@ -162,7 +162,7 @@ async function loadAdSets(unitId, startDate, endDate) {
     return new Promise((resolve) => {
         FB.api(
             `/${unitId}/adsets`,
-            { fields: 'id,name' }, // Removido campaign{id} para independência
+            { fields: 'id,name' },
             async function(adSetResponse) {
                 if (adSetResponse && !adSetResponse.error) {
                     adSetsMap[unitId] = {};
@@ -311,7 +311,7 @@ closeOptionsModalBtn.addEventListener('click', () => {
     toggleModal(optionsModal, false);
 });
 
-// Geração do relatório com soma consolidada dos ad sets filtrados
+// Geração do relatório com soma consolidada
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
