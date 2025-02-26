@@ -166,14 +166,14 @@ async function loadCampaigns(unitId, startDate, endDate) {
                                     for (const id in response) {
                                         const insights = response[id].insights?.data?.[0] || {};
                                         console.log(`Insights detalhados para campanha ${id} no período ${startDate} a ${endDate} (spend: ${insights.spend}, data completa: ${JSON.stringify(insights)}):`, insights); // Log de depuração detalhado
-                                        if (insights && insights.spend !== undefined && parseFloat(insights.spend) > 0) {
+                                        if (insights && insights.spend !== undefined && parseFloat(insights.spend) > 0 && insights.spend !== null) {
                                             validIds.push(id);
                                             campaignsMap[unitId][id] = {
                                                 name: campaignResponse.data.find(camp => camp.id === id).name.toLowerCase(),
                                                 insights: insights // Armazena os insights para depuração
                                             };
                                         } else {
-                                            console.log(`Campanha ${id} ignorada por spend = 0, ausente ou período inválido (spend: ${insights.spend})`); // Log de depuração
+                                            console.log(`Campanha ${id} ignorada por spend = 0, ausente, nulo ou período inválido (spend: ${insights.spend})`); // Log de depuração
                                         }
                                     }
                                     resolve(validIds);
@@ -322,7 +322,7 @@ async function updateAdSets(selectedCampaigns) {
                 spend: adSetsMap[unitId][id]?.insights?.spend || 'ausente'
             }))); // Log para depuração (remova em produção)
             if (validAdSetIdsWithSpend.length === 0 && selectedCampaigns.size > 0) {
-                console.warn('Nenhum ad set encontrado com gastos para as campanhas selecionadas'); // Log de depuração
+                console.info('Nenhum ad set encontrado com gastos para as campanhas selecionadas no período'); // Alterado para info, não warn
             }
             const adSetOptions = validAdSetIdsWithSpend.map(id => ({
                 value: id,
