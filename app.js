@@ -151,7 +151,7 @@ form.addEventListener('input', async function(e) {
                     }));
                     renderOptions('campaignsList', campaignOptions, selectedCampaigns, updateAdSets);
 
-                    // Atualiza ad sets com base nas campanhas selecionadas
+                    // Atualiza ad sets imediatamente com base nas campanhas (mesmo sem seleção inicial)
                     updateAdSets(selectedCampaigns);
                 });
             } else {
@@ -170,6 +170,7 @@ async function updateAdSets(selectedCampaigns) {
     if (unitId && startDate && endDate) {
         let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
         if (selectedCampaigns.size > 0) {
+            // Filtra apenas os ad sets que pertencem às campanhas selecionadas
             validAdSetIds = validAdSetIds.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
                     campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
@@ -188,7 +189,9 @@ async function updateAdSets(selectedCampaigns) {
             return validIds;
         };
 
+        // Filtra ad sets com spend > 0 no período, apenas entre os válidos (pertencentes às campanhas selecionadas)
         fetchInsights(validAdSetIds).then(validAdSetIdsWithSpend => {
+            console.log('Ad Sets válidos com gastos no período:', validAdSetIdsWithSpend); // Log para depuração (remova em produção)
             const adSetOptions = validAdSetIdsWithSpend.map(id => ({
                 value: id,
                 label: adSetsMap[unitId][id]
@@ -277,7 +280,7 @@ form.addEventListener('submit', async (e) => {
             adSetIdsToProcess = adSetIdsToProcess.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
                     campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
-                return campaignId && selectedCampaigns.has(campaignId);
+                return campaignId && selectedCampaigns.has(campId);
             });
         }
         if (selectedAdSets.size > 0) {
