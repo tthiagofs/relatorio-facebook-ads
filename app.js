@@ -128,22 +128,45 @@ form.addEventListener('input', async function(e) {
 // Função para carregar campanhas com spend > 0 no período
 async function loadCampaigns(unitId, startDate, endDate) {
     FB.api(`/${unitId}/campaigns`, { fields: 'id,name' }, function(campaignResponse) {
-        if (campaignResponse && !campaignsResponse.error) {
+        if (campaignResponse && !campaignResponse.error) {
             campaignsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
-            const fetchInsights = async (ids) => {
-                const validIds = [];
-                for (const id of ids) {
-                    const insights = await getCampaignInsights(id, startDate, endDate);
-                    if (insights && parseFloat(insights.spend || 0) > 0) {
-                        validIds.push(id);
-                        campaignsMap[unitId][id] = campaignResponse.data.find(camp => camp.id === id).name.toLowerCase();
-                    }
-                }
-                return validIds;
+            const campaignIds = campaignResponse.data.map(camp => camp.id);
+            
+            // Otimiza chamadas agrupando os IDs em lotes (máximo 50 por chamada, conforme limite da API)
+            const batchSize = 50;
+            const batches = [];
+            for (let i = 0; i < campaignIds.length; i += batchSize) {
+                batches.push(campaignIds.slice(i, i + batchSize));
+            }
+
+            const fetchBatchInsights = async (batchIds) => {
+                const idsString = batchIds.join(',');
+                return new Promise((resolve, reject) => {
+                    FB.api(
+                        `/?ids=${idsString}&fields=insights.time_range({since:${startDate},until:${endDate}}){spend,actions,reach}`,
+                        function(response) {
+                            console.log(`Insights batch para campanhas:`, JSON.stringify(response, null, 2));
+                            if (response && !response.error) {
+                                const validIds = [];
+                                for (const id in response) {
+                                    const insights = response[id].insights?.data?.[0] || {};
+                                    if (parseFloat(insights.spend || 0) > 0) {
+                                        validIds.push(id);
+                                        campaignsMap[unitId][id] = campaignResponse.data.find(camp => camp.id === id).name.toLowerCase();
+                                    }
+                                }
+                                resolve(validIds);
+                            } else {
+                                console.error(`Erro ao carregar insights batch para campanhas:`, response.error);
+                                resolve([]); // Retorna vazio em caso de erro para continuar o processo
+                            }
+                        }
+                    );
+                });
             };
 
-            const campaignIds = campaignResponse.data.map(camp => camp.id);
-            fetchInsights(campaignIds).then(validCampaignIds => {
+            Promise.all(batches.map(batch => fetchBatchInsights(batch))).then(results => {
+                const validCampaignIds = [].concat(...results);
                 const campaignOptions = validCampaignIds.map(id => ({
                     value: id,
                     label: campaignsMap[unitId][id]
@@ -164,20 +187,43 @@ async function loadAdSets(unitId, startDate, endDate) {
     FB.api(`/${unitId}/adsets`, { fields: 'id,name,campaign{id}' }, function(adSetResponse) {
         if (adSetResponse && !adSetResponse.error) {
             adSetsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
-            const fetchInsights = async (ids) => {
-                const validIds = [];
-                for (const id of ids) {
-                    const insights = await getAdSetInsights(id, startDate, endDate);
-                    if (insights && parseFloat(insights.spend || 0) > 0) {
-                        validIds.push(id);
-                        adSetsMap[unitId][id] = adSetResponse.data.find(set => set.id === id).name.toLowerCase();
-                    }
-                }
-                return validIds;
+            const adSetIds = adSetResponse.data.map(set => set.id);
+            
+            // Otimiza chamadas agrupando os IDs em lotes (máximo 50 por chamada)
+            const batchSize = 50;
+            const batches = [];
+            for (let i = 0; i < adSetIds.length; i += batchSize) {
+                batches.push(adSetIds.slice(i, i + batchSize));
+            }
+
+            const fetchBatchInsights = async (batchIds) => {
+                const idsString = batchIds.join(',');
+                return new Promise((resolve, reject) => {
+                    FB.api(
+                        `/?ids=${idsString}&fields=insights.time_range({since:${startDate},until:${endDate}}){spend,actions,reach}`,
+                        function(response) {
+                            console.log(`Insights batch para ad sets:`, JSON.stringify(response, null, 2));
+                            if (response && !response.error) {
+                                const validIds = [];
+                                for (const id in response) {
+                                    const insights = response[id].insights?.data?.[0] || {};
+                                    if (parseFloat(insights.spend || 0) > 0) {
+                                        validIds.push(id);
+                                        adSetsMap[unitId][id] = adSetResponse.data.find(set => set.id === id).name.toLowerCase();
+                                    }
+                                }
+                                resolve(validIds);
+                            } else {
+                                console.error(`Erro ao carregar insights batch para ad sets:`, response.error);
+                                resolve([]); // Retorna vazio em caso de erro para continuar o processo
+                            }
+                        }
+                    );
+                });
             };
 
-            const adSetIds = adSetResponse.data.map(set => set.id);
-            fetchInsights(adSetIds).then(validAdSetIds => {
+            Promise.all(batches.map(batch => fetchBatchInsights(batch))).then(results => {
+                const validAdSetIds = [].concat(...results);
                 console.log('Ad Sets válidos com gastos no período:', validAdSetIds); // Log para depuração (remova em produção)
             });
         } else {
