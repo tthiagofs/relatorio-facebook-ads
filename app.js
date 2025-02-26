@@ -9,11 +9,19 @@ const loginBtn = document.getElementById('loginBtn');
 const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
+const filterCampaignsBtn = document.getElementById('filterCampaigns');
+const filterAdSetsBtn = document.getElementById('filterAdSets');
+const campaignsModal = document.getElementById('campaignsModal');
+const adSetsModal = document.getElementById('adSetsModal');
+const closeCampaignsModalBtn = document.getElementById('closeCampaignsModal');
+const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
 const adSetsMap = {}; // Mapa para armazenar IDs, nomes e insights dos ad sets
 const campaignsMap = {}; // Mapa para armazenar IDs e nomes das campanhas
+let selectedCampaigns = new Set(); // Conjunto para armazenar campanhas selecionadas
+let selectedAdSets = new Set(); // Conjunto para armazenar ad sets selecionados
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -24,15 +32,32 @@ function showScreen(screen) {
     screen.style.display = 'block';
 }
 
-// Função para limpar e preencher uma caixa de seleção
-function populateSelect(selectId, options, placeholder = '') {
-    const select = document.getElementById(selectId);
-    select.innerHTML = placeholder ? `<option value="">${placeholder}</option>` : '';
+// Função para mostrar/esconder modais
+function toggleModal(modal, show) {
+    modal.style.display = show ? 'block' : 'none';
+}
+
+// Função para criar e gerenciar opções clicáveis nos modals
+function renderOptions(containerId, options, selectedSet, callback) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
     options.forEach(option => {
-        const opt = document.createElement('option');
-        opt.value = option.value;
-        opt.textContent = option.label;
-        select.appendChild(opt);
+        const div = document.createElement('div');
+        div.className = `filter-option ${selectedSet.has(option.value) ? 'selected' : ''}`;
+        div.textContent = option.label;
+        div.dataset.value = option.value;
+        div.addEventListener('click', () => {
+            const value = option.value;
+            if (selectedSet.has(value)) {
+                selectedSet.delete(value);
+                div.classList.remove('selected');
+            } else {
+                selectedSet.add(value);
+                div.classList.add('selected');
+            }
+            callback(selectedSet);
+        });
+        container.appendChild(div);
     });
 }
 
@@ -85,7 +110,7 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Carrega os ad sets, campanhas e atualiza as caixas de seleção quando o formulário é preenchido
+// Carrega os ad sets, campanhas e atualiza os modais quando o formulário é preenchido
 form.addEventListener('input', async function(e) {
     const unitId = document.getElementById('unitId').value;
     const startDate = document.getElementById('startDate').value;
@@ -97,14 +122,11 @@ form.addEventListener('input', async function(e) {
             if (adSetResponse && !adSetResponse.error) {
                 adSetsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
                 campaignsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
-                const campaignOptions = new Set();
-                const adSetOptions = new Set();
 
                 adSetResponse.data.forEach(adSet => {
                     adSetsMap[unitId][adSet.id] = adSet.name.toLowerCase(); // Armazena IDs e nomes dos ad sets
                     if (adSet.campaign && adSet.campaign.id) {
                         campaignsMap[unitId][adSet.campaign.id] = adSet.campaign.name.toLowerCase();
-                        campaignOptions.add({ value: adSet.campaign.id, label: adSet.campaign.name });
                     }
                 });
 
@@ -123,26 +145,14 @@ form.addEventListener('input', async function(e) {
                 // Filtra campanhas com spend > 0
                 const campaignIds = Object.keys(campaignsMap[unitId] || {});
                 fetchInsights(campaignIds, 'campaign').then(validCampaignIds => {
-                    const filteredCampaignOptions = [...campaignOptions].filter(opt => validCampaignIds.includes(opt.value));
-                    populateSelect('campaignName', filteredCampaignOptions, 'Selecione uma ou mais campanhas');
+                    const campaignOptions = validCampaignIds.map(id => ({
+                        value: id,
+                        label: campaignsMap[unitId][id]
+                    }));
+                    renderOptions('campaignsList', campaignOptions, selectedCampaigns, updateAdSets);
 
                     // Atualiza ad sets com base nas campanhas selecionadas
-                    const selectedCampaigns = Array.from(document.getElementById('campaignName').selectedOptions).map(opt => opt.value);
-                    let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
-                    if (selectedCampaigns.length > 0) {
-                        validAdSetIds = validAdSetIds.filter(id => {
-                            const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
-                                campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
-                            return campaignId && selectedCampaigns.includes(campaignId);
-                        });
-                    }
-                    fetchInsights(validAdSetIds, 'adset').then(validAdSetIdsWithSpend => {
-                        const filteredAdSetOptions = validAdSetIdsWithSpend.map(id => ({
-                            value: id,
-                            label: adSetsMap[unitId][id]
-                        }));
-                        populateSelect('adSetName', filteredAdSetOptions, 'Selecione um ou mais conjuntos');
-                    });
+                    updateAdSets(selectedCampaigns);
                 });
             } else {
                 console.error('Erro ao carregar ad sets:', adSetResponse.error);
@@ -150,6 +160,43 @@ form.addEventListener('input', async function(e) {
         });
     }
 });
+
+// Função para atualizar as opções de ad sets com base nas campanhas selecionadas
+async function updateAdSets(selectedCampaigns) {
+    const unitId = document.getElementById('unitId').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (unitId && startDate && endDate) {
+        let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
+        if (selectedCampaigns.size > 0) {
+            validAdSetIds = validAdSetIds.filter(id => {
+                const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
+                    campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
+                return campaignId && selectedCampaigns.has(campId);
+            });
+        }
+
+        const fetchInsights = async (ids) => {
+            const validIds = [];
+            for (const id of ids) {
+                const insights = await getAdSetInsights(id, startDate, endDate);
+                if (insights && parseFloat(insights.spend || 0) > 0) {
+                    validIds.push(id);
+                }
+            }
+            return validIds;
+        };
+
+        fetchInsights(validAdSetIds).then(validAdSetIdsWithSpend => {
+            const adSetOptions = validAdSetIdsWithSpend.map(id => ({
+                value: id,
+                label: adSetsMap[unitId][id]
+            }));
+            renderOptions('adSetsList', adSetOptions, selectedAdSets, () => {});
+        });
+    }
+}
 
 // Funções para obter insights de campanhas e ad sets
 async function getCampaignInsights(campaignId, startDate, endDate) {
@@ -195,6 +242,12 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     });
 }
 
+// Configurar eventos para os botões de filtro
+filterCampaignsBtn.addEventListener('click', () => toggleModal(campaignsModal, true));
+filterAdSetsBtn.addEventListener('click', () => toggleModal(adSetsModal, true));
+closeCampaignsModalBtn.addEventListener('click', () => toggleModal(campaignsModal, false));
+closeAdSetsModalBtn.addEventListener('click', () => toggleModal(adSetsModal, false));
+
 // Geração do relatório com soma consolidada dos ad sets filtrados por campanha e conjunto com lógica AND
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -202,8 +255,6 @@ form.addEventListener('submit', async (e) => {
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const selectedCampaignIds = Array.from(document.getElementById('campaignName').selectedOptions).map(opt => opt.value);
-    const selectedAdSetIds = Array.from(document.getElementById('adSetName').selectedOptions).map(opt => opt.value);
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
@@ -214,7 +265,7 @@ form.addEventListener('submit', async (e) => {
     let totalConversations = 0;
     let totalReach = 0;
 
-    if (selectedCampaignIds.length > 0 || selectedAdSetIds.length > 0) {
+    if (selectedCampaigns.size > 0 || selectedAdSets.size > 0) {
         if (!adSetsMap[unitId] || Object.keys(adSetsMap[unitId]).length === 0 || !campaignsMap[unitId] || Object.keys(campaignsMap[unitId]).length === 0) {
             reportContainer.innerHTML = '<p>Carregue os conjuntos de anúncios e campanhas selecionando a unidade novamente.</p>';
             shareWhatsAppBtn.style.display = 'none';
@@ -222,15 +273,15 @@ form.addEventListener('submit', async (e) => {
         }
 
         let adSetIdsToProcess = Object.keys(adSetsMap[unitId] || {});
-        if (selectedCampaignIds.length > 0) {
+        if (selectedCampaigns.size > 0) {
             adSetIdsToProcess = adSetIdsToProcess.filter(id => {
                 const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
                     campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
-                return campaignId && selectedCampaignIds.includes(campaignId);
+                return campaignId && selectedCampaigns.has(campaignId);
             });
         }
-        if (selectedAdSetIds.length > 0) {
-            adSetIdsToProcess = adSetIdsToProcess.filter(id => selectedAdSetIds.includes(id));
+        if (selectedAdSets.size > 0) {
+            adSetIdsToProcess = adSetIdsToProcess.filter(id => selectedAdSets.has(id));
         }
 
         if (adSetIdsToProcess.length === 0) {
