@@ -12,7 +12,7 @@ const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
-const adSetsMap = {}; // Mapa para armazenar IDs e nomes dos ad sets
+const adSetsMap = {}; // Mapa para armazenar IDs, nomes e insights dos ad sets
 const campaignsMap = {}; // Mapa para armazenar IDs e nomes das campanhas
 
 // Função para alternar telas
@@ -22,6 +22,18 @@ function showScreen(screen) {
     loginScreen.style.display = 'none';
     mainContent.style.display = 'none';
     screen.style.display = 'block';
+}
+
+// Função para limpar e preencher uma caixa de seleção
+function populateSelect(selectId, options, placeholder = '') {
+    const select = document.getElementById(selectId);
+    select.innerHTML = placeholder ? `<option value="">${placeholder}</option>` : '';
+    options.forEach(option => {
+        const opt = document.createElement('option');
+        opt.value = option.value;
+        opt.textContent = option.label;
+        select.appendChild(opt);
+    });
 }
 
 // Login do app
@@ -73,24 +85,65 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Carrega os ad sets e campanhas quando uma unidade é selecionada
-document.getElementById('unitId').addEventListener('change', function() {
-    const unitId = this.value;
-    if (unitId) {
-        // Carrega os ad sets com informações das campanhas
+// Carrega os ad sets, campanhas e atualiza as caixas de seleção quando o formulário é preenchido
+form.addEventListener('input', async function(e) {
+    const unitId = document.getElementById('unitId').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (unitId && startDate && endDate) {
+        // Carrega ad sets e campanhas
         FB.api(`/${unitId}/adsets`, { fields: 'id,name,campaign{id,name}' }, function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
                 adSetsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
                 campaignsMap[unitId] = {}; // Limpa ou inicializa o mapa para esta unidade
+                const campaignOptions = new Set();
+                const adSetOptions = new Set();
+
                 adSetResponse.data.forEach(adSet => {
-                    adSetsMap[unitId][adSet.id] = adSet.name.toLowerCase(); // Armazena IDs e nomes dos ad sets em minúsculas
-                    // Armazena a relação entre ad set e campanha no campaignsMap
+                    adSetsMap[unitId][adSet.id] = adSet.name.toLowerCase(); // Armazena IDs e nomes dos ad sets
                     if (adSet.campaign && adSet.campaign.id) {
                         campaignsMap[unitId][adSet.campaign.id] = adSet.campaign.name.toLowerCase();
+                        campaignOptions.add({ value: adSet.campaign.id, label: adSet.campaign.name });
                     }
                 });
-                console.log('Ad Sets carregados:', adSetsMap[unitId]); // Log para depuração (remova em produção)
-                console.log('Campanhas carregadas:', campaignsMap[unitId]); // Log para depuração (remova em produção)
+
+                // Carrega insights temporariamente para filtrar por spend > 0
+                const fetchInsights = async (ids, type) => {
+                    const validIds = [];
+                    for (const id of ids) {
+                        const insights = await (type === 'campaign' ? getCampaignInsights : getAdSetInsights)(id, startDate, endDate);
+                        if (insights && parseFloat(insights.spend || 0) > 0) {
+                            validIds.push(id);
+                        }
+                    }
+                    return validIds;
+                };
+
+                // Filtra campanhas com spend > 0
+                const campaignIds = Object.keys(campaignsMap[unitId] || {});
+                fetchInsights(campaignIds, 'campaign').then(validCampaignIds => {
+                    const filteredCampaignOptions = [...campaignOptions].filter(opt => validCampaignIds.includes(opt.value));
+                    populateSelect('campaignName', filteredCampaignOptions, 'Selecione uma ou mais campanhas');
+
+                    // Atualiza ad sets com base nas campanhas selecionadas
+                    const selectedCampaigns = Array.from(document.getElementById('campaignName').selectedOptions).map(opt => opt.value);
+                    let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
+                    if (selectedCampaigns.length > 0) {
+                        validAdSetIds = validAdSetIds.filter(id => {
+                            const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
+                                campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
+                            return campaignId && selectedCampaigns.includes(campaignId);
+                        });
+                    }
+                    fetchInsights(validAdSetIds, 'adset').then(validAdSetIdsWithSpend => {
+                        const filteredAdSetOptions = validAdSetIdsWithSpend.map(id => ({
+                            value: id,
+                            label: adSetsMap[unitId][id]
+                        }));
+                        populateSelect('adSetName', filteredAdSetOptions, 'Selecione um ou mais conjuntos');
+                    });
+                });
             } else {
                 console.error('Erro ao carregar ad sets:', adSetResponse.error);
             }
@@ -98,17 +151,39 @@ document.getElementById('unitId').addEventListener('change', function() {
     }
 });
 
-// Função para obter insights de um único ad set
+// Funções para obter insights de campanhas e ad sets
+async function getCampaignInsights(campaignId, startDate, endDate) {
+    return new Promise((resolve, reject) => {
+        FB.api(
+            `/${campaignId}/insights`,
+            {
+                fields: ['spend', 'actions', 'reach'],
+                time_range: { since: startDate, until: endDate },
+                level: 'campaign'
+            },
+            function(response) {
+                console.log(`Insights para campanha ${campaignId}:`, JSON.stringify(response, null, 2));
+                if (response && !response.error) {
+                    resolve(response.data[0] || {});
+                } else {
+                    console.error(`Erro ao carregar insights para campanha ${campaignId}:`, response.error);
+                    resolve({});
+                }
+            }
+        );
+    });
+}
+
 async function getAdSetInsights(adSetId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${adSetId}/insights`,
             {
-                fields: ['spend', 'actions', 'reach'], // Apenas métricas válidas, removido 'name'
+                fields: ['spend', 'actions', 'reach'],
                 time_range: { since: startDate, until: endDate }
             },
             function(response) {
-                console.log(`Insights para ad set ${adSetId}:`, JSON.stringify(response, null, 2)); // Log detalhado para depuração (remova em produção)
+                console.log(`Insights para ad set ${adSetId}:`, JSON.stringify(response, null, 2));
                 if (response && !response.error) {
                     resolve(response.data[0] || {});
                 } else {
@@ -124,11 +199,11 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
-    const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida'; // Usa o mapa para pegar o nome
+    const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    const adSetNameFilter = document.getElementById('adSetName').value.trim().toLowerCase(); // Nome do conjunto para filtrar (opcional)
-    const campaignNameFilter = document.getElementById('campaignName').value.trim().toLowerCase(); // Nome da campanha para filtrar (opcional)
+    const selectedCampaignIds = Array.from(document.getElementById('campaignName').selectedOptions).map(opt => opt.value);
+    const selectedAdSetIds = Array.from(document.getElementById('adSetName').selectedOptions).map(opt => opt.value);
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
@@ -139,49 +214,44 @@ form.addEventListener('submit', async (e) => {
     let totalConversations = 0;
     let totalReach = 0;
 
-    if (adSetNameFilter || campaignNameFilter) {
-        // Verifica se os mapas estão carregados
+    if (selectedCampaignIds.length > 0 || selectedAdSetIds.length > 0) {
         if (!adSetsMap[unitId] || Object.keys(adSetsMap[unitId]).length === 0 || !campaignsMap[unitId] || Object.keys(campaignsMap[unitId]).length === 0) {
             reportContainer.innerHTML = '<p>Carregue os conjuntos de anúncios e campanhas selecionando a unidade novamente.</p>';
             shareWhatsAppBtn.style.display = 'none';
             return;
         }
 
-        const adSetIds = Object.entries(adSetsMap[unitId])
-            .filter(([id, adSetName]) => {
-                // Filtra pelo nome do conjunto, se fornecido
-                const matchesAdSetName = !adSetNameFilter || adSetName.includes(adSetNameFilter);
-                // Encontra a campanha associada a este ad set pelo ID
-                const campaignId = Object.keys(campaignsMap[unitId]).find(campId => {
-                    // Verifica se o ad set está associado a essa campanha (baseado no carregamento inicial)
-                    return adSetsMap[unitId][id] && campaignsMap[unitId][campId] && Object.values(adSetsMap[unitId]).some(setName => setName === adSetName && campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
-                });
-                const campaignName = campaignId ? campaignsMap[unitId][campaignId] : '';
-                const matchesCampaignName = !campaignNameFilter || (campaignName && campaignName.includes(campaignNameFilter));
-                // Retorna true apenas se ambos os filtros (se fornecidos) coincidirem (lógica AND)
-                return matchesAdSetName && matchesCampaignName;
-            })
-            .map(([id]) => id);
+        let adSetIdsToProcess = Object.keys(adSetsMap[unitId] || {});
+        if (selectedCampaignIds.length > 0) {
+            adSetIdsToProcess = adSetIdsToProcess.filter(id => {
+                const campaignId = Object.keys(campaignsMap[unitId]).find(campId => 
+                    campaignsMap[unitId][campId] === adSetsMap[unitId][id].toLowerCase());
+                return campaignId && selectedCampaignIds.includes(campaignId);
+            });
+        }
+        if (selectedAdSetIds.length > 0) {
+            adSetIdsToProcess = adSetIdsToProcess.filter(id => selectedAdSetIds.includes(id));
+        }
 
-        if (adSetIds.length === 0) {
+        if (adSetIdsToProcess.length === 0) {
             reportContainer.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para os filtros especificados.</p>';
             shareWhatsAppBtn.style.display = 'none';
             return;
         }
 
         // Faz chamadas individuais para os insights de cada ad set filtrado
-        for (const adSetId of adSetIds) {
+        for (const adSetId of adSetIdsToProcess) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            console.log(`Insights processados para ad set ${adSetId}:`, insights); // Log para depuração (remova em produção)
+            console.log(`Insights processados para ad set ${adSetId}:`, insights);
             if (insights && Object.keys(insights).length > 0) {
-                const spend = parseFloat(insights.spend || 0) || 0; // Garantir valor padrão 0 se ausente
+                const spend = parseFloat(insights.spend || 0) || 0;
                 const actions = insights.actions || [];
-                const reach = parseInt(insights.reach || 0) || 0; // Garantir valor padrão 0 se ausente
+                const reach = parseInt(insights.reach || 0) || 0;
 
                 let conversations = 0;
                 actions.forEach(action => {
                     if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                        conversations = parseInt(action.value) || 0; // Garante que é um número inteiro
+                        conversations = parseInt(action.value) || 0;
                     }
                 });
 
@@ -207,17 +277,17 @@ form.addEventListener('submit', async (e) => {
                 level: 'account'
             },
             function(response) {
-                console.log('Resposta insights da conta:', JSON.stringify(response, null, 2)); // Log para depuração (remova em produção)
+                console.log('Resposta insights da conta:', JSON.stringify(response, null, 2));
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
-                        const spend = parseFloat(data.spend || 0) || 0; // Garantir valor padrão 0 se ausente
+                        const spend = parseFloat(data.spend || 0) || 0;
                         const actions = data.actions || [];
-                        const reach = parseInt(data.reach || 0) || 0; // Garantir valor padrão 0 se ausente
+                        const reach = parseInt(data.reach || 0) || 0;
 
                         let conversations = 0;
                         actions.forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                                conversations = parseInt(action.value) || 0; // Garante que é um número inteiro
+                                conversations = parseInt(action.value) || 0;
                             }
                         });
 
@@ -228,13 +298,13 @@ form.addEventListener('submit', async (e) => {
 
                     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
-                    // Gera relatório consolidado sem detalhes individuais
+                    // Gera relatório consolidado com soma
                     reportContainer.innerHTML = `
                         <p>📊 RELATÓRIO - CA - ${unitName}</p>
                         <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
                         <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
-                        <p>💬 Mensagens iniciadas: ${totalConversations}</p>
-                        <p>💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
+                        <p>💬 Mensagens Iniciadas: ${totalConversations}</p>
+                        <p>💵 Custo por Mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
                         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
                     `;
                     shareWhatsAppBtn.style.display = 'block';
@@ -251,15 +321,22 @@ form.addEventListener('submit', async (e) => {
     }
 
     // Após processar todos os ad sets filtrados
+    if (totalSpend === 0 && totalConversations === 0 && totalReach === 0) {
+        reportContainer.innerHTML = '<p>Nenhum dado válido encontrado para os filtros especificados.</p>';
+        shareWhatsAppBtn.style.display = 'none';
+        return;
+    }
+
+    // Calcula a soma dos valores
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
-    // Gera relatório consolidado sem detalhes individuais
+    // Gera relatório consolidado com soma
     reportContainer.innerHTML = `
         <p>📊 RELATÓRIO - CA - ${unitName}</p>
         <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
         <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
-        <p>💬 Mensagens iniciadas: ${totalConversations}</p>
-        <p>💵 Custo por mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
+        <p>💬 Mensagens Iniciadas: ${totalConversations}</p>
+        <p>💵 Custo por Mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
     `;
     shareWhatsAppBtn.style.display = 'block';

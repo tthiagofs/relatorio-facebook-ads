@@ -70,9 +70,13 @@
             <label for="endDate">Data Fim:</label>
             <input type="date" id="endDate" required>
             <label for="campaignName">Nome da Campanha:</label>
-            <input type="text" id="campaignName" placeholder="Digite parte do nome da campanha">
+            <select id="campaignName" multiple>
+                <option value="">Selecione uma ou mais campanhas</option>
+            </select>
             <label for="adSetName">Nome do Conjunto de Anúncios:</label>
-            <input type="text" id="adSetName" placeholder="Digite parte do nome">
+            <select id="adSetName" multiple>
+                <option value="">Selecione um ou mais conjuntos</option>
+            </select>
             <button type="submit">Gerar Relatório</button>
         </form>
         <div id="reportContainer" class="report-container"></div>
