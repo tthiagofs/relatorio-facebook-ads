@@ -19,35 +19,13 @@ body {
     background-color: transparent; /* Remove o overlay semi-transparente para maior clareza */
 }
 
-.login-box {
+.login-box, .container {
     background-color: #fff;
-    padding: 40px; /* Mantém o padding interno para maior espaço */
+    padding: 40px; /* Aumenta o padding interno para maior espaço */
     border-radius: 12px; /* Bordas mais arredondadas para um visual moderno */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
     width: 100%;
-    max-width: 300px; /* Tamanho padrão do login, mantido para consistência */
-    text-align: center;
-    margin: 0 auto; /* Garante centralização horizontal */
-}
-
-#reportSelectionScreen .container {
-    background-color: #fff;
-    padding: 40px; /* Mantém o padding interno para maior espaço */
-    border-radius: 12px; /* Bordas mais arredondadas para um visual moderno */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
-    width: 100%;
-    max-width: 300px; /* Reduz para o mesmo tamanho do login, mantendo consistência */
-    text-align: center;
-    margin: 0 auto; /* Garante centralização horizontal */
-}
-
-#mainContent .container {
-    background-color: #fff;
-    padding: 40px; /* Mantém o padding interno para maior espaço */
-    border-radius: 12px; /* Bordas mais arredondadas para um visual moderno */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
-    width: 100%;
-    max-width: 600px; /* Reduz para um tamanho consistente, maior que o login, mas alinhado com o padrão visual */
+    max-width: 800px; /* Aumenta o tamanho máximo da caixa para um padrão consistente e maior */
     text-align: center;
     margin: 0 auto; /* Garante centralização horizontal */
 }
@@ -77,10 +55,10 @@ body {
     color: #333;
 }
 
-.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button {
+.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle {
     width: 100%;
     padding: 12px;
-    background-color: #4CAF50; /* Estiliza o botão "Gerar Relatório" com o mesmo verde dos outros botões */
+    background-color: #4CAF50;
     color: white;
     border: none;
     border-radius: 8px; /* Bordas mais arredondadas para botões */
@@ -90,7 +68,7 @@ body {
     transition: background-color 0.3s ease;
 }
 
-.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover, #form button:hover {
+.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover {
     background-color: #45a049;
 }
 
@@ -139,7 +117,7 @@ body {
 .report-container {
     margin-top: 20px;
     background-color: #f9f9f9;
-    padding: 30px; /* Mantém o padding interno do relatório */
+    padding: 30px; /* Aumenta o padding interno do relatório */
     border-radius: 12px; /* Bordas mais arredondadas para o relatório */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
     width: 100%;
@@ -165,7 +143,7 @@ body {
         padding: 20px; /* Reduz o padding em telas menores para melhor adaptação */
     }
 
-    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button {
+    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle {
         padding: 10px;
         font-size: 14px; /* Reduz o tamanho da fonte dos botões em telas menores */
     }
@@ -177,6 +155,16 @@ body {
 
     .report-container {
         padding: 20px; /* Reduz o padding do relatório em telas menores */
+    }
+
+    #form button {
+        padding: 10px 20px;
+        font-size: 14px; /* Reduz o tamanho da fonte do botão "Gerar Relatório" */
+    }
+
+    #shareWhatsAppBtn {
+        padding: 10px 20px;
+        font-size: 14px; /* Reduz o tamanho da fonte do botão "Compartilhar no WhatsApp" */
     }
 }
 
@@ -194,11 +182,11 @@ body {
 
 #mainContent .modal-content {
     background-color: #fff;
-    padding: 40px; /* Mantém o padding interno dos modais */
+    padding: 40px; /* Aumenta o padding interno dos modais */
     border-radius: 12px; /* Bordas mais arredondadas para os modais */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
     width: 90%;
-    max-width: 800px; /* Mantém o tamanho máximo dos modais consistente */
+    max-width: 800px; /* Aumenta o tamanho máximo dos modais para padrão consistente */
     max-height: 80vh; /* Limita a altura para evitar overflow excessivo */
     overflow-y: auto;
     margin: 0 auto; /* Centraliza horizontalmente */
