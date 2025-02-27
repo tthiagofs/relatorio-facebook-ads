@@ -36,6 +36,10 @@ function showScreen(screen) {
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
+    if (show && ((isCampaign && isAdSetFilterActive && selectedAdSets.size > 0) || (!isCampaign && isCampaignFilterActive && selectedCampaigns.size > 0))) {
+        return; // Impede abrir o modal se o outro já tiver seleções
+    }
+
     modal.style.display = show ? 'block' : 'none';
     if (show) {
         if (isCampaign) {
@@ -43,21 +47,25 @@ function toggleModal(modal, show, isCampaign) {
             isAdSetFilterActive = false;
             selectedAdSets.clear(); // Limpa seleções de ad sets ao abrir campanhas
             filterAdSetsBtn.disabled = true; // Desativa o botão de conjuntos
+            filterAdSetsBtn.style.cursor = 'not-allowed'; // Visual feedback de desativação
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
             selectedCampaigns.clear(); // Limpa seleções de campanhas ao abrir conjuntos
             filterCampaignsBtn.disabled = true; // Desativa o botão de campanhas
+            filterCampaignsBtn.style.cursor = 'not-allowed'; // Visual feedback de desativação
         }
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
             selectedCampaigns.clear();
             filterAdSetsBtn.disabled = false; // Libera o botão de conjuntos
+            filterAdSetsBtn.style.cursor = 'pointer'; // Restaura o cursor
         } else {
             isAdSetFilterActive = false;
             selectedAdSets.clear();
             filterCampaignsBtn.disabled = false; // Libera o botão de campanhas
+            filterCampaignsBtn.style.cursor = 'pointer'; // Restaura o cursor
         }
     }
 }
@@ -83,11 +91,13 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                     selectedSet.add(value);
                     div.classList.add('selected');
                 }
-                // Atualiza o estado do outro botão de filtro
+                // Mantém o outro filtro desativado se houver seleções
                 if (isCampaign) {
                     filterAdSetsBtn.disabled = selectedCampaigns.size > 0;
+                    filterAdSetsBtn.style.cursor = selectedCampaigns.size > 0 ? 'not-allowed' : 'pointer';
                 } else {
                     filterCampaignsBtn.disabled = selectedAdSets.size > 0;
+                    filterCampaignsBtn.style.cursor = selectedAdSets.size > 0 ? 'not-allowed' : 'pointer';
                 }
             });
             container.appendChild(div);
@@ -103,8 +113,10 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
             // Libera o outro filtro
             if (isCampaign) {
                 filterAdSetsBtn.disabled = false;
+                filterAdSetsBtn.style.cursor = 'pointer';
             } else {
                 filterCampaignsBtn.disabled = false;
+                filterCampaignsBtn.style.cursor = 'pointer';
             }
         });
         container.appendChild(clearButton);
@@ -174,6 +186,8 @@ form.addEventListener('input', async function(e) {
         isAdSetFilterActive = false;
         filterCampaignsBtn.disabled = false;
         filterAdSetsBtn.disabled = false;
+        filterCampaignsBtn.style.cursor = 'pointer';
+        filterAdSetsBtn.style.cursor = 'pointer';
         await Promise.all([
             loadCampaigns(unitId, startDate, endDate),
             loadAdSets(unitId, startDate, endDate)
@@ -357,7 +371,7 @@ closeAdSetsModalBtn.addEventListener('click', () => {
     toggleModal(adSetsModal, false, false);
 });
 
-// Geração do relatório com soma consolidada dos ad sets filtrados
+// Geração do relatório com soma consolidada dos itens filtrados
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -375,17 +389,12 @@ form.addEventListener('submit', async (e) => {
     let totalReach = 0;
 
     if (selectedCampaigns.size > 0) {
-        const adSetIds = Object.keys(adSetsMap[unitId] || {}).filter(id => {
-            const adSetData = adSetsMap[unitId][id];
-            const campaignId = adSetData && adSetData.campaignId ? adSetData.campaignId.toString() : null;
-            return campaignId && selectedCampaigns.has(campaignId);
-        });
-        for (const adSetId of adSetIds) {
-            const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            if (insights && insights.spend) { // Verifica se insights.spend existe
+        for (const campaignId of selectedCampaigns) {
+            const insights = await getCampaignInsights(campaignId, startDate, endDate);
+            if (insights && insights.spend) {
                 totalSpend += parseFloat(insights.spend) || 0;
             }
-            if (insights && insights.reach) { // Verifica se insights.reach existe
+            if (insights && insights.reach) {
                 totalReach += parseInt(insights.reach) || 0;
             }
             (insights.actions || []).forEach(action => {
@@ -397,10 +406,10 @@ form.addEventListener('submit', async (e) => {
     } else if (selectedAdSets.size > 0) {
         for (const adSetId of selectedAdSets) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            if (insights && insights.spend) { // Verifica se insights.spend existe
+            if (insights && insights.spend) {
                 totalSpend += parseFloat(insights.spend) || 0;
             }
-            if (insights && insights.reach) { // Verifica se insights.reach existe
+            if (insights && insights.reach) {
                 totalReach += parseInt(insights.reach) || 0;
             }
             (insights.actions || []).forEach(action => {
@@ -416,10 +425,10 @@ form.addEventListener('submit', async (e) => {
             function(response) {
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
-                        if (data.spend) { // Verifica se data.spend existe
+                        if (data.spend) {
                             totalSpend += parseFloat(data.spend) || 0;
                         }
-                        if (data.reach) { // Verifica se data.reach existe
+                        if (data.reach) {
                             totalReach += parseInt(data.reach) || 0;
                         }
                         (data.actions || []).forEach(action => {
