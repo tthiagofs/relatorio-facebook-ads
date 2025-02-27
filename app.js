@@ -111,6 +111,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
         options.forEach(option => {
             const div = document.createElement('div');
             div.className = `filter-option ${selectedSet.has(option.value) ? 'selected' : ''}`;
+            // Usar o spend diretamente dos insights carregados pela API, garantindo consistência
             const spend = option.spend !== undefined && option.spend !== null ? parseFloat(option.spend) : 0;
             const spendColor = spend > 0 ? 'green' : 'gray';
             div.innerHTML = `${option.label} <span style="margin-left: 10px; color: ${spendColor};">R$ ${spend.toFixed(2).replace('.', ',')}</span>`;
@@ -292,7 +293,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     );
 }
 
-// Função para carregar ad sets
+// Função para carregar ad sets, corrigindo o spend para usar o valor real da API
 async function loadAdSets(unitId, startDate, endDate) {
     FB.api(
         `/${unitId}/adsets`,
@@ -319,6 +320,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                                     for (const id in response) {
                                         const insights = response[id].insights?.data?.[0] || {};
                                         const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
+                                        console.log(`Spend inicial para ad set ${id}: ${spend}`); // Log para depuração
                                         if (spend > 0) {
                                             validIds.push(id);
                                             const adSet = adSetResponse.data.find(set => set.id === id);
@@ -343,7 +345,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                     const adSetOptions = validAdSetIds.map(id => ({
                         value: id,
                         label: adSetsMap[unitId][id].name,
-                        spend: adSetsMap[unitId][id].insights.spend
+                        spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
                     }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
@@ -370,7 +372,7 @@ function updateAdSets(selectedCampaigns) {
         const adSetOptions = validAdSetIds.map(id => ({
             value: id,
             label: adSetsMap[unitId][id].name,
-            spend: adSetsMap[unitId][id].insights.spend
+            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
         }));
         renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
     }
