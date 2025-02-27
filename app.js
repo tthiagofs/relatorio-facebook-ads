@@ -24,6 +24,7 @@ let selectedCampaigns = new Set(); // Conjunto para armazenar campanhas selecion
 let selectedAdSets = new Set(); // Conjunto para armazenar ad sets selecionados
 let isCampaignFilterActive = false;
 let isAdSetFilterActive = false;
+let isFilterActivated = false; // Novo estado para indicar se os filtros estão ativados
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -36,8 +37,8 @@ function showScreen(screen) {
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
-    if (show && ((isCampaign && isAdSetFilterActive && selectedAdSets.size > 0) || (!isCampaign && isCampaignFilterActive && selectedCampaigns.size > 0))) {
-        return; // Impede abrir o modal se o outro já tiver seleções
+    if (show && isFilterActivated) {
+        return; // Impede abrir o modal se os filtros já estiverem ativados
     }
 
     modal.style.display = show ? 'block' : 'none';
@@ -45,32 +46,44 @@ function toggleModal(modal, show, isCampaign) {
         if (isCampaign) {
             isCampaignFilterActive = true;
             isAdSetFilterActive = false;
-            selectedAdSets.clear(); // Limpa seleções de ad sets ao abrir campanhas
             filterAdSetsBtn.disabled = true; // Desativa o botão de conjuntos
             filterAdSetsBtn.style.cursor = 'not-allowed'; // Visual feedback de desativação
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
-            selectedCampaigns.clear(); // Limpa seleções de campanhas ao abrir conjuntos
             filterCampaignsBtn.disabled = true; // Desativa o botão de campanhas
             filterCampaignsBtn.style.cursor = 'not-allowed'; // Visual feedback de desativação
         }
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
-            selectedCampaigns.clear();
             filterAdSetsBtn.disabled = false; // Libera o botão de conjuntos
             filterAdSetsBtn.style.cursor = 'pointer'; // Restaura o cursor
         } else {
             isAdSetFilterActive = false;
-            selectedAdSets.clear();
             filterCampaignsBtn.disabled = false; // Libera o botão de campanhas
             filterCampaignsBtn.style.cursor = 'pointer'; // Restaura o cursor
         }
     }
+    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
 }
 
-// Função para criar e gerenciar opções clicáveis nos modals com valor gasto e botão de desmarcação
+// Função para atualizar o botão de ativação/desativação
+function updateFilterButton() {
+    const campaignsButton = campaignsModal.querySelector('.btn-filter-toggle');
+    const adSetsButton = adSetsModal.querySelector('.btn-filter-toggle');
+
+    if (campaignsButton) {
+        campaignsButton.textContent = isFilterActivated && selectedCampaigns.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
+        campaignsButton.disabled = selectedCampaigns.size === 0; // Desativa se não houver seleções
+    }
+    if (adSetsButton) {
+        adSetsButton.textContent = isFilterActivated && selectedAdSets.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
+        adSetsButton.disabled = selectedAdSets.size === 0; // Desativa se não houver seleções
+    }
+}
+
+// Função para criar e gerenciar opções clicáveis nos modals com valor gasto
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
     container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : ''; // Mostra "Buscando..." enquanto carrega
@@ -91,35 +104,47 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                     selectedSet.add(value);
                     div.classList.add('selected');
                 }
-                // Mantém o outro filtro desativado se houver seleções
-                if (isCampaign) {
-                    filterAdSetsBtn.disabled = selectedCampaigns.size > 0;
-                    filterAdSetsBtn.style.cursor = selectedCampaigns.size > 0 ? 'not-allowed' : 'pointer';
-                } else {
-                    filterCampaignsBtn.disabled = selectedAdSets.size > 0;
-                    filterCampaignsBtn.style.cursor = selectedAdSets.size > 0 ? 'not-allowed' : 'pointer';
-                }
+                updateFilterButton(); // Atualiza o botão de ativação/desativação após cada clique
             });
             container.appendChild(div);
         });
 
-        // Adiciona botão de "Desmarcar Seleção" ao final do modal
-        const clearButton = document.createElement('button');
-        clearButton.textContent = 'Desmarcar Seleção';
-        clearButton.className = 'btn-clear';
-        clearButton.addEventListener('click', () => {
-            selectedSet.clear();
-            renderOptions(containerId, options, selectedSet, isCampaign); // Re-renderiza para refletir a desmarcação
-            // Libera o outro filtro
-            if (isCampaign) {
+        // Adiciona botão de "Ativar Seleções/Desativar Seleção" ao final do modal
+        const existingButton = container.querySelector('.btn-filter-toggle');
+        if (existingButton) existingButton.remove(); // Remove o botão antigo para evitar duplicação
+
+        const filterButton = document.createElement('button');
+        filterButton.textContent = isFilterActivated && (isCampaign ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) ? 'Desativar Seleção' : 'Ativar Seleções';
+        filterButton.className = 'btn-filter-toggle';
+        filterButton.disabled = (isCampaign ? selectedCampaigns.size === 0 : selectedAdSets.size === 0); // Desativa se não houver seleções
+        filterButton.addEventListener('click', () => {
+            if (isFilterActivated && (isCampaign ? selectedCampaigns.size > 0 : selectedAdSets.size > 0)) {
+                // Desativa os filtros
+                isFilterActivated = false;
+                if (isCampaign) {
+                    selectedCampaigns.clear();
+                } else {
+                    selectedAdSets.clear();
+                }
+                filterCampaignsBtn.disabled = false;
                 filterAdSetsBtn.disabled = false;
+                filterCampaignsBtn.style.cursor = 'pointer';
                 filterAdSetsBtn.style.cursor = 'pointer';
             } else {
-                filterCampaignsBtn.disabled = false;
-                filterCampaignsBtn.style.cursor = 'pointer';
+                // Ativa os filtros
+                isFilterActivated = true;
+                if (isCampaign) {
+                    filterAdSetsBtn.disabled = true;
+                    filterAdSetsBtn.style.cursor = 'not-allowed';
+                } else {
+                    filterCampaignsBtn.disabled = true;
+                    filterCampaignsBtn.style.cursor = 'not-allowed';
+                }
             }
+            renderOptions(containerId, options, selectedSet, isCampaign); // Re-renderiza para atualizar o botão
+            updateFilterButton(); // Garante que o estado do botão seja atualizado
         });
-        container.appendChild(clearButton);
+        container.appendChild(filterButton);
     }
 }
 
@@ -184,6 +209,7 @@ form.addEventListener('input', async function(e) {
         selectedAdSets.clear();
         isCampaignFilterActive = false;
         isAdSetFilterActive = false;
+        isFilterActivated = false;
         filterCampaignsBtn.disabled = false;
         filterAdSetsBtn.disabled = false;
         filterCampaignsBtn.style.cursor = 'pointer';
@@ -348,12 +374,14 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
 
 // Configurar eventos para os botões de filtro com exclusão mútua simples
 filterCampaignsBtn.addEventListener('click', () => {
+    if (isFilterActivated) return; // Impede abrir o modal se os filtros já estiverem ativados
     if (isAdSetFilterActive && selectedAdSets.size > 0) return; // Impede abrir se há seleções em ad sets
     isCampaignFilterActive = true;
     toggleModal(campaignsModal, true, true);
 });
 
 filterAdSetsBtn.addEventListener('click', () => {
+    if (isFilterActivated) return; // Impede abrir o modal se os filtros já estiverem ativados
     if (isCampaignFilterActive && selectedCampaigns.size > 0) return; // Impede abrir se há seleções em campanhas
     isAdSetFilterActive = true;
     toggleModal(adSetsModal, true, false);
@@ -361,17 +389,17 @@ filterAdSetsBtn.addEventListener('click', () => {
 
 closeCampaignsModalBtn.addEventListener('click', () => {
     isCampaignFilterActive = false;
-    selectedCampaigns.clear();
     toggleModal(campaignsModal, false, true);
+    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
 });
 
 closeAdSetsModalBtn.addEventListener('click', () => {
     isAdSetFilterActive = false;
-    selectedAdSets.clear();
     toggleModal(adSetsModal, false, false);
+    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
 });
 
-// Geração do relatório com soma consolidada dos itens filtrados
+// Geração do relatório com soma consolidada dos itens filtrados ativados
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -388,35 +416,37 @@ form.addEventListener('submit', async (e) => {
     let totalConversations = 0;
     let totalReach = 0;
 
-    if (selectedCampaigns.size > 0) {
-        for (const campaignId of selectedCampaigns) {
-            const insights = await getCampaignInsights(campaignId, startDate, endDate);
-            if (insights && insights.spend) {
-                totalSpend += parseFloat(insights.spend) || 0;
-            }
-            if (insights && insights.reach) {
-                totalReach += parseInt(insights.reach) || 0;
-            }
-            (insights.actions || []).forEach(action => {
-                if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                    totalConversations += parseInt(action.value) || 0;
+    if (isFilterActivated) {
+        if (selectedCampaigns.size > 0) {
+            for (const campaignId of selectedCampaigns) {
+                const insights = await getCampaignInsights(campaignId, startDate, endDate);
+                if (insights && insights.spend) {
+                    totalSpend += parseFloat(insights.spend) || 0;
                 }
-            });
-        }
-    } else if (selectedAdSets.size > 0) {
-        for (const adSetId of selectedAdSets) {
-            const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            if (insights && insights.spend) {
-                totalSpend += parseFloat(insights.spend) || 0;
-            }
-            if (insights && insights.reach) {
-                totalReach += parseInt(insights.reach) || 0;
-            }
-            (insights.actions || []).forEach(action => {
-                if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                    totalConversations += parseInt(action.value) || 0;
+                if (insights && insights.reach) {
+                    totalReach += parseInt(insights.reach) || 0;
                 }
-            });
+                (insights.actions || []).forEach(action => {
+                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                        totalConversations += parseInt(action.value) || 0;
+                    }
+                });
+            }
+        } else if (selectedAdSets.size > 0) {
+            for (const adSetId of selectedAdSets) {
+                const insights = await getAdSetInsights(adSetId, startDate, endDate);
+                if (insights && insights.spend) {
+                    totalSpend += parseFloat(insights.spend) || 0;
+                }
+                if (insights && insights.reach) {
+                    totalReach += parseInt(insights.reach) || 0;
+                }
+                (insights.actions || []).forEach(action => {
+                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                        totalConversations += parseInt(action.value) || 0;
+                    }
+                });
+            }
         }
     } else {
         FB.api(
