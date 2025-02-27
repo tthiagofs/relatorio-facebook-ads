@@ -401,6 +401,8 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
             { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate } },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
+                    // Log para depuração
+                    console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
                     resolve(response.data[0]);
                 } else {
                     console.warn(`Nenhum insight válido retornado para ad set ${adSetId}:`, response.error || 'Dados ausentes');
@@ -473,6 +475,8 @@ form.addEventListener('submit', async (e) => {
             for (const adSetId of selectedAdSets) {
                 const insights = await getAdSetInsights(adSetId, startDate, endDate);
                 if (insights && insights.spend) {
+                    // Log para depuração do valor de spend
+                    console.log(`Spend para ad set ${adSetId}: ${insights.spend}`);
                     totalSpend += parseFloat(insights.spend) || 0;
                 }
                 if (insights && insights.reach) {
