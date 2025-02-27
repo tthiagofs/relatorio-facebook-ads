@@ -327,10 +327,3 @@ body {
 #mainContent .filter-option:hover {
     background-color: #e0e0e0;
 }
-
-/* Estilo para o texto "Buscando..." */
-#mainContent .modal-content p {
-    text-align: center;
-    font-size: 16px;
-    color: #666;
-}

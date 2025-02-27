@@ -42,39 +42,41 @@ function toggleModal(modal, show) {
 // Função para criar e gerenciar opções clicáveis nos modals com valor gasto e limpeza
 function renderOptions(containerId, options, selectedSet, callback) {
     const container = document.getElementById(containerId);
-    container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : ''; // Mostra "Buscando..." enquanto carrega
-    if (options.length > 0) {
-        options.forEach(option => {
-            const div = document.createElement('div');
-            div.className = `filter-option ${selectedSet.has(option.value) ? 'selected' : ''}`;
-            const spend = option.spend !== undefined && option.spend !== null ? parseFloat(option.spend) : 0;
-            const spendColor = spend > 0 ? 'green' : 'gray';
-            div.innerHTML = `${option.label} <span style="margin-left: 10px; color: ${spendColor};">R$ ${spend.toFixed(2).replace('.', ',')}</span>`;
-            div.dataset.value = option.value;
-            div.addEventListener('click', () => {
-                const value = option.value;
-                if (selectedSet.has(value)) {
-                    selectedSet.delete(value);
-                    div.classList.remove('selected');
-                } else {
-                    selectedSet.add(value);
-                    div.classList.add('selected');
-                }
-                callback(selectedSet);
-            });
-            container.appendChild(div);
-        });
-
-        // Adiciona botão de "Limpar Seleção" ao final do modal
-        const clearButton = document.createElement('button');
-        clearButton.textContent = 'Limpar Seleção';
-        clearButton.className = 'btn-clear';
-        clearButton.addEventListener('click', () => {
-            selectedSet.clear();
-            renderOptions(containerId, options, selectedSet, callback); // Re-renderiza para refletir a limpeza
-        });
-        container.appendChild(clearButton);
+    container.innerHTML = '';
+    if (options.length === 0) {
+        container.innerHTML = '<p>Nenhuma opção disponível para o período selecionado.</p>';
+        return;
     }
+    options.forEach(option => {
+        const div = document.createElement('div');
+        div.className = `filter-option ${selectedSet.has(option.value) ? 'selected' : ''}`;
+        const spend = option.spend !== undefined && option.spend !== null ? parseFloat(option.spend) : 0;
+        const spendColor = spend > 0 ? 'green' : 'gray';
+        div.innerHTML = `${option.label} <span style="margin-left: 10px; color: ${spendColor};">R$ ${spend.toFixed(2).replace('.', ',')}</span>`;
+        div.dataset.value = option.value;
+        div.addEventListener('click', () => {
+            const value = option.value;
+            if (selectedSet.has(value)) {
+                selectedSet.delete(value);
+                div.classList.remove('selected');
+            } else {
+                selectedSet.add(value);
+                div.classList.add('selected');
+            }
+            callback(selectedSet);
+        });
+        container.appendChild(div);
+    });
+
+    // Adiciona botão de "Limpar Seleção" ao final do modal
+    const clearButton = document.createElement('button');
+    clearButton.textContent = 'Limpar Seleção';
+    clearButton.className = 'btn-clear';
+    clearButton.addEventListener('click', () => {
+        selectedSet.clear();
+        renderOptions(containerId, options, selectedSet, callback); // Re-renderiza para refletir a limpeza
+    });
+    container.appendChild(clearButton);
 }
 
 // Login do app
@@ -183,7 +185,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
 async function loadAdSets(unitId, startDate, endDate) {
     FB.api(
         `/${unitId}/adsets`,
-        { fields: 'id,name' },
+        { fields: 'id,name' }, // Removido campaign{id} para independência
         async function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
                 adSetsMap[unitId] = {};
@@ -251,7 +253,7 @@ function updateAdSets(selectedCampaigns) {
         let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
         validAdSetIds = validAdSetIds.filter(id => {
             const adSetData = adSetsMap[unitId][id];
-            return adSetData && adSetData.insights.spend > 0; // Filtra apenas ad sets com gastos
+            return adSetData && selectedCampaigns.has(id); // Ajustado para independência
         });
 
         const adSetOptions = validAdSetIds.map(id => ({
