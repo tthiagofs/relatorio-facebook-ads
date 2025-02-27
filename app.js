@@ -341,7 +341,16 @@ async function loadAdSets(unitId, startDate, endDate) {
                                     const validIds = [];
                                     for (const id in response) {
                                         const insights = response[id].insights?.data?.[0] || {};
-                                        const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
+                                        // Verifica se o spend está no formato correto antes de parsear
+                                        let spend = 0;
+                                        if (insights.spend !== undefined && insights.spend !== null) {
+                                            // Tenta parsear o spend como float, lidando com possíveis strings ou números
+                                            spend = parseFloat(insights.spend) || 0;
+                                            if (isNaN(spend)) {
+                                                console.warn(`Valor inválido de spend para ad set ${id}: ${insights.spend}`);
+                                                spend = 0;
+                                            }
+                                        }
                                         console.log(`Spend inicial para ad set ${id}: ${spend}`); // Log para depuração
                                         if (spend > 0) {
                                             validIds.push(id);
