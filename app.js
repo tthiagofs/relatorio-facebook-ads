@@ -341,11 +341,11 @@ async function loadAdSets(unitId, startDate, endDate) {
                                     const validIds = [];
                                     for (const id in response) {
                                         const insights = response[id].insights?.data?.[0] || {};
-                                        // Verifica se o spend está no formato correto antes de parsear
+                                        // Usa o mesmo método de parsing e validação de getAdSetInsights
                                         let spend = 0;
                                         if (insights.spend !== undefined && insights.spend !== null) {
-                                            // Tenta parsear o spend como float, lidando com possíveis strings ou números
-                                            spend = parseFloat(insights.spend) || 0;
+                                            // Tenta parsear o spend como float, lidando com strings ou números
+                                            spend = parseFloat(insights.spend.replace(',', '.')) || 0; // Trata possíveis formatos com vírgula
                                             if (isNaN(spend)) {
                                                 console.warn(`Valor inválido de spend para ad set ${id}: ${insights.spend}`);
                                                 spend = 0;
@@ -376,7 +376,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                     const adSetOptions = validAdSetIds.map(id => ({
                         value: id,
                         label: adSetsMap[unitId][id].name,
-                        spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API, alinhado com getAdSetInsights
+                        spend: adSetsMap[unitId][id].insights.spend // Usa o spend corrigido da API
                     }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
@@ -403,7 +403,7 @@ function updateAdSets(selectedCampaigns) {
         const adSetOptions = validAdSetIds.map(id => ({
             value: id,
             label: adSetsMap[unitId][id].name,
-            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
+            spend: adSetsMap[unitId][id].insights.spend // Usa o spend corrigido da API
         }));
         renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
     }
