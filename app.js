@@ -315,7 +315,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     );
 }
 
-// Função para carregar ad sets
+// Função para carregar ad sets, corrigindo o valor de spend para corresponder ao relatório
 async function loadAdSets(unitId, startDate, endDate) {
     FB.api(
         `/${unitId}/adsets`,
@@ -367,7 +367,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                     const adSetOptions = validAdSetIds.map(id => ({
                         value: id,
                         label: adSetsMap[unitId][id].name,
-                        spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
+                        spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API, alinhado com getAdSetInsights
                     }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
