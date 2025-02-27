@@ -94,10 +94,41 @@
         <button id="shareWhatsAppBtn" style="display: none;">Compartilhar no WhatsApp</button>
     </div>
 
-    <!-- Tela de Relatório Completo (nova tela) -->
+    <!-- Tela de Geração do Relatório Completo (Formulário do Relatório Completo) -->
     <div id="fullReportScreen" class="container" style="display: none;">
         <h1>Relatório Completo - Facebook Ads</h1>
-        <p>Aqui será desenvolvido o módulo do Relatório Completo.</p>
+        <form id="fullReportForm">
+            <label for="fullUnitId">Selecione a Unidade:</label>
+            <select id="fullUnitId" required>
+                <option value="">Escolha a unidade</option>
+            </select>
+            <label for="fullStartDate">Data Início:</label>
+            <input type="date" id="fullStartDate" required>
+            <label for="fullEndDate">Data Fim:</label>
+            <input type="date" id="fullEndDate" required>
+            <label style="font-weight: bold;">Campanha White:</label>
+            <button type="button" id="filterWhiteCampaigns" class="btn-primary">Selecionar Campanhas White</button>
+            <div id="whiteCampaignsModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <h2>Selecione as Campanhas White</h2>
+                    <input type="text" id="whiteCampaignSearch" class="search-bar" placeholder="Pesquisar campanhas...">
+                    <div id="whiteCampaignsList"></div>
+                    <button type="button" id="closeWhiteCampaignsModal" class="btn-primary">Fechar</button>
+                </div>
+            </div>
+            <label style="font-weight: bold;">Campanha Black:</label>
+            <button type="button" id="filterBlackCampaigns" class="btn-primary">Selecionar Campanhas Black</button>
+            <div id="blackCampaignsModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <h2>Selecione as Campanhas Black</h2>
+                    <input type="text" id="blackCampaignSearch" class="search-bar" placeholder="Pesquisar campanhas...">
+                    <div id="blackCampaignsList"></div>
+                    <button type="button" id="closeBlackCampaignsModal" class="btn-primary">Fechar</button>
+                </div>
+            </div>
+            <button type="submit">Gerar Relatório Completo</button>
+        </form>
+        <div id="fullReportContainer" class="report-container"></div>
         <button id="backToSelectionBtn" class="btn-primary">Voltar ao Início</button>
     </div>
 
