@@ -19,13 +19,24 @@ body {
     background-color: transparent; /* Remove o overlay semi-transparente para maior clareza */
 }
 
-.login-box, #reportSelectionScreen .container {
+.login-box {
     background-color: #fff;
     padding: 40px; /* Mantém o padding interno para maior espaço */
     border-radius: 12px; /* Bordas mais arredondadas para um visual moderno */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
     width: 100%;
-    max-width: 300px; /* Mesmo tamanho da tela de login no app para "Escolha o Tipo de Relatório" */
+    max-width: 300px; /* Tamanho padrão do login, mantido para consistência */
+    text-align: center;
+    margin: 0 auto; /* Garante centralização horizontal */
+}
+
+#reportSelectionScreen .container {
+    background-color: #fff;
+    padding: 40px; /* Mantém o padding interno para maior espaço */
+    border-radius: 12px; /* Bordas mais arredondadas para um visual moderno */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
+    width: 100%;
+    max-width: 300px; /* Reduz para o mesmo tamanho do login, mantendo consistência */
     text-align: center;
     margin: 0 auto; /* Garante centralização horizontal */
 }
@@ -36,7 +47,7 @@ body {
     border-radius: 12px; /* Bordas mais arredondadas para um visual moderno */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
     width: 100%;
-    max-width: 600px; /* Reduz o tamanho da caixa branca para "Gerar Relatório" */
+    max-width: 600px; /* Reduz para um tamanho consistente, maior que o login, mas alinhado com o padrão visual */
     text-align: center;
     margin: 0 auto; /* Garante centralização horizontal */
 }
@@ -149,7 +160,7 @@ body {
 }
 
 @media (max-width: 480px) {
-    .login-box, #reportSelectionScreen .container, #mainContent .container {
+    .login-box, .container {
         max-width: 90%;
         padding: 20px; /* Reduz o padding em telas menores para melhor adaptação */
     }
