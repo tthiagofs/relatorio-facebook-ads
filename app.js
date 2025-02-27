@@ -341,14 +341,17 @@ async function loadAdSets(unitId, startDate, endDate) {
                                     const validIds = [];
                                     for (const id in response) {
                                         const insights = response[id].insights?.data?.[0] || {};
-                                        // Usa o mesmo método de parsing e validação de getAdSetInsights
+                                        // Parsing mais robusto para o spend, alinhado com getAdSetInsights
                                         let spend = 0;
                                         if (insights.spend !== undefined && insights.spend !== null) {
-                                            // Tenta parsear o spend como float, lidando com strings ou números
-                                            spend = parseFloat(insights.spend.replace(',', '.')) || 0; // Trata possíveis formatos com vírgula
+                                            // Tenta parsear o spend, lidando com diferentes formatos (string com ponto, vírgula, ou número)
+                                            const spendStr = String(insights.spend).trim();
+                                            // Remove qualquer formato não numérico e tenta parsear
+                                            spend = parseFloat(spendStr.replace(/[^0-9.-]/g, '')) || 0;
                                             if (isNaN(spend)) {
-                                                console.warn(`Valor inválido de spend para ad set ${id}: ${insights.spend}`);
-                                                spend = 0;
+                                                console.warn(`Valor inválido de spend para ad set ${id}: ${spendStr}`);
+                                                // Tenta parsear assumindo formato com vírgula como decimal
+                                                spend = parseFloat(spendStr.replace(',', '.')) || 0;
                                             }
                                         }
                                         console.log(`Spend inicial para ad set ${id}: ${spend}`); // Log para depuração
