@@ -55,10 +55,10 @@ body {
     color: #333;
 }
 
-.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle {
+.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button {
     width: 100%;
     padding: 12px;
-    background-color: #4CAF50;
+    background-color: #4CAF50; /* Ajusta o botão "Gerar Relatório" para o mesmo verde dos outros botões */
     color: white;
     border: none;
     border-radius: 8px; /* Bordas mais arredondadas para botões */
@@ -68,7 +68,7 @@ body {
     transition: background-color 0.3s ease;
 }
 
-.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover {
+.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover, #form button:hover {
     background-color: #45a049;
 }
 
@@ -143,7 +143,7 @@ body {
         padding: 20px; /* Reduz o padding em telas menores para melhor adaptação */
     }
 
-    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle {
+    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button {
         padding: 10px;
         font-size: 14px; /* Reduz o tamanho da fonte dos botões em telas menores */
     }
@@ -155,16 +155,6 @@ body {
 
     .report-container {
         padding: 20px; /* Reduz o padding do relatório em telas menores */
-    }
-
-    #form button {
-        padding: 10px 20px;
-        font-size: 14px; /* Reduz o tamanho da fonte do botão "Gerar Relatório" */
-    }
-
-    #shareWhatsAppBtn {
-        padding: 10px 20px;
-        font-size: 14px; /* Reduz o tamanho da fonte do botão "Compartilhar no WhatsApp" */
     }
 }
 
