@@ -138,8 +138,8 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 filterAdSetsBtn.disabled = false;
                 filterCampaignsBtn.style.cursor = 'pointer';
                 filterAdSetsBtn.style.cursor = 'pointer';
-            } else {
-                // Ativa os filtros
+            } else if (isCampaign ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) {
+                // Ativa os filtros apenas se houver seleções
                 isFilterActivated = true;
                 if (isCampaign) {
                     isCampaignFilterActive = true;
