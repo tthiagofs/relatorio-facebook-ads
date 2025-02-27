@@ -40,32 +40,29 @@ function toggleModal(modal, show, isCampaign) {
     if (show) {
         if (isCampaign) {
             isCampaignFilterActive = true;
-            filterAdSetsBtn.disabled = selectedCampaigns.size > 0;
+            isAdSetFilterActive = false;
+            selectedAdSets.clear(); // Limpa seleções de ad sets ao abrir campanhas
+            filterAdSetsBtn.disabled = true; // Desativa o botão de conjuntos
         } else {
             isAdSetFilterActive = true;
-            filterCampaignsBtn.disabled = selectedAdSets.size > 0;
+            isCampaignFilterActive = false;
+            selectedCampaigns.clear(); // Limpa seleções de campanhas ao abrir conjuntos
+            filterCampaignsBtn.disabled = true; // Desativa o botão de campanhas
         }
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
             selectedCampaigns.clear();
-            filterAdSetsBtn.disabled = false; // Libera o outro filtro
+            filterAdSetsBtn.disabled = false; // Libera o botão de conjuntos
         } else {
             isAdSetFilterActive = false;
             selectedAdSets.clear();
-            filterCampaignsBtn.disabled = false; // Libera o outro filtro
+            filterCampaignsBtn.disabled = false; // Libera o botão de campanhas
         }
     }
-    updateModalStates();
 }
 
-// Função para atualizar o estado dos botões de filtro
-function updateModalStates() {
-    filterCampaignsBtn.disabled = isAdSetFilterActive && selectedAdSets.size > 0;
-    filterAdSetsBtn.disabled = isCampaignFilterActive && selectedCampaigns.size > 0;
-}
-
-// Função para criar e gerenciar opções clicáveis nos modals com valor gasto
+// Função para criar e gerenciar opções clicáveis nos modals com valor gasto e botão de desmarcação
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
     container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : ''; // Mostra "Buscando..." enquanto carrega
@@ -86,10 +83,31 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                     selectedSet.add(value);
                     div.classList.add('selected');
                 }
-                updateModalStates(); // Atualiza o estado dos botões após qualquer seleção/des seleção
+                // Atualiza o estado do outro botão de filtro
+                if (isCampaign) {
+                    filterAdSetsBtn.disabled = selectedCampaigns.size > 0;
+                } else {
+                    filterCampaignsBtn.disabled = selectedAdSets.size > 0;
+                }
             });
             container.appendChild(div);
         });
+
+        // Adiciona botão de "Desmarcar Seleção" ao final do modal
+        const clearButton = document.createElement('button');
+        clearButton.textContent = 'Desmarcar Seleção';
+        clearButton.className = 'btn-clear';
+        clearButton.addEventListener('click', () => {
+            selectedSet.clear();
+            renderOptions(containerId, options, selectedSet, isCampaign); // Re-renderiza para refletir a desmarcação
+            // Libera o outro filtro
+            if (isCampaign) {
+                filterAdSetsBtn.disabled = false;
+            } else {
+                filterCampaignsBtn.disabled = false;
+            }
+        });
+        container.appendChild(clearButton);
     }
 }
 
@@ -257,7 +275,7 @@ async function loadAdSets(unitId, startDate, endDate) {
     );
 }
 
-// Função para atualizar as opções de ad sets com base nas campanhas selecionadas (não usada aqui, mas mantida para compatibilidade)
+// Função para atualizar as opções de ad sets (não usada aqui, mas mantida para compatibilidade)
 function updateAdSets(selectedCampaigns) {
     const unitId = document.getElementById('unitId').value;
     const startDate = document.getElementById('startDate').value;
@@ -331,14 +349,12 @@ closeCampaignsModalBtn.addEventListener('click', () => {
     isCampaignFilterActive = false;
     selectedCampaigns.clear();
     toggleModal(campaignsModal, false, true);
-    updateModalStates(); // Libera o outro filtro
 });
 
 closeAdSetsModalBtn.addEventListener('click', () => {
     isAdSetFilterActive = false;
     selectedAdSets.clear();
     toggleModal(adSetsModal, false, false);
-    updateModalStates(); // Libera o outro filtro
 });
 
 // Geração do relatório com soma consolidada dos ad sets filtrados
@@ -366,8 +382,12 @@ form.addEventListener('submit', async (e) => {
         });
         for (const adSetId of adSetIds) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            totalSpend += parseFloat(insights.spend || 0) || 0;
-            totalReach += parseInt(insights.reach || 0) || 0;
+            if (insights && insights.spend) { // Verifica se insights.spend existe
+                totalSpend += parseFloat(insights.spend) || 0;
+            }
+            if (insights && insights.reach) { // Verifica se insights.reach existe
+                totalReach += parseInt(insights.reach) || 0;
+            }
             (insights.actions || []).forEach(action => {
                 if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                     totalConversations += parseInt(action.value) || 0;
@@ -377,8 +397,12 @@ form.addEventListener('submit', async (e) => {
     } else if (selectedAdSets.size > 0) {
         for (const adSetId of selectedAdSets) {
             const insights = await getAdSetInsights(adSetId, startDate, endDate);
-            totalSpend += parseFloat(insights.spend || 0) || 0;
-            totalReach += parseInt(insights.reach || 0) || 0;
+            if (insights && insights.spend) { // Verifica se insights.spend existe
+                totalSpend += parseFloat(insights.spend) || 0;
+            }
+            if (insights && insights.reach) { // Verifica se insights.reach existe
+                totalReach += parseInt(insights.reach) || 0;
+            }
             (insights.actions || []).forEach(action => {
                 if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                     totalConversations += parseInt(action.value) || 0;
@@ -392,8 +416,12 @@ form.addEventListener('submit', async (e) => {
             function(response) {
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
-                        totalSpend += parseFloat(data.spend || 0) || 0;
-                        totalReach += parseInt(data.reach || 0) || 0;
+                        if (data.spend) { // Verifica se data.spend existe
+                            totalSpend += parseFloat(data.spend) || 0;
+                        }
+                        if (data.reach) { // Verifica se data.reach existe
+                            totalReach += parseInt(data.reach) || 0;
+                        }
                         (data.actions || []).forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                                 totalConversations += parseInt(action.value) || 0;
