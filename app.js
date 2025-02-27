@@ -37,8 +37,8 @@ function showScreen(screen) {
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
-    if (show && isFilterActivated) {
-        return; // Impede abrir o modal se os filtros já estiverem ativados
+    if (show && isFilterActivated && ((isCampaign && selectedCampaigns.size === 0) || (!isCampaign && selectedAdSets.size === 0))) {
+        return; // Impede abrir o modal se os filtros já estiverem ativados sem seleções
     }
 
     modal.style.display = show ? 'block' : 'none';
@@ -46,23 +46,23 @@ function toggleModal(modal, show, isCampaign) {
         if (isCampaign) {
             isCampaignFilterActive = true;
             isAdSetFilterActive = false;
-            filterAdSetsBtn.disabled = true; // Desativa o botão de conjuntos
-            filterAdSetsBtn.style.cursor = 'not-allowed'; // Visual feedback de desativação
+            filterAdSetsBtn.disabled = isFilterActivated; // Desativa o botão de conjuntos se filtros ativados
+            filterAdSetsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
-            filterCampaignsBtn.disabled = true; // Desativa o botão de campanhas
-            filterCampaignsBtn.style.cursor = 'not-allowed'; // Visual feedback de desativação
+            filterCampaignsBtn.disabled = isFilterActivated; // Desativa o botão de campanhas se filtros ativados
+            filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
-            filterAdSetsBtn.disabled = false; // Libera o botão de conjuntos
-            filterAdSetsBtn.style.cursor = 'pointer'; // Restaura o cursor
+            filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0; // Mantém desativado se filtros ativos
+            filterAdSetsBtn.style.cursor = isFilterActivated && selectedCampaigns.size > 0 ? 'not-allowed' : 'pointer';
         } else {
             isAdSetFilterActive = false;
-            filterCampaignsBtn.disabled = false; // Libera o botão de campanhas
-            filterCampaignsBtn.style.cursor = 'pointer'; // Restaura o cursor
+            filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0; // Mantém desativado se filtros ativos
+            filterCampaignsBtn.style.cursor = isFilterActivated && selectedAdSets.size > 0 ? 'not-allowed' : 'pointer';
         }
     }
     updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
@@ -75,12 +75,17 @@ function updateFilterButton() {
 
     if (campaignsButton) {
         campaignsButton.textContent = isFilterActivated && selectedCampaigns.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
-        campaignsButton.disabled = selectedCampaigns.size === 0; // Desativa se não houver seleções
+        campaignsButton.disabled = !isFilterActivated && selectedCampaigns.size === 0; // Desativa se não houver seleções antes de ativar
     }
     if (adSetsButton) {
         adSetsButton.textContent = isFilterActivated && selectedAdSets.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
-        adSetsButton.disabled = selectedAdSets.size === 0; // Desativa se não houver seleções
+        adSetsButton.disabled = !isFilterActivated && selectedAdSets.size === 0; // Desativa se não houver seleções antes de ativar
     }
+    // Atualiza o estado dos botões de filtro com base nos filtros ativados
+    filterCampaignsBtn.disabled = isFilterActivated && (selectedAdSets.size > 0 || selectedCampaigns.size === 0);
+    filterAdSetsBtn.disabled = isFilterActivated && (selectedCampaigns.size > 0 || selectedAdSets.size === 0);
+    filterCampaignsBtn.style.cursor = filterCampaignsBtn.disabled ? 'not-allowed' : 'pointer';
+    filterAdSetsBtn.style.cursor = filterAdSetsBtn.disabled ? 'not-allowed' : 'pointer';
 }
 
 // Função para criar e gerenciar opções clicáveis nos modals com valor gasto
@@ -123,8 +128,10 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 isFilterActivated = false;
                 if (isCampaign) {
                     selectedCampaigns.clear();
+                    isCampaignFilterActive = false;
                 } else {
                     selectedAdSets.clear();
+                    isAdSetFilterActive = false;
                 }
                 filterCampaignsBtn.disabled = false;
                 filterAdSetsBtn.disabled = false;
@@ -134,9 +141,13 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 // Ativa os filtros
                 isFilterActivated = true;
                 if (isCampaign) {
+                    isCampaignFilterActive = true;
+                    isAdSetFilterActive = false;
                     filterAdSetsBtn.disabled = true;
                     filterAdSetsBtn.style.cursor = 'not-allowed';
                 } else {
+                    isAdSetFilterActive = true;
+                    isCampaignFilterActive = false;
                     filterCampaignsBtn.disabled = true;
                     filterCampaignsBtn.style.cursor = 'not-allowed';
                 }
