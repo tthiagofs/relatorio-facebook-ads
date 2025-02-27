@@ -37,6 +37,7 @@ function showScreen(screen) {
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
+    // Permite abrir o modal para desativar, mesmo com filtros ativados, se houver seleções ativas
     if (show && isFilterActivated && ((isCampaign && selectedCampaigns.size === 0) || (!isCampaign && selectedAdSets.size === 0))) {
         return; // Impede abrir o modal se os filtros já estiverem ativados sem seleções
     }
@@ -57,11 +58,11 @@ function toggleModal(modal, show, isCampaign) {
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
-            filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0; // Mantém desativado se filtros ativos
+            filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0; // Mantém desativado se filtros ativos com seleções
             filterAdSetsBtn.style.cursor = isFilterActivated && selectedCampaigns.size > 0 ? 'not-allowed' : 'pointer';
         } else {
             isAdSetFilterActive = false;
-            filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0; // Mantém desativado se filtros ativos
+            filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0; // Mantém desativado se filtros ativos com seleções
             filterCampaignsBtn.style.cursor = isFilterActivated && selectedAdSets.size > 0 ? 'not-allowed' : 'pointer';
         }
     }
@@ -82,8 +83,8 @@ function updateFilterButton() {
         adSetsButton.disabled = !isFilterActivated && selectedAdSets.size === 0; // Desativa se não houver seleções antes de ativar
     }
     // Atualiza o estado dos botões de filtro com base nos filtros ativados
-    filterCampaignsBtn.disabled = isFilterActivated && (selectedAdSets.size > 0 || selectedCampaigns.size === 0);
-    filterAdSetsBtn.disabled = isFilterActivated && (selectedCampaigns.size > 0 || selectedAdSets.size === 0);
+    filterCampaignsBtn.disabled = isFilterActivated && (selectedAdSets.size > 0 || (selectedCampaigns.size === 0 && !isCampaignFilterActive));
+    filterAdSetsBtn.disabled = isFilterActivated && (selectedCampaigns.size > 0 || (selectedAdSets.size === 0 && !isAdSetFilterActive));
     filterCampaignsBtn.style.cursor = filterCampaignsBtn.disabled ? 'not-allowed' : 'pointer';
     filterAdSetsBtn.style.cursor = filterAdSetsBtn.disabled ? 'not-allowed' : 'pointer';
 }
@@ -385,15 +386,13 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
 
 // Configurar eventos para os botões de filtro com exclusão mútua simples
 filterCampaignsBtn.addEventListener('click', () => {
-    if (isFilterActivated) return; // Impede abrir o modal se os filtros já estiverem ativados
-    if (isAdSetFilterActive && selectedAdSets.size > 0) return; // Impede abrir se há seleções em ad sets
+    if (isFilterActivated && selectedAdSets.size > 0) return; // Impede abrir se há seleções ativas de ad sets
     isCampaignFilterActive = true;
     toggleModal(campaignsModal, true, true);
 });
 
 filterAdSetsBtn.addEventListener('click', () => {
-    if (isFilterActivated) return; // Impede abrir o modal se os filtros já estiverem ativados
-    if (isCampaignFilterActive && selectedCampaigns.size > 0) return; // Impede abrir se há seleções em campanhas
+    if (isFilterActivated && selectedCampaigns.size > 0) return; // Impede abrir se há seleções ativas de campanhas
     isAdSetFilterActive = true;
     toggleModal(adSetsModal, true, false);
 });
