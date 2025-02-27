@@ -103,88 +103,110 @@ function updateFilterButton() {
     filterAdSetsBtn.style.cursor = filterAdSetsBtn.disabled ? 'not-allowed' : 'pointer';
 }
 
-// Função para criar e gerenciar opções clicáveis nos modals com valor gasto
+// Função para criar e gerenciar opções clicáveis nos modals com valor gasto e pesquisa
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
+    const searchInput = document.getElementById(isCampaign ? 'campaignSearch' : 'adSetSearch');
     container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : ''; // Mostra "Buscando..." enquanto carrega
     if (options.length > 0) {
-        options.forEach(option => {
-            const div = document.createElement('div');
-            div.className = `filter-option ${selectedSet.has(option.value) ? 'selected' : ''}`;
-            // Usar o spend diretamente dos insights carregados pela API, garantindo consistência
-            const spend = option.spend !== undefined && option.spend !== null ? parseFloat(option.spend) : 0;
-            const spendColor = spend > 0 ? 'green' : 'gray';
-            div.innerHTML = `${option.label} <span style="margin-left: 10px; color: ${spendColor};">R$ ${spend.toFixed(2).replace('.', ',')}</span>`;
-            div.dataset.value = option.value;
-            div.addEventListener('click', () => {
-                const value = option.value;
-                if (selectedSet.has(value)) {
-                    selectedSet.delete(value);
-                    div.classList.remove('selected');
-                } else {
-                    selectedSet.add(value);
-                    div.classList.add('selected');
-                }
-                // Atualiza o estado do filtro se não houver mais seleções
-                if (selectedSet.size === 0 && isFilterActivated) {
-                    isFilterActivated = false;
-                    if (isCampaign) {
-                        isCampaignFilterActive = false;
-                        filterAdSetsBtn.disabled = false;
-                        filterAdSetsBtn.style.cursor = 'pointer';
+        // Função para filtrar opções com base no texto de pesquisa
+        function filterOptions(searchText) {
+            const filteredOptions = options.filter(option => 
+                option.label.toLowerCase().includes(searchText.toLowerCase())
+            );
+            renderFilteredOptions(filteredOptions, selectedSet, isCampaign);
+        }
+
+        // Função para renderizar as opções filtradas
+        function renderFilteredOptions(filteredOptions, set, isCampaignParam) {
+            container.innerHTML = '';
+            filteredOptions.forEach(option => {
+                const div = document.createElement('div');
+                div.className = `filter-option ${set.has(option.value) ? 'selected' : ''}`;
+                const spend = option.spend !== undefined && option.spend !== null ? parseFloat(option.spend) : 0;
+                const spendColor = spend > 0 ? 'green' : 'gray';
+                div.innerHTML = `${option.label} <span style="margin-left: 10px; color: ${spendColor};">R$ ${spend.toFixed(2).replace('.', ',')}</span>`;
+                div.dataset.value = option.value;
+                div.addEventListener('click', () => {
+                    const value = option.value;
+                    if (set.has(value)) {
+                        set.delete(value);
+                        div.classList.remove('selected');
                     } else {
+                        set.add(value);
+                        div.classList.add('selected');
+                    }
+                    // Atualiza o estado do filtro se não houver mais seleções
+                    if (set.size === 0 && isFilterActivated) {
+                        isFilterActivated = false;
+                        if (isCampaignParam) {
+                            isCampaignFilterActive = false;
+                            filterAdSetsBtn.disabled = false;
+                            filterAdSetsBtn.style.cursor = 'pointer';
+                        } else {
+                            isAdSetFilterActive = false;
+                            filterCampaignsBtn.disabled = false;
+                            filterCampaignsBtn.style.cursor = 'pointer';
+                        }
+                    }
+                    updateFilterButton(); // Atualiza o botão de ativação/desativação após cada clique
+                });
+                container.appendChild(div);
+            });
+
+            // Adiciona botão de "Ativar Seleções/Desativar Seleção" ao final do modal
+            const existingButton = container.querySelector('.btn-filter-toggle');
+            if (existingButton) existingButton.remove(); // Remove o botão antigo para evitar duplicação
+
+            const filterButton = document.createElement('button');
+            filterButton.textContent = isFilterActivated && (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) ? 'Desativar Seleção' : 'Ativar Seleções';
+            filterButton.className = 'btn-filter-toggle';
+            filterButton.disabled = (isCampaignParam ? selectedCampaigns.size === 0 : selectedAdSets.size === 0); // Desativa se não houver seleções
+            filterButton.addEventListener('click', () => {
+                if (isFilterActivated && (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0)) {
+                    // Desativa os filtros
+                    isFilterActivated = false;
+                    if (isCampaignParam) {
+                        selectedCampaigns.clear();
+                        isCampaignFilterActive = false;
+                    } else {
+                        selectedAdSets.clear();
                         isAdSetFilterActive = false;
-                        filterCampaignsBtn.disabled = false;
-                        filterCampaignsBtn.style.cursor = 'pointer';
+                    }
+                    filterCampaignsBtn.disabled = false;
+                    filterAdSetsBtn.disabled = false;
+                    filterCampaignsBtn.style.cursor = 'pointer';
+                    filterAdSetsBtn.style.cursor = 'pointer';
+                } else if (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) {
+                    // Ativa os filtros apenas se houver seleções
+                    isFilterActivated = true;
+                    if (isCampaignParam) {
+                        isCampaignFilterActive = true;
+                        isAdSetFilterActive = false;
+                        filterAdSetsBtn.disabled = true;
+                        filterAdSetsBtn.style.cursor = 'not-allowed';
+                    } else {
+                        isAdSetFilterActive = true;
+                        isCampaignFilterActive = false;
+                        filterCampaignsBtn.disabled = true;
+                        filterCampaignsBtn.style.cursor = 'not-allowed';
                     }
                 }
-                updateFilterButton(); // Atualiza o botão de ativação/desativação após cada clique
+                renderFilteredOptions(filteredOptions, set, isCampaignParam); // Re-renderiza para atualizar o botão
+                updateFilterButton(); // Garante que o estado do botão seja atualizado
             });
-            container.appendChild(div);
-        });
+            container.appendChild(filterButton);
+        }
 
-        // Adiciona botão de "Ativar Seleções/Desativar Seleção" ao final do modal
-        const existingButton = container.querySelector('.btn-filter-toggle');
-        if (existingButton) existingButton.remove(); // Remove o botão antigo para evitar duplicação
+        // Renderiza todas as opções inicialmente
+        renderFilteredOptions(options, selectedSet, isCampaign);
 
-        const filterButton = document.createElement('button');
-        filterButton.textContent = isFilterActivated && (isCampaign ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) ? 'Desativar Seleção' : 'Ativar Seleções';
-        filterButton.className = 'btn-filter-toggle';
-        filterButton.disabled = (isCampaign ? selectedCampaigns.size === 0 : selectedAdSets.size === 0); // Desativa se não houver seleções
-        filterButton.addEventListener('click', () => {
-            if (isFilterActivated && (isCampaign ? selectedCampaigns.size > 0 : selectedAdSets.size > 0)) {
-                // Desativa os filtros
-                isFilterActivated = false;
-                if (isCampaign) {
-                    selectedCampaigns.clear();
-                    isCampaignFilterActive = false;
-                } else {
-                    selectedAdSets.clear();
-                    isAdSetFilterActive = false;
-                }
-                filterCampaignsBtn.disabled = false;
-                filterAdSetsBtn.disabled = false;
-                filterCampaignsBtn.style.cursor = 'pointer';
-                filterAdSetsBtn.style.cursor = 'pointer';
-            } else if (isCampaign ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) {
-                // Ativa os filtros apenas se houver seleções
-                isFilterActivated = true;
-                if (isCampaign) {
-                    isCampaignFilterActive = true;
-                    isAdSetFilterActive = false;
-                    filterAdSetsBtn.disabled = true;
-                    filterAdSetsBtn.style.cursor = 'not-allowed';
-                } else {
-                    isAdSetFilterActive = true;
-                    isCampaignFilterActive = false;
-                    filterCampaignsBtn.disabled = true;
-                    filterCampaignsBtn.style.cursor = 'not-allowed';
-                }
-            }
-            renderOptions(containerId, options, selectedSet, isCampaign); // Re-renderiza para atualizar o botão
-            updateFilterButton(); // Garante que o estado do botão seja atualizado
-        });
-        container.appendChild(filterButton);
+        // Adiciona evento de pesquisa
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                filterOptions(e.target.value);
+            });
+        }
     }
 }
 
@@ -293,7 +315,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     );
 }
 
-// Função para carregar ad sets, corrigindo o spend para usar o valor real da API
+// Função para carregar ad sets
 async function loadAdSets(unitId, startDate, endDate) {
     FB.api(
         `/${unitId}/adsets`,

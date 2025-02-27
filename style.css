@@ -306,6 +306,17 @@ body {
     text-align: center;
 }
 
+#mainContent .search-bar {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #fff;
+    color: #333;
+}
+
 #mainContent #campaignsList, #mainContent #adSetsList {
     margin: 10px 0;
     max-height: 50vh;
