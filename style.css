@@ -19,6 +19,14 @@ body {
     background-color: transparent; /* Remove o overlay semi-transparente para maior clareza */
 }
 
+/* Estilo específico para o Relatório Completo */
+.full-report-container {
+    background: linear-gradient(135deg, #d1e8ff, #a3cfff); /* Fundo diferente, mais escuro que o simplificado */
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2); /* Sombra mais pronunciada */
+}
+
 .login-box, .container {
     background-color: #fff;
     padding: 40px; /* Aumenta o padding interno para maior espaço */
@@ -55,10 +63,10 @@ body {
     color: #333;
 }
 
-.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button {
+.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle {
     width: 100%;
     padding: 12px;
-    background-color: #4CAF50; /* Ajusta o botão "Gerar Relatório" para o mesmo verde dos outros botões */
+    background-color: #4CAF50;
     color: white;
     border: none;
     border-radius: 8px; /* Bordas mais arredondadas para botões */
@@ -68,7 +76,7 @@ body {
     transition: background-color 0.3s ease;
 }
 
-.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover, #form button:hover {
+.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover {
     background-color: #45a049;
 }
 
@@ -92,19 +100,19 @@ body {
     height: 20px;
 }
 
-#form {
+#form, #fullReportForm {
     display: flex;
     flex-direction: column;
     gap: 20px; /* Aumenta o espaçamento entre os elementos do formulário */
 }
 
-#form label {
+#form label, #fullReportForm label {
     font-weight: bold;
     color: #333;
     font-size: 16px; /* Fonte maior para labels no formulário */
 }
 
-#form select, #form input[type="date"] {
+#form select, #form input[type="date"], #fullReportForm select, #fullReportForm input[type="date"] {
     width: 100%;
     padding: 12px;
     border: 1px solid #ccc;
@@ -143,12 +151,12 @@ body {
         padding: 20px; /* Reduz o padding em telas menores para melhor adaptação */
     }
 
-    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button {
+    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle {
         padding: 10px;
         font-size: 14px; /* Reduz o tamanho da fonte dos botões em telas menores */
     }
 
-    #form select, #form input[type="date"], .login-box input {
+    #form select, #form input[type="date"], .login-box input, #fullReportForm select, #fullReportForm input[type="date"] {
         padding: 10px;
         font-size: 14px; /* Reduz o tamanho da fonte dos inputs em telas menores */
     }
@@ -158,8 +166,8 @@ body {
     }
 }
 
-/* Novos estilos específicos para a tela de relatório (#mainContent) */
-#mainContent .modal {
+/* Estilos para modals */
+.modal {
     display: none;
     position: fixed;
     top: 0;
@@ -170,48 +178,51 @@ body {
     z-index: 1000;
 }
 
-#mainContent .modal-content {
+.modal-content {
     background-color: #fff;
-    padding: 40px; /* Aumenta o padding interno dos modais */
-    border-radius: 12px; /* Bordas mais arredondadas para os modais */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     width: 90%;
-    max-width: 800px; /* Aumenta o tamanho máximo dos modais para padrão consistente */
-    max-height: 80vh; /* Limita a altura para evitar overflow excessivo */
+    max-width: 800px;
+    max-height: 80vh;
     overflow-y: auto;
-    margin: 0 auto; /* Centraliza horizontalmente */
-    position: relative; /* Garante posicionamento relativo para centralização */
+    margin: 0 auto;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
-#mainContent .modal-content h2 {
+.modal-content h2 {
     margin-top: 0;
     color: #333;
     text-align: center;
-    font-size: 24px; /* Tamanho de fonte maior para títulos nos modais */
+    font-size: 24px;
 }
 
-#mainContent .search-bar {
+.modal-content .search-bar {
     width: 100%;
     padding: 12px;
-    margin: 15px 0; /* Ajusta o espaçamento da barra de pesquisa */
+    margin: 15px 0;
     border: 1px solid #ccc;
-    border-radius: 8px; /* Bordas mais arredondadas para a barra de pesquisa */
+    border-radius: 8px;
     font-size: 16px;
     background-color: #fff;
     color: #333;
 }
 
-#mainContent #campaignsList, #mainContent #adSetsList {
-    margin: 15px 0; /* Ajusta o espaçamento das listas de opções */
+.modal-content #whiteCampaignsList,
+.modal-content #blackCampaignsList {
+    margin: 15px 0;
     max-height: 50vh;
     overflow-y: auto;
 }
 
-#mainContent .filter-option {
+.filter-option {
     padding: 12px;
-    margin: 8px 0; /* Ajusta o espaçamento entre as opções */
+    margin: 8px 0;
     border: 1px solid #ccc;
-    border-radius: 8px; /* Bordas mais arredondadas para as opções */
+    border-radius: 8px;
     cursor: pointer;
     background-color: #fff;
     transition: background-color 0.3s ease;
@@ -220,17 +231,16 @@ body {
     align-items: center;
 }
 
-#mainContent .filter-option.selected {
+.filter-option.selected {
     background-color: #4CAF50;
     color: white;
 }
 
-#mainContent .filter-option:hover {
+.filter-option:hover {
     background-color: #e0e0e0;
 }
 
-/* Estilo para o texto "Buscando..." */
-#mainContent .modal-content p {
+.modal-content p {
     text-align: center;
     font-size: 16px;
     color: #666;

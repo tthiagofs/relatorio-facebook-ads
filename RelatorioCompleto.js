@@ -9,9 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const backToSelectionBtn = document.getElementById('backToSelectionBtn');
     const fullReportForm = document.getElementById('fullReportForm');
     const loginBtn = document.getElementById('loginBtn');
-    const selectReportTypeBtn = document.getElementById('selectReportTypeBtn');
-    const reportTypeModal = document.getElementById('reportTypeModal');
-    const closeReportTypeModalBtn = document.getElementById('closeReportTypeModal');
+    const reportTypeSelect = document.getElementById('reportType');
     const whiteCampaignLabel = document.getElementById('whiteCampaignLabel');
     const filterWhiteCampaignsBtn = document.getElementById('filterWhiteCampaigns');
     const blackCampaignLabel = document.getElementById('blackCampaignLabel');
@@ -30,9 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         !backToSelectionBtn ||
         !fullReportForm ||
         !loginBtn ||
-        !selectReportTypeBtn ||
-        !reportTypeModal ||
-        !closeReportTypeModalBtn ||
+        !reportTypeSelect ||
         !whiteCampaignLabel ||
         !filterWhiteCampaignsBtn ||
         !blackCampaignLabel ||
@@ -50,9 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             backToSelectionBtn: !!backToSelectionBtn,
             fullReportForm: !!fullReportForm,
             loginBtn: !!loginBtn,
-            selectReportTypeBtn: !!selectReportTypeBtn,
-            reportTypeModal: !!reportTypeModal,
-            closeReportTypeModalBtn: !!closeReportTypeModalBtn,
+            reportTypeSelect: !!reportTypeSelect,
             whiteCampaignLabel: !!whiteCampaignLabel,
             filterWhiteCampaignsBtn: !!filterWhiteCampaignsBtn,
             blackCampaignLabel: !!blackCampaignLabel,
@@ -70,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const campaignsMap = {}; // Mapa para armazenar IDs, nomes e insights das campanhas
     let selectedWhiteCampaigns = new Set(); // Conjunto para armazenar campanhas White selecionadas
     let selectedBlackCampaigns = new Set(); // Conjunto para armazenar campanhas Black selecionadas
-    let selectedReportType = null; // Tipo de relatório selecionado ("white", "black", ou "whiteAndBlack")
     let isWhiteCampaignFilterActive = false;
     let isBlackCampaignFilterActive = false;
     let isFilterActivated = false;
@@ -245,51 +238,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Função para renderizar opções do tipo de relatório
-    function renderReportTypeOptions() {
-        const container = document.getElementById('reportTypeOptions');
-        const options = [
-            { value: 'white', label: 'White' },
-            { value: 'black', label: 'Black' },
-            { value: 'whiteAndBlack', label: 'White e Black' }
-        ];
-
-        container.innerHTML = '';
-        options.forEach(option => {
-            const div = document.createElement('div');
-            div.className = `filter-option ${selectedReportType === option.value ? 'selected' : ''}`;
-            div.innerHTML = option.label;
-            div.dataset.value = option.value;
-            div.addEventListener('click', () => {
-                // Desmarca a opção anterior e marca a nova
-                selectedReportType = option.value;
-                const allOptions = container.querySelectorAll('.filter-option');
-                allOptions.forEach(opt => opt.classList.remove('selected'));
-                div.classList.add('selected');
-                updateCampaignSelectionVisibility();
-            });
-            container.appendChild(div);
-        });
-    }
-
     // Função para atualizar a visibilidade dos botões de seleção de campanhas
     function updateCampaignSelectionVisibility() {
-        if (!selectedReportType) {
+        const reportType = reportTypeSelect.value;
+        if (!reportType) {
             whiteCampaignLabel.style.display = 'none';
             filterWhiteCampaignsBtn.style.display = 'none';
             blackCampaignLabel.style.display = 'none';
             filterBlackCampaignsBtn.style.display = 'none';
-        } else if (selectedReportType === 'white') {
+        } else if (reportType === 'white') {
             whiteCampaignLabel.style.display = 'block';
             filterWhiteCampaignsBtn.style.display = 'block';
             blackCampaignLabel.style.display = 'none';
             filterBlackCampaignsBtn.style.display = 'none';
-        } else if (selectedReportType === 'black') {
+        } else if (reportType === 'black') {
             whiteCampaignLabel.style.display = 'none';
             filterWhiteCampaignsBtn.style.display = 'none';
             blackCampaignLabel.style.display = 'block';
             filterBlackCampaignsBtn.style.display = 'block';
-        } else if (selectedReportType === 'whiteAndBlack') {
+        } else if (reportType === 'whiteAndBlack') {
             whiteCampaignLabel.style.display = 'block';
             filterWhiteCampaignsBtn.style.display = 'block';
             blackCampaignLabel.style.display = 'block';
@@ -412,17 +379,9 @@ document.addEventListener('DOMContentLoaded', () => {
             filterBlackCampaignsBtn.style.cursor = 'pointer';
             await loadCampaigns(unitId, startDate, endDate);
         }
-    });
 
-    // Evento para abrir o modal de seleção do tipo de relatório
-    selectReportTypeBtn.addEventListener('click', () => {
-        reportTypeModal.style.display = 'block';
-        renderReportTypeOptions();
-    });
-
-    // Evento para fechar o modal de tipo de relatório
-    closeReportTypeModalBtn.addEventListener('click', () => {
-        reportTypeModal.style.display = 'none';
+        // Atualiza a visibilidade dos botões de seleção com base no tipo de relatório
+        updateCampaignSelectionVisibility();
     });
 
     // Configurar eventos para os botões de filtro de campanhas
@@ -454,11 +413,8 @@ document.addEventListener('DOMContentLoaded', () => {
     fullReportForm.addEventListener('submit', (e) => {
         e.preventDefault();
         console.log('Formulário do Relatório Completo submetido');
-        if (!selectedReportType) {
-            alert('Por favor, selecione o tipo de relatório.');
-            return;
-        }
-        console.log('Tipo de relatório selecionado:', selectedReportType);
+        const reportType = reportTypeSelect.value;
+        console.log('Tipo de relatório selecionado:', reportType);
         console.log('Campanhas White selecionadas:', Array.from(selectedWhiteCampaigns));
         console.log('Campanhas Black selecionadas:', Array.from(selectedBlackCampaigns));
         // A lógica de geração do relatório será implementada na próxima etapa

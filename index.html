@@ -95,7 +95,7 @@
     </div>
 
     <!-- Tela de Geração do Relatório Completo (Formulário do Relatório Completo) -->
-    <div id="fullReportScreen" class="container" style="display: none;">
+    <div id="fullReportScreen" class="container full-report-container" style="display: none;">
         <h1>Relatório Completo - Facebook Ads</h1>
         <form id="fullReportForm">
             <label for="fullUnitId">Selecione a Unidade:</label>
@@ -106,17 +106,15 @@
             <input type="date" id="fullStartDate" required>
             <label for="fullEndDate">Data Fim:</label>
             <input type="date" id="fullEndDate" required>
-            <label>Tipo de Relatório:</label>
-            <button type="button" id="selectReportTypeBtn" class="btn-primary">Selecionar Tipo de Relatório</button>
-            <div id="reportTypeModal" class="modal" style="display: none;">
-                <div class="modal-content">
-                    <h2>Tipo de Relatório</h2>
-                    <div id="reportTypeOptions"></div>
-                    <button type="button" id="closeReportTypeModal" class="btn-primary">Fechar</button>
-                </div>
-            </div>
+            <label for="reportType">Tipo de Relatório:</label>
+            <select id="reportType" required>
+                <option value="">Selecione o tipo de relatório</option>
+                <option value="white">Apenas White</option>
+                <option value="black">Apenas Black</option>
+                <option value="whiteAndBlack">White e Black</option>
+            </select>
             <label style="font-weight: bold;" id="whiteCampaignLabel" style="display: none;">Campanha White:</label>
-            <button type="button" id="filterWhiteCampaigns" class="btn-primary" style="display: none;">Selecionar Campanhas White</button>
+            <button type="button" id="filterWhiteCampaigns" class="btn-primary" style="display: none;">Selecionar Campanhas/Conjuntos para White</button>
             <div id="whiteCampaignsModal" class="modal" style="display: none;">
                 <div class="modal-content">
                     <h2>Selecione as Campanhas ou Conjuntos para o Relatório White</h2>
@@ -126,7 +124,7 @@
                 </div>
             </div>
             <label style="font-weight: bold;" id="blackCampaignLabel" style="display: none;">Campanha Black:</label>
-            <button type="button" id="filterBlackCampaigns" class="btn-primary" style="display: none;">Selecionar Campanhas Black</button>
+            <button type="button" id="filterBlackCampaigns" class="btn-primary" style="display: none;">Selecionar Campanhas/Conjuntos para Black</button>
             <div id="blackCampaignsModal" class="modal" style="display: none;">
                 <div class="modal-content">
                     <h2>Selecione as Campanhas ou Conjuntos para o Relatório Black</h2>
