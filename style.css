@@ -61,8 +61,23 @@ body {
     margin-top: 15px;
 }
 
+/* Estilo específico para o botão "Gerar Relatório" no Relatório Completo */
+.full-report-container #fullReportForm button[type="submit"] {
+    background-color: #4CAF50; /* Mesmo verde dos outros botões */
+    border-radius: 8px; /* Mesmo border-radius */
+    padding: 12px; /* Mesmo padding */
+    font-size: 16px; /* Mesmo tamanho de fonte */
+    font-weight: normal; /* Remove o peso bold para consistência */
+    margin: 10px 0; /* Mesmo margin */
+}
+
 .full-report-container button.btn-primary:hover {
     background-color: #d35400; /* Laranja mais escuro no hover */
+}
+
+/* Estilo específico para o botão "Gerar Relatório" no Relatório Completo no hover */
+.full-report-container #fullReportForm button[type="submit"]:hover {
+    background-color: #45a049; /* Mesmo verde mais escuro no hover */
 }
 
 .login-box, .container:not(.full-report-container) {
@@ -101,10 +116,11 @@ body {
     color: #333;
 }
 
-.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #fullReportForm button[type="submit"] {
+/* Estilo para todos os botões, incluindo Gerar Relatório no Simplificado */
+.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button[type="submit"], #fullReportForm button[type="submit"] {
     width: 100%;
     padding: 12px;
-    background-color: #4CAF50; /* Cor verde para todos os botões, incluindo Gerar Relatório */
+    background-color: #4CAF50; /* Cor verde para todos os botões */
     color: white;
     border: none;
     border-radius: 8px;
@@ -114,7 +130,8 @@ body {
     transition: background-color 0.3s ease;
 }
 
-.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover, #fullReportForm button[type="submit"]:hover {
+/* Hover para todos os botões */
+.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover, #form button[type="submit"]:hover, #fullReportForm button[type="submit"]:hover {
     background-color: #45a049;
 }
 
@@ -194,7 +211,7 @@ body {
         max-width: 90%;
     }
 
-    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #fullReportForm button[type="submit"] {
+    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button[type="submit"], #fullReportForm button[type="submit"] {
         padding: 10px;
         font-size: 14px;
     }
