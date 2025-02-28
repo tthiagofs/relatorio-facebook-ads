@@ -106,21 +106,30 @@
             <input type="date" id="fullStartDate" required>
             <label for="fullEndDate">Data Fim:</label>
             <input type="date" id="fullEndDate" required>
-            <label style="font-weight: bold;">Campanha White:</label>
-            <button type="button" id="filterWhiteCampaigns" class="btn-primary">Selecionar Campanhas White</button>
+            <label>Tipo de Relatório:</label>
+            <button type="button" id="selectReportTypeBtn" class="btn-primary">Selecionar Tipo de Relatório</button>
+            <div id="reportTypeModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <h2>Tipo de Relatório</h2>
+                    <div id="reportTypeOptions"></div>
+                    <button type="button" id="closeReportTypeModal" class="btn-primary">Fechar</button>
+                </div>
+            </div>
+            <label style="font-weight: bold;" id="whiteCampaignLabel" style="display: none;">Campanha White:</label>
+            <button type="button" id="filterWhiteCampaigns" class="btn-primary" style="display: none;">Selecionar Campanhas White</button>
             <div id="whiteCampaignsModal" class="modal" style="display: none;">
                 <div class="modal-content">
-                    <h2>Selecione as Campanhas White</h2>
+                    <h2>Selecione as Campanhas ou Conjuntos para o Relatório White</h2>
                     <input type="text" id="whiteCampaignSearch" class="search-bar" placeholder="Pesquisar campanhas...">
                     <div id="whiteCampaignsList"></div>
                     <button type="button" id="closeWhiteCampaignsModal" class="btn-primary">Fechar</button>
                 </div>
             </div>
-            <label style="font-weight: bold;">Campanha Black:</label>
-            <button type="button" id="filterBlackCampaigns" class="btn-primary">Selecionar Campanhas Black</button>
+            <label style="font-weight: bold;" id="blackCampaignLabel" style="display: none;">Campanha Black:</label>
+            <button type="button" id="filterBlackCampaigns" class="btn-primary" style="display: none;">Selecionar Campanhas Black</button>
             <div id="blackCampaignsModal" class="modal" style="display: none;">
                 <div class="modal-content">
-                    <h2>Selecione as Campanhas Black</h2>
+                    <h2>Selecione as Campanhas ou Conjuntos para o Relatório Black</h2>
                     <input type="text" id="blackCampaignSearch" class="search-bar" placeholder="Pesquisar campanhas...">
                     <div id="blackCampaignsList"></div>
                     <button type="button" id="closeBlackCampaignsModal" class="btn-primary">Fechar</button>
