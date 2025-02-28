@@ -335,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.addEventListener('click', () => {
         FB.login(function(response) {
             if (response.authResponse) {
+                console.log('Login com Facebook bem-sucedido:', response.authResponse);
                 showScreen(fullReportScreen);
                 FB.api('/me/adaccounts', { fields: 'id,name' }, function(accountResponse) {
                     if (accountResponse && !accountResponse.error) {
@@ -366,7 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             } else {
-                document.getElementById('loginError').textContent = 'Login cancelado ou falhou.';
+                console.error('Falha no login com Facebook:', response);
+                document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente.';
                 document.getElementById('loginError').style.display = 'block';
             }
         }, {scope: 'ads_read'});
