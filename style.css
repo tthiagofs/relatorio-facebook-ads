@@ -21,62 +21,100 @@ body {
 
 /* Estilo específico para o Relatório Completo */
 .full-report-container {
-    background: linear-gradient(135deg, #d1e8ff, #a3cfff); /* Fundo diferente, mais escuro que o simplificado */
-    border-radius: 16px;
-    padding: 40px;
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2); /* Sombra mais pronunciada */
+    background: linear-gradient(135deg, #6a85b6, #bac8e0); /* Fundo gradiente mais escuro e diferente */
+    border-radius: 20px; /* Bordas ainda mais arredondadas */
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3); /* Sombra mais intensa */
+    padding: 50px; /* Mais padding para destacar */
+    max-width: 900px; /* Um pouco mais largo que o simplificado */
 }
 
-.login-box, .container {
+.full-report-container h1 {
+    color: #2c3e50; /* Cor mais escura para o título */
+    font-size: 28px; /* Título maior */
+    margin-bottom: 40px; /* Mais espaço abaixo do título */
+    border-bottom: 2px solid #2c3e50; /* Linha abaixo do título */
+    padding-bottom: 10px;
+}
+
+.full-report-container label {
+    color: #34495e; /* Cor diferente para os labels */
+    font-size: 18px; /* Labels maiores */
+    margin-bottom: 15px;
+}
+
+.full-report-container input,
+.full-report-container select {
+    background-color: #f5f7fa; /* Fundo mais claro para inputs */
+    border: 2px solid #34495e; /* Borda mais escura */
+    border-radius: 10px;
+    padding: 15px; /* Mais padding nos inputs */
+    font-size: 16px;
+    color: #2c3e50;
+}
+
+.full-report-container button.btn-primary {
+    background-color: #e67e22; /* Cor laranja para botões, diferente do simplificado */
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+.full-report-container button.btn-primary:hover {
+    background-color: #d35400; /* Laranja mais escuro no hover */
+}
+
+.login-box, .container:not(.full-report-container) {
     background-color: #fff;
-    padding: 40px; /* Aumenta o padding interno para maior espaço */
-    border-radius: 12px; /* Bordas mais arredondadas para um visual moderno */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 800px; /* Aumenta o tamanho máximo da caixa para um padrão consistente e maior */
+    max-width: 800px;
     text-align: center;
-    margin: 0 auto; /* Garante centralização horizontal */
+    margin: 0 auto;
 }
 
-.login-box h1, .container h1 {
-    margin-bottom: 30px; /* Aumenta o espaçamento abaixo do título */
+.login-box h1, .container:not(.full-report-container) h1 {
+    margin-bottom: 30px;
     color: #333;
-    font-size: 24px; /* Tamanho de fonte maior para títulos */
+    font-size: 24px;
 }
 
-.login-box label {
+.login-box label, .container:not(.full-report-container) label {
     display: block;
     text-align: left;
-    margin-bottom: 10px; /* Ajusta o espaçamento entre labels e inputs */
+    margin-bottom: 10px;
     color: #333;
-    font-size: 16px; /* Fonte maior para labels */
+    font-size: 16px;
 }
 
-.login-box input {
+.login-box input, .container:not(.full-report-container) input {
     width: 100%;
     padding: 12px;
-    margin-bottom: 20px; /* Aumenta o espaçamento entre inputs */
+    margin-bottom: 20px;
     border: 1px solid #ccc;
-    border-radius: 8px; /* Bordas mais arredondadas para inputs */
+    border-radius: 8px;
     font-size: 16px;
     background-color: #fff;
     color: #333;
 }
 
-.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle {
+.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #fullReportForm button[type="submit"] {
     width: 100%;
     padding: 12px;
-    background-color: #4CAF50;
+    background-color: #4CAF50; /* Cor verde para todos os botões, incluindo Gerar Relatório */
     color: white;
     border: none;
-    border-radius: 8px; /* Bordas mais arredondadas para botões */
+    border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
-    margin: 10px 0; /* Ajusta o espaçamento entre botões */
+    margin: 10px 0;
     transition: background-color 0.3s ease;
 }
 
-.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover {
+.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover, #fullReportForm button[type="submit"]:hover {
     background-color: #45a049;
 }
 
@@ -87,7 +125,7 @@ body {
 }
 
 .error-message {
-    color: #ff0000; /* Vermelho mais vivo para mensagens de erro */
+    color: #ff0000;
     margin-top: 15px;
     display: none;
 }
@@ -103,20 +141,20 @@ body {
 #form, #fullReportForm {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Aumenta o espaçamento entre os elementos do formulário */
+    gap: 20px;
 }
 
 #form label, #fullReportForm label {
     font-weight: bold;
     color: #333;
-    font-size: 16px; /* Fonte maior para labels no formulário */
+    font-size: 16px;
 }
 
 #form select, #form input[type="date"], #fullReportForm select, #fullReportForm input[type="date"] {
     width: 100%;
     padding: 12px;
     border: 1px solid #ccc;
-    border-radius: 8px; /* Bordas mais arredondadas para selects e dates */
+    border-radius: 8px;
     font-size: 16px;
     background-color: #fff;
     color: #333;
@@ -125,16 +163,16 @@ body {
 .report-container {
     margin-top: 20px;
     background-color: #f9f9f9;
-    padding: 30px; /* Aumenta o padding interno do relatório */
-    border-radius: 12px; /* Bordas mais arredondadas para o relatório */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     width: 100%;
 }
 
 .report-container p {
     color: #555;
-    font-size: 16px; /* Mantém o tamanho da fonte para legibilidade */
-    margin: 15px 0; /* Ajusta o espaçamento entre linhas do relatório */
+    font-size: 16px;
+    margin: 15px 0;
 }
 
 #shareWhatsAppBtn::before {
@@ -146,23 +184,28 @@ body {
 }
 
 @media (max-width: 480px) {
-    .login-box, .container {
+    .login-box, .container:not(.full-report-container) {
         max-width: 90%;
-        padding: 20px; /* Reduz o padding em telas menores para melhor adaptação */
+        padding: 20px;
     }
 
-    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle {
+    .full-report-container {
+        padding: 30px;
+        max-width: 90%;
+    }
+
+    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #fullReportForm button[type="submit"] {
         padding: 10px;
-        font-size: 14px; /* Reduz o tamanho da fonte dos botões em telas menores */
+        font-size: 14px;
     }
 
     #form select, #form input[type="date"], .login-box input, #fullReportForm select, #fullReportForm input[type="date"] {
         padding: 10px;
-        font-size: 14px; /* Reduz o tamanho da fonte dos inputs em telas menores */
+        font-size: 14px;
     }
 
     .report-container {
-        padding: 20px; /* Reduz o padding do relatório em telas menores */
+        padding: 20px;
     }
 }
 
