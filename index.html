@@ -97,22 +97,35 @@
     <!-- Tela de Geração do Relatório Completo (Formulário do Relatório Completo) -->
     <div id="fullReportScreen" class="container full-report-container" style="display: none;">
         <h1>Relatório Completo - Facebook Ads</h1>
+        <p class="full-report-info">Este é o Relatório Completo, com análise detalhada de campanhas White e Black.</p>
         <form id="fullReportForm">
-            <label for="fullUnitId">Selecione a Unidade:</label>
-            <select id="fullUnitId" required>
-                <option value="">Escolha a unidade</option>
-            </select>
-            <label for="fullStartDate">Data Início:</label>
-            <input type="date" id="fullStartDate" required>
-            <label for="fullEndDate">Data Fim:</label>
-            <input type="date" id="fullEndDate" required>
-            <label for="reportType">Tipo de Relatório:</label>
-            <select id="reportType" required>
-                <option value="">Selecione o tipo de relatório</option>
-                <option value="white">Apenas White</option>
-                <option value="black">Apenas Black</option>
-                <option value="whiteAndBlack">White e Black</option>
-            </select>
+            <div class="form-row">
+                <div class="form-column">
+                    <label for="fullUnitId">Unidade:</label>
+                    <select id="fullUnitId" required>
+                        <option value="">Escolha a unidade</option>
+                    </select>
+                </div>
+                <div class="form-column">
+                    <label for="reportType">Tipo de Relatório:</label>
+                    <select id="reportType" required>
+                        <option value="">Selecione o tipo de relatório</option>
+                        <option value="white">Apenas White</option>
+                        <option value="black">Apenas Black</option>
+                        <option value="whiteAndBlack">White e Black</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-column">
+                    <label for="fullStartDate">Data Início:</label>
+                    <input type="date" id="fullStartDate" required>
+                </div>
+                <div class="form-column">
+                    <label for="fullEndDate">Data Fim:</label>
+                    <input type="date" id="fullEndDate" required>
+                </div>
+            </div>
             <label style="font-weight: bold;" id="whiteCampaignLabel" style="display: none;">Campanha White:</label>
             <button type="button" id="filterWhiteCampaigns" class="btn-primary" style="display: none;">Selecionar Campanhas/Conjuntos para White</button>
             <div id="whiteCampaignsModal" class="modal" style="display: none;">

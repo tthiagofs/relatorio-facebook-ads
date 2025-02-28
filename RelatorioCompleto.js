@@ -1,6 +1,8 @@
 // RelatorioCompleto.js - Módulo para o Relatório Completo
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('RelatorioCompleto.js carregado com sucesso - Versão Atualizada (28/02/2025)'); // Log para confirmar que a versão atualizada está sendo executada
+
     // Elementos DOM
     const reportSelectionScreen = document.getElementById('reportSelectionScreen');
     const loginScreen = document.getElementById('loginScreen');
@@ -321,13 +323,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Evento para o botão "Relatório Completo"
     fullReportBtn.addEventListener('click', () => {
-        console.log('Botão Relatório Completo clicado');
+        console.log('Botão Relatório Completo clicado - Versão Atualizada (28/02/2025)');
         showScreen(loginScreen);
     });
 
     // Evento para o botão "Voltar ao Início"
     backToSelectionBtn.addEventListener('click', () => {
-        console.log('Botão Voltar ao Início clicado');
+        console.log('Botão Voltar ao Início clicado - Versão Atualizada (28/02/2025)');
         showScreen(reportSelectionScreen);
     });
 
@@ -335,11 +337,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.addEventListener('click', () => {
         FB.login(function(response) {
             if (response.authResponse) {
-                console.log('Login com Facebook bem-sucedido:', response.authResponse);
+                console.log('Login com Facebook bem-sucedido - Versão Atualizada (28/02/2025):', response.authResponse);
                 showScreen(fullReportScreen);
                 FB.api('/me/adaccounts', { fields: 'id,name' }, function(accountResponse) {
                     if (accountResponse && !accountResponse.error) {
-                        console.log('Resposta da API /me/adaccounts:', accountResponse); // Log para depuração
+                        console.log('Resposta da API /me/adaccounts - Versão Atualizada (28/02/2025):', accountResponse);
                         const unitSelect = document.getElementById('fullUnitId');
                         unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
                         const accounts = accountResponse.data || [];

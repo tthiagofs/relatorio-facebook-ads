@@ -31,9 +31,16 @@ body {
 .full-report-container h1 {
     color: #2c3e50; /* Cor mais escura para o título */
     font-size: 28px; /* Título maior */
-    margin-bottom: 40px; /* Mais espaço abaixo do título */
+    margin-bottom: 20px; /* Espaço abaixo do título reduzido para caber a mensagem */
     border-bottom: 2px solid #2c3e50; /* Linha abaixo do título */
     padding-bottom: 10px;
+}
+
+.full-report-container .full-report-info {
+    color: #34495e;
+    font-size: 16px;
+    margin-bottom: 30px;
+    font-style: italic;
 }
 
 .full-report-container label {
@@ -75,7 +82,6 @@ body {
     background-color: #d35400; /* Laranja mais escuro no hover */
 }
 
-/* Estilo específico para o botão "Gerar Relatório" no Relatório Completo no hover */
 .full-report-container #fullReportForm button[type="submit"]:hover {
     background-color: #45a049; /* Mesmo verde mais escuro no hover */
 }
@@ -161,6 +167,18 @@ body {
     gap: 20px;
 }
 
+/* Estilo para layout em duas colunas no Relatório Completo */
+.full-report-container .form-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.full-report-container .form-column {
+    flex: 1;
+    min-width: 300px;
+}
+
 #form label, #fullReportForm label {
     font-weight: bold;
     color: #333;
@@ -209,6 +227,10 @@ body {
     .full-report-container {
         padding: 30px;
         max-width: 90%;
+    }
+
+    .full-report-container .form-column {
+        min-width: 100%;
     }
 
     .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button[type="submit"], #fullReportForm button[type="submit"] {
