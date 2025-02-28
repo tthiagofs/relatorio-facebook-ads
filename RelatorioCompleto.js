@@ -338,18 +338,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 showScreen(fullReportScreen);
                 FB.api('/me/adaccounts', { fields: 'id,name' }, function(accountResponse) {
                     if (accountResponse && !accountResponse.error) {
+                        console.log('Resposta da API /me/adaccounts:', accountResponse); // Log para depuração
                         const unitSelect = document.getElementById('fullUnitId');
                         unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-                        accountResponse.data.forEach(account => {
+                        const accounts = accountResponse.data || [];
+                        accounts.forEach(account => {
                             adAccountsMap[account.id] = account.name;
                             const option = document.createElement('option');
                             option.value = account.id;
                             option.textContent = account.name;
                             unitSelect.appendChild(option);
+                            // Verifica se a conta específica está presente
+                            if (account.id === '1187332129240271') {
+                                console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada:', account);
+                            }
                         });
+                        // Verifica se a conta foi encontrada
+                        if (!accounts.some(account => account.id === '1187332129240271')) {
+                            console.warn('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas NÃO encontrada na lista de contas retornada pela API.');
+                            document.getElementById('loginError').textContent = 'A conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas não foi encontrada. Verifique suas permissões.';
+                            document.getElementById('loginError').style.display = 'block';
+                        }
                     } else {
                         console.error('Erro ao carregar contas:', accountResponse.error);
-                        document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios.';
+                        document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios: ' + (accountResponse.error.message || 'Erro desconhecido');
                         document.getElementById('loginError').style.display = 'block';
                     }
                 });
