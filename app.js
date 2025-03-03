@@ -37,6 +37,7 @@ function showScreen(screen) {
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
+    // Permite abrir o modal para desativar, mesmo com filtros ativados, se houver seleções ativas
     if (show && isFilterActivated && ((isCampaign && selectedCampaigns.size === 0) || (!isCampaign && selectedAdSets.size === 0))) {
         return; // Impede abrir o modal se os filtros já estiverem ativados sem seleções
     }
@@ -46,38 +47,40 @@ function toggleModal(modal, show, isCampaign) {
         if (isCampaign) {
             isCampaignFilterActive = true;
             isAdSetFilterActive = false;
-            filterAdSetsBtn.disabled = isFilterActivated;
+            filterAdSetsBtn.disabled = isFilterActivated; // Desativa o botão de conjuntos se filtros ativados
             filterAdSetsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
-            filterCampaignsBtn.disabled = isFilterActivated;
+            filterCampaignsBtn.disabled = isFilterActivated; // Desativa o botão de campanhas se filtros ativados
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
+            // Verifica se os filtros devem ser desativados ao fechar o modal sem seleções
             if (isFilterActivated && selectedCampaigns.size === 0) {
                 isFilterActivated = false;
                 filterAdSetsBtn.disabled = false;
                 filterAdSetsBtn.style.cursor = 'pointer';
             } else {
-                filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0;
+                filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0; // Mantém desativado se filtros ativos com seleções
                 filterAdSetsBtn.style.cursor = isFilterActivated && selectedCampaigns.size > 0 ? 'not-allowed' : 'pointer';
             }
         } else {
             isAdSetFilterActive = false;
+            // Verifica se os filtros devem ser desativados ao fechar o modal sem seleções
             if (isFilterActivated && selectedAdSets.size === 0) {
                 isFilterActivated = false;
                 filterCampaignsBtn.disabled = false;
                 filterCampaignsBtn.style.cursor = 'pointer';
             } else {
-                filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0;
+                filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0; // Mantém desativado se filtros ativos com seleções
                 filterCampaignsBtn.style.cursor = isFilterActivated && selectedAdSets.size > 0 ? 'not-allowed' : 'pointer';
             }
         }
     }
-    updateFilterButton();
+    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
 }
 
 // Função para atualizar o botão de ativação/desativação
@@ -87,12 +90,13 @@ function updateFilterButton() {
 
     if (campaignsButton) {
         campaignsButton.textContent = isFilterActivated && selectedCampaigns.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
-        campaignsButton.disabled = !isFilterActivated && selectedCampaigns.size === 0;
+        campaignsButton.disabled = !isFilterActivated && selectedCampaigns.size === 0; // Desativa se não houver seleções antes de ativar
     }
     if (adSetsButton) {
         adSetsButton.textContent = isFilterActivated && selectedAdSets.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
-        adSetsButton.disabled = !isFilterActivated && selectedAdSets.size === 0;
+        adSetsButton.disabled = !isFilterActivated && selectedAdSets.size === 0; // Desativa se não houver seleções antes de ativar
     }
+    // Atualiza o estado dos botões de filtro com base nos filtros ativados
     filterCampaignsBtn.disabled = isFilterActivated && (selectedAdSets.size > 0 || (selectedCampaigns.size === 0 && !isCampaignFilterActive));
     filterAdSetsBtn.disabled = isFilterActivated && (selectedCampaigns.size > 0 || (selectedAdSets.size === 0 && !isAdSetFilterActive));
     filterCampaignsBtn.style.cursor = filterCampaignsBtn.disabled ? 'not-allowed' : 'pointer';
@@ -103,8 +107,9 @@ function updateFilterButton() {
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
     const searchInput = document.getElementById(isCampaign ? 'campaignSearch' : 'adSetSearch');
-    container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : '';
+    container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : ''; // Mostra "Buscando..." enquanto carrega
     if (options.length > 0) {
+        // Função para filtrar opções com base no texto de pesquisa
         function filterOptions(searchText) {
             const filteredOptions = options.filter(option => 
                 option.label.toLowerCase().includes(searchText.toLowerCase())
@@ -112,6 +117,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
             renderFilteredOptions(filteredOptions, selectedSet, isCampaign);
         }
 
+        // Função para renderizar as opções filtradas
         function renderFilteredOptions(filteredOptions, set, isCampaignParam) {
             container.innerHTML = '';
             filteredOptions.forEach(option => {
@@ -130,6 +136,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                         set.add(value);
                         div.classList.add('selected');
                     }
+                    // Atualiza o estado do filtro se não houver mais seleções
                     if (set.size === 0 && isFilterActivated) {
                         isFilterActivated = false;
                         if (isCampaignParam) {
@@ -142,20 +149,22 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                             filterCampaignsBtn.style.cursor = 'pointer';
                         }
                     }
-                    updateFilterButton();
+                    updateFilterButton(); // Atualiza o botão de ativação/desativação após cada clique
                 });
                 container.appendChild(div);
             });
 
+            // Adiciona botão de "Ativar Seleções/Desativar Seleção" ao final do modal
             const existingButton = container.querySelector('.btn-filter-toggle');
-            if (existingButton) existingButton.remove();
+            if (existingButton) existingButton.remove(); // Remove o botão antigo para evitar duplicação
 
             const filterButton = document.createElement('button');
             filterButton.textContent = isFilterActivated && (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) ? 'Desativar Seleção' : 'Ativar Seleções';
             filterButton.className = 'btn-filter-toggle';
-            filterButton.disabled = (isCampaignParam ? selectedCampaigns.size === 0 : selectedAdSets.size === 0);
+            filterButton.disabled = (isCampaignParam ? selectedCampaigns.size === 0 : selectedAdSets.size === 0); // Desativa se não houver seleções
             filterButton.addEventListener('click', () => {
                 if (isFilterActivated && (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0)) {
+                    // Desativa os filtros
                     isFilterActivated = false;
                     if (isCampaignParam) {
                         selectedCampaigns.clear();
@@ -169,6 +178,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                     filterCampaignsBtn.style.cursor = 'pointer';
                     filterAdSetsBtn.style.cursor = 'pointer';
                 } else if (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) {
+                    // Ativa os filtros apenas se houver seleções
                     isFilterActivated = true;
                     if (isCampaignParam) {
                         isCampaignFilterActive = true;
@@ -182,14 +192,16 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                         filterCampaignsBtn.style.cursor = 'not-allowed';
                     }
                 }
-                renderFilteredOptions(filteredOptions, set, isCampaignParam);
-                updateFilterButton();
+                renderFilteredOptions(filteredOptions, set, isCampaignParam); // Re-renderiza para atualizar o botão
+                updateFilterButton(); // Garante que o estado do botão seja atualizado
             });
             container.appendChild(filterButton);
         }
 
+        // Renderiza todas as opções inicialmente
         renderFilteredOptions(options, selectedSet, isCampaign);
 
+        // Adiciona evento de pesquisa
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 filterOptions(e.target.value);
@@ -200,18 +212,18 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
 
 // Login do app
 appLoginForm.addEventListener('submit', (e) => {
-    console.log('Formulário de login submetido');
-    e.preventDefault();
+    console.log('Formulário de login submetido'); // Log para depuração
+    e.preventDefault(); // Impede o comportamento padrão do formulário
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    console.log('Dados do formulário:', { username, password });
+    console.log('Dados do formulário:', { username, password }); // Log para depuração
 
     if (username === '@admin' && password === '134679') {
-        console.log('Login bem-sucedido, alternando para reportSelectionScreen');
+        console.log('Login bem-sucedido, alternando para reportSelectionScreen'); // Log para depuração
         showScreen(reportSelectionScreen);
     } else {
-        console.log('Login falhou: usuário ou senha inválidos');
+        console.log('Login falhou: usuário ou senha inválidos'); // Log para depuração
         appLoginError.textContent = 'Usuário ou senha inválidos.';
         appLoginError.style.display = 'block';
     }
@@ -226,8 +238,8 @@ simpleReportBtn.addEventListener('click', () => {
 
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Outro Contexto) - Versão Atualizada (03/03/2025)');
+    event.preventDefault(); // Impede qualquer comportamento padrão do botão
+    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Outro Contexto) - Versão Atualizada (03/03/2025)'); // Log para confirmar evento
 
     if (typeof FB === 'undefined') {
         console.error('Facebook SDK não está carregado ou inicializado corretamente.');
@@ -240,11 +252,13 @@ loginBtn.addEventListener('click', (event) => {
         return; // Impede a execução se não for o contexto do Relatório Simplificado
     }
 
+    // Adiciona permissões extras, incluindo business_management
     FB.login(function(response) {
         if (response.authResponse) {
             console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
             showScreen(mainContent);
 
+            // Obtém o token de acesso para verificar permissões
             const accessToken = response.authResponse.accessToken;
             console.log('Access Token:', accessToken);
 
@@ -254,9 +268,13 @@ loginBtn.addEventListener('click', (event) => {
                     console.log('Status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse);
                     if (statusResponse.account_status !== 1) {
                         console.warn('A conta CA - Oral Centter Jaíba (ID: 9586847491331372) não está ativa. Status:', statusResponse.account_status);
+                        document.getElementById('loginError').textContent = 'A conta CA - Oral Centter Jaíba (ID: 9586847491331372) não está ativa. Verifique o status no Business Manager.';
+                        document.getElementById('loginError').style.display = 'block';
                     }
                 } else {
                     console.error('Erro ao verificar o status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse.error);
+                    document.getElementById('loginError').textContent = 'Erro ao verificar o status da conta CA - Oral Centter Jaíba: ' + (statusResponse.error.message || 'Erro desconhecido') + '. Verifique se a conta existe e se você tem permissões.';
+                    document.getElementById('loginError').style.display = 'block';
                 }
             });
 
@@ -282,30 +300,51 @@ loginBtn.addEventListener('click', (event) => {
                         if (businessResponse && !businessResponse.error) {
                             console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
                             const businesses = businessResponse.data || [];
-                            let businessAccountsPromises = businesses.map(business => {
-                                return new Promise((resolve) => {
+                            let businessAccountsPromises = [];
+
+                            businesses.forEach(business => {
+                                // Lista contas pertencentes ao Business Manager (owned_ad_accounts)
+                                businessAccountsPromises.push(new Promise((resolve) => {
                                     FB.api(
-                                        `/${business.id}/adaccounts`,
+                                        `/${business.id}/owned_ad_accounts`,
                                         { fields: 'id,name', access_token: accessToken },
-                                        function(businessAccountResponse) {
-                                            if (businessAccountResponse && !businessAccountResponse.error) {
-                                                console.log(`Contas do Business Manager ${business.id} (${business.name}):`, businessAccountResponse);
-                                                const businessAccounts = businessAccountResponse.data || [];
-                                                resolve(businessAccounts);
+                                        function(ownedAccountResponse) {
+                                            if (ownedAccountResponse && !ownedAccountResponse.error) {
+                                                console.log(`Contas próprias do Business Manager ${business.id} (${business.name}):`, ownedAccountResponse);
+                                                const ownedAccounts = ownedAccountResponse.data || [];
+                                                resolve(ownedAccounts);
                                             } else {
-                                                console.error(`Erro ao carregar contas do Business Manager ${business.id}:`, businessAccountResponse.error);
+                                                console.error(`Erro ao carregar contas próprias do Business Manager ${business.id}:`, ownedAccountResponse.error);
                                                 resolve([]);
                                             }
                                         }
                                     );
-                                });
+                                }));
+
+                                // Lista contas compartilhadas com o Business Manager (client_ad_accounts)
+                                businessAccountsPromises.push(new Promise((resolve) => {
+                                    FB.api(
+                                        `/${business.id}/client_ad_accounts`,
+                                        { fields: 'id,name', access_token: accessToken },
+                                        function(clientAccountResponse) {
+                                            if (clientAccountResponse && !clientAccountResponse.error) {
+                                                console.log(`Contas compartilhadas com o Business Manager ${business.id} (${business.name}):`, clientAccountResponse);
+                                                const clientAccounts = clientAccountResponse.data || [];
+                                                resolve(clientAccounts);
+                                            } else {
+                                                console.error(`Erro ao carregar contas compartilhadas do Business Manager ${business.id}:`, clientAccountResponse.error);
+                                                resolve([]);
+                                            }
+                                        }
+                                    );
+                                }));
                             });
 
                             // Aguarda todas as chamadas para Business Managers
                             Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
                                 let allBusinessAccounts = [].concat(...businessAccountsArrays);
                                 allBusinessAccounts.forEach(account => {
-                                    if (!adAccountsMap[account.id]) {
+                                    if (!adAccountsMap[account.id]) { // Evita duplicatas
                                         adAccountsMap[account.id] = account.name;
                                         if (account.id === '1187332129240271') {
                                             console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada (via Business Manager):', account);
@@ -358,10 +397,10 @@ loginBtn.addEventListener('click', (event) => {
             });
         } else {
             console.error('Falha no login com Facebook:', response);
-            document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente.';
+            document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente. Detalhes: ' + (response.error ? response.error.message : 'Erro desconhecido');
             document.getElementById('loginError').style.display = 'block';
         }
-    }, {scope: 'ads_read,ads_management,business_management'});
+    }, {scope: 'ads_read,ads_management,business_management'}); // Adiciona business_management
 });
 
 // Carrega os ad sets e campanhas quando o formulário é preenchido
@@ -431,6 +470,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                 adSetsMap[unitId] = {};
                 const adSetIds = adSetResponse.data.map(set => set.id);
 
+                // Usa getAdSetInsights individualmente para cada ad set, garantindo o valor correto de spend
                 for (const adSetId of adSetIds) {
                     try {
                         const insights = await getAdSetInsights(adSetId, startDate, endDate);
@@ -442,7 +482,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                                 spend = 0;
                             }
                         }
-                        console.log(`Spend inicial para ad set ${adSetId}: ${spend}`);
+                        console.log(`Spend inicial para ad set ${adSetId}: ${spend}`); // Log para depuração
                         if (spend > 0) {
                             const adSet = adSetResponse.data.find(set => set.id === adSetId);
                             adSetsMap[unitId][adSetId] = {
@@ -461,7 +501,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                         .map(id => ({
                             value: id,
                             label: adSetsMap[unitId][id].name,
-                            spend: adSetsMap[unitId][id].insights.spend
+                            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
                         }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
@@ -482,13 +522,13 @@ function updateAdSets(selectedCampaigns) {
         let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
         validAdSetIds = validAdSetIds.filter(id => {
             const adSetData = adSetsMap[unitId][id];
-            return adSetData && adSetData.insights.spend > 0;
+            return adSetData && adSetData.insights.spend > 0; // Filtra apenas ad sets com gastos
         });
 
         const adSetOptions = validAdSetIds.map(id => ({
             value: id,
             label: adSetsMap[unitId][id].name,
-            spend: adSetsMap[unitId][id].insights.spend
+            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
         }));
         renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
     }
@@ -519,6 +559,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
             { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate } },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
+                    // Log para depuração
                     console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
                     resolve(response.data[0]);
                 } else {
@@ -532,13 +573,13 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
 
 // Configurar eventos para os botões de filtro com exclusão mútua simples
 filterCampaignsBtn.addEventListener('click', () => {
-    if (isFilterActivated && selectedAdSets.size > 0) return;
+    if (isFilterActivated && selectedAdSets.size > 0) return; // Impede abrir se há seleções ativas de ad sets
     isCampaignFilterActive = true;
     toggleModal(campaignsModal, true, true);
 });
 
 filterAdSetsBtn.addEventListener('click', () => {
-    if (isFilterActivated && selectedCampaigns.size > 0) return;
+    if (isFilterActivated && selectedCampaigns.size > 0) return; // Impede abrir se há seleções ativas de campanhas
     isAdSetFilterActive = true;
     toggleModal(adSetsModal, true, false);
 });
@@ -546,13 +587,13 @@ filterAdSetsBtn.addEventListener('click', () => {
 closeCampaignsModalBtn.addEventListener('click', () => {
     isCampaignFilterActive = false;
     toggleModal(campaignsModal, false, true);
-    updateFilterButton();
+    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
 });
 
 closeAdSetsModalBtn.addEventListener('click', () => {
     isAdSetFilterActive = false;
     toggleModal(adSetsModal, false, false);
-    updateFilterButton();
+    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
 });
 
 // Geração do relatório com soma consolidada dos itens filtrados ativados
@@ -592,6 +633,7 @@ form.addEventListener('submit', async (e) => {
             for (const adSetId of selectedAdSets) {
                 const insights = await getAdSetInsights(adSetId, startDate, endDate);
                 if (insights && insights.spend) {
+                    // Log para depuração do valor de spend
                     console.log(`Spend para ad set ${adSetId}: ${insights.spend}`);
                     totalSpend += parseFloat(insights.spend) || 0;
                 }
