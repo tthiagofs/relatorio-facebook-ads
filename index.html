@@ -11,9 +11,10 @@
                 appId      : '618519427538646',
                 cookie     : true,
                 xfbml      : true,
-                version    : 'v12.0'
+                version    : 'v19.0' // Atualizado para a versão mais recente em março de 2025
             });
             FB.AppEvents.logPageView();
+            console.log('Facebook SDK inicializado com sucesso - Versão Atualizada (03/03/2025)');
         };
 
         (function(d, s, id){
@@ -21,6 +22,12 @@
             if (d.getElementById(id)) {return;}
             js = d.createElement(s); js.id = id;
             js.src = "https://connect.facebook.net/pt_BR/sdk.js";
+            js.onload = function() {
+                console.log('Facebook SDK carregado com sucesso - Versão Atualizada (03/03/2025)');
+            };
+            js.onerror = function() {
+                console.error('Erro ao carregar o Facebook SDK');
+            };
             fjs.parentNode.insertBefore(js, fjs);
         }(document, 'script', 'facebook-jssdk'));
     </script>
