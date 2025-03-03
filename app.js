@@ -238,7 +238,7 @@ simpleReportBtn.addEventListener('click', () => {
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
     event.preventDefault(); // Impede qualquer comportamento padrão do botão
-    console.log('Botão Login com Facebook clicado - Versão Atualizada (03/03/2025)'); // Log para confirmar evento
+    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Outro Contexto) - Versão Atualizada (03/03/2025)'); // Log para confirmar evento
 
     if (typeof FB === 'undefined') {
         console.error('Facebook SDK não está carregado ou inicializado corretamente.');
@@ -247,23 +247,23 @@ loginBtn.addEventListener('click', (event) => {
         return;
     }
 
-    // Adiciona permissões extras para garantir acesso às contas de anúncios
+    // Adiciona permissões extras, incluindo business_management
     FB.login(function(response) {
         if (response.authResponse) {
-            console.log('Login com Facebook bem-sucedido - Versão Atualizada (03/03/2025):', response.authResponse);
+            console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
             showScreen(mainContent);
 
             // Obtém o token de acesso para verificar permissões
             const accessToken = response.authResponse.accessToken;
             console.log('Access Token:', accessToken);
 
-            // Chama a API para obter as contas de anúncios
+            // Primeiro, tenta listar as contas diretamente com /me/adaccounts
             FB.api('/me/adaccounts', { fields: 'id,name', access_token: accessToken }, function(accountResponse) {
                 if (accountResponse && !accountResponse.error) {
-                    console.log('Resposta da API /me/adaccounts - Versão Atualizada (03/03/2025):', accountResponse);
+                    console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
                     const unitSelect = document.getElementById('unitId');
                     unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-                    const accounts = accountResponse.data || [];
+                    let accounts = accountResponse.data || [];
                     accounts.forEach(account => {
                         adAccountsMap[account.id] = account.name;
                         const option = document.createElement('option');
@@ -278,17 +278,69 @@ loginBtn.addEventListener('click', (event) => {
                             console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba encontrada:', account);
                         }
                     });
-                    // Verifica se as contas específicas foram encontradas
-                    if (!accounts.some(account => account.id === '1187332129240271')) {
-                        console.warn('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas NÃO encontrada na lista de contas retornada pela API.');
-                    }
-                    if (!accounts.some(account => account.id === '9586847491331372')) {
-                        console.warn('Conta 9586847491331372 - CA - Oral Centter Jaíba NÃO encontrada na lista de contas retornada pela API.');
-                    }
-                    if (!accounts.some(account => account.id === '1187332129240271') || !accounts.some(account => account.id === '9586847491331372')) {
-                        document.getElementById('loginError').textContent = 'Uma ou mais contas esperadas (Sete Lagoas ou Jaíba) não foram encontradas. Verifique suas permissões ou o status das contas.';
-                        document.getElementById('loginError').style.display = 'block';
-                    }
+
+                    // Em seguida, lista os Business Managers associados ao usuário
+                    FB.api('/me/businesses', { fields: 'id,name', access_token: accessToken }, function(businessResponse) {
+                        if (businessResponse && !businessResponse.error) {
+                            console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
+                            const businesses = businessResponse.data || [];
+                            let businessAccountsPromises = businesses.map(business => {
+                                return new Promise((resolve) => {
+                                    FB.api(
+                                        `/${business.id}/adaccounts`,
+                                        { fields: 'id,name', access_token: accessToken },
+                                        function(businessAccountResponse) {
+                                            if (businessAccountResponse && !businessAccountResponse.error) {
+                                                console.log(`Contas do Business Manager ${business.id} (${business.name}):`, businessAccountResponse);
+                                                const businessAccounts = businessAccountResponse.data || [];
+                                                resolve(businessAccounts);
+                                            } else {
+                                                console.error(`Erro ao carregar contas do Business Manager ${business.id}:`, businessAccountResponse.error);
+                                                resolve([]);
+                                            }
+                                        }
+                                    );
+                                });
+                            });
+
+                            // Aguarda todas as chamadas para Business Managers
+                            Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
+                                let allBusinessAccounts = [].concat(...businessAccountsArrays);
+                                allBusinessAccounts.forEach(account => {
+                                    if (!adAccountsMap[account.id]) { // Evita duplicatas
+                                        adAccountsMap[account.id] = account.name;
+                                        const option = document.createElement('option');
+                                        option.value = account.id;
+                                        option.textContent = account.name;
+                                        unitSelect.appendChild(option);
+                                        // Verifica as contas específicas
+                                        if (account.id === '1187332129240271') {
+                                            console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada (via Business Manager):', account);
+                                        }
+                                        if (account.id === '9586847491331372') {
+                                            console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba encontrada (via Business Manager):', account);
+                                        }
+                                    }
+                                });
+
+                                // Verifica se as contas específicas foram encontradas após todas as chamadas
+                                if (!Object.keys(adAccountsMap).includes('1187332129240271')) {
+                                    console.warn('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas NÃO encontrada após todas as chamadas da API.');
+                                }
+                                if (!Object.keys(adAccountsMap).includes('9586847491331372')) {
+                                    console.warn('Conta 9586847491331372 - CA - Oral Centter Jaíba NÃO encontrada após todas as chamadas da API.');
+                                }
+                                if (!Object.keys(adAccountsMap).includes('1187332129240271') || !Object.keys(adAccountsMap).includes('9586847491331372')) {
+                                    document.getElementById('loginError').textContent = 'Uma ou mais contas esperadas (Sete Lagoas ou Jaíba) não foram encontradas. Verifique suas permissões ou o status das contas.';
+                                    document.getElementById('loginError').style.display = 'block';
+                                }
+                            });
+                        } else {
+                            console.error('Erro ao carregar Business Managers:', businessResponse.error);
+                            document.getElementById('loginError').textContent = 'Erro ao carregar Business Managers: ' + (businessResponse.error.message || 'Erro desconhecido');
+                            document.getElementById('loginError').style.display = 'block';
+                        }
+                    });
                 } else {
                     console.error('Erro ao carregar contas:', accountResponse.error);
                     document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios: ' + (accountResponse.error.message || 'Erro desconhecido');
@@ -300,7 +352,7 @@ loginBtn.addEventListener('click', (event) => {
             document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente.';
             document.getElementById('loginError').style.display = 'block';
         }
-    }, {scope: 'ads_read,ads_management'}); // Adiciona permissões extras
+    }, {scope: 'ads_read,ads_management,business_management'}); // Adiciona business_management
 });
 
 // Carrega os ad sets e campanhas quando o formulário é preenchido
