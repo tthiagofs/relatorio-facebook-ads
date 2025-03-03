@@ -212,13 +212,18 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
 
 // Login do app
 appLoginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
+    console.log('Formulário de login submetido'); // Log para depuração
+    e.preventDefault(); // Impede o comportamento padrão do formulário
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
+    console.log('Dados do formulário:', { username, password }); // Log para depuração
+
     if (username === '@admin' && password === '134679') {
+        console.log('Login bem-sucedido, alternando para reportSelectionScreen'); // Log para depuração
         showScreen(reportSelectionScreen);
     } else {
+        console.log('Login falhou: usuário ou senha inválidos'); // Log para depuração
         appLoginError.textContent = 'Usuário ou senha inválidos.';
         appLoginError.style.display = 'block';
     }
@@ -315,7 +320,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     );
 }
 
-// Função para carregar ad sets
+// Função para carregar ad sets, usando getAdSetInsights para garantir consistência
 async function loadAdSets(unitId, startDate, endDate) {
     FB.api(
         `/${unitId}/adsets`,
@@ -324,51 +329,40 @@ async function loadAdSets(unitId, startDate, endDate) {
             if (adSetResponse && !adSetResponse.error) {
                 adSetsMap[unitId] = {};
                 const adSetIds = adSetResponse.data.map(set => set.id);
-                const batchSize = 50;
-                const batches = [];
-                for (let i = 0; i < adSetIds.length; i += batchSize) {
-                    batches.push(adSetIds.slice(i, i + batchSize));
+
+                // Usa getAdSetInsights individualmente para cada ad set, garantindo o valor correto de spend
+                for (const adSetId of adSetIds) {
+                    try {
+                        const insights = await getAdSetInsights(adSetId, startDate, endDate);
+                        let spend = 0;
+                        if (insights.spend !== undefined && insights.spend !== null) {
+                            spend = parseFloat(insights.spend) || 0;
+                            if (isNaN(spend)) {
+                                console.warn(`Valor inválido de spend para ad set ${adSetId}: ${insights.spend}`);
+                                spend = 0;
+                            }
+                        }
+                        console.log(`Spend inicial para ad set ${adSetId}: ${spend}`); // Log para depuração
+                        if (spend > 0) {
+                            const adSet = adSetResponse.data.find(set => set.id === adSetId);
+                            adSetsMap[unitId][adSetId] = {
+                                name: adSet.name.toLowerCase(),
+                                insights: { spend: spend, actions: insights.actions || [], reach: insights.reach || 0 }
+                            };
+                        }
+                    } catch (error) {
+                        console.error(`Erro ao carregar insights para ad set ${adSetId}:`, error);
+                    }
                 }
 
-                const fetchBatchInsights = async (batchIds) => {
-                    const timeRange = { since: startDate, until: endDate };
-                    const idsString = batchIds.join(',');
-                    return new Promise((resolve, reject) => {
-                        FB.api(
-                            `/?ids=${idsString}&fields=insights{spend,actions,reach}&time_range=${JSON.stringify(timeRange)}`,
-                            function(response) {
-                                if (response && !response.error) {
-                                    const validIds = [];
-                                    for (const id in response) {
-                                        const insights = response[id].insights?.data?.[0] || {};
-                                        const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
-                                        console.log(`Spend inicial para ad set ${id}: ${spend}`); // Log para depuração
-                                        if (spend > 0) {
-                                            validIds.push(id);
-                                            const adSet = adSetResponse.data.find(set => set.id === id);
-                                            adSetsMap[unitId][id] = {
-                                                name: adSet.name.toLowerCase(),
-                                                insights: { spend: spend, actions: insights.actions || [], reach: insights.reach || 0 }
-                                            };
-                                        }
-                                    }
-                                    resolve(validIds);
-                                } else {
-                                    console.error('Erro ao carregar insights batch para ad sets:', response.error);
-                                    resolve([]);
-                                }
-                            }
-                        );
-                    });
-                };
-
-                const validAdSetIds = [].concat(...(await Promise.all(batches.map(batch => fetchBatchInsights(batch)))));
                 if (!isCampaignFilterActive) {
-                    const adSetOptions = validAdSetIds.map(id => ({
-                        value: id,
-                        label: adSetsMap[unitId][id].name,
-                        spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
-                    }));
+                    const adSetOptions = Object.keys(adSetsMap[unitId])
+                        .filter(id => adSetsMap[unitId][id].insights.spend > 0)
+                        .map(id => ({
+                            value: id,
+                            label: adSetsMap[unitId][id].name,
+                            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
+                        }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
             } else {
