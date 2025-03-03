@@ -16,17 +16,15 @@ const adSetsModal = document.getElementById('adSetsModal');
 const closeCampaignsModalBtn = document.getElementById('closeCampaignsModal');
 const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 
-// Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
-const adSetsMap = {}; // Mapa para armazenar IDs, nomes e insights dos ad sets
-const campaignsMap = {}; // Mapa para armazenar IDs, nomes e insights das campanhas
-let selectedCampaigns = new Set(); // Conjunto para armazenar campanhas selecionadas
-let selectedAdSets = new Set(); // Conjunto para armazenar ad sets selecionados
+const adSetsMap = {};
+const campaignsMap = {};
+let selectedCampaigns = new Set();
+let selectedAdSets = new Set();
 let isCampaignFilterActive = false;
 let isAdSetFilterActive = false;
-let isFilterActivated = false; // Novo estado para indicar se os filtros estão ativados
+let isFilterActivated = false;
 
-// Função para alternar telas
 function showScreen(screen) {
     appLoginScreen.style.display = 'none';
     reportSelectionScreen.style.display = 'none';
@@ -35,11 +33,9 @@ function showScreen(screen) {
     screen.style.display = 'block';
 }
 
-// Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
-    // Permite abrir o modal para desativar, mesmo com filtros ativados, se houver seleções ativas
     if (show && isFilterActivated && ((isCampaign && selectedCampaigns.size === 0) || (!isCampaign && selectedAdSets.size === 0))) {
-        return; // Impede abrir o modal se os filtros já estiverem ativados sem seleções
+        return;
     }
 
     modal.style.display = show ? 'block' : 'none';
@@ -47,69 +43,63 @@ function toggleModal(modal, show, isCampaign) {
         if (isCampaign) {
             isCampaignFilterActive = true;
             isAdSetFilterActive = false;
-            filterAdSetsBtn.disabled = isFilterActivated; // Desativa o botão de conjuntos se filtros ativados
+            filterAdSetsBtn.disabled = isFilterActivated;
             filterAdSetsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
-            filterCampaignsBtn.disabled = isFilterActivated; // Desativa o botão de campanhas se filtros ativados
+            filterCampaignsBtn.disabled = isFilterActivated;
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
-            // Verifica se os filtros devem ser desativados ao fechar o modal sem seleções
             if (isFilterActivated && selectedCampaigns.size === 0) {
                 isFilterActivated = false;
                 filterAdSetsBtn.disabled = false;
                 filterAdSetsBtn.style.cursor = 'pointer';
             } else {
-                filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0; // Mantém desativado se filtros ativos com seleções
+                filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0;
                 filterAdSetsBtn.style.cursor = isFilterActivated && selectedCampaigns.size > 0 ? 'not-allowed' : 'pointer';
             }
         } else {
             isAdSetFilterActive = false;
-            // Verifica se os filtros devem ser desativados ao fechar o modal sem seleções
             if (isFilterActivated && selectedAdSets.size === 0) {
                 isFilterActivated = false;
                 filterCampaignsBtn.disabled = false;
                 filterCampaignsBtn.style.cursor = 'pointer';
             } else {
-                filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0; // Mantém desativado se filtros ativos com seleções
+                filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0;
                 filterCampaignsBtn.style.cursor = isFilterActivated && selectedAdSets.size > 0 ? 'not-allowed' : 'pointer';
             }
         }
     }
-    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
+    updateFilterButton();
 }
 
-// Função para atualizar o botão de ativação/desativação
 function updateFilterButton() {
     const campaignsButton = campaignsModal.querySelector('.btn-filter-toggle');
     const adSetsButton = adSetsModal.querySelector('.btn-filter-toggle');
 
     if (campaignsButton) {
         campaignsButton.textContent = isFilterActivated && selectedCampaigns.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
-        campaignsButton.disabled = !isFilterActivated && selectedCampaigns.size === 0; // Desativa se não houver seleções antes de ativar
+        campaignsButton.disabled = !isFilterActivated && selectedCampaigns.size === 0;
     }
     if (adSetsButton) {
         adSetsButton.textContent = isFilterActivated && selectedAdSets.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
-        adSetsButton.disabled = !isFilterActivated && selectedAdSets.size === 0; // Desativa se não houver seleções antes de ativar
+        adSetsButton.disabled = !isFilterActivated && selectedAdSets.size === 0;
     }
-    // Atualiza o estado dos botões de filtro com base nos filtros ativados
     filterCampaignsBtn.disabled = isFilterActivated && (selectedAdSets.size > 0 || (selectedCampaigns.size === 0 && !isCampaignFilterActive));
     filterAdSetsBtn.disabled = isFilterActivated && (selectedCampaigns.size > 0 || (selectedAdSets.size === 0 && !isAdSetFilterActive));
     filterCampaignsBtn.style.cursor = filterCampaignsBtn.disabled ? 'not-allowed' : 'pointer';
     filterAdSetsBtn.style.cursor = filterAdSetsBtn.disabled ? 'not-allowed' : 'pointer';
 }
 
-// Função para criar e gerenciar opções clicáveis nos modals com valor gasto e pesquisa
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
     const searchInput = document.getElementById(isCampaign ? 'campaignSearch' : 'adSetSearch');
-    container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : ''; // Mostra "Buscando..." enquanto carrega
+    container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : '';
     if (options.length > 0) {
-        // Função para filtrar opções com base no texto de pesquisa
         function filterOptions(searchText) {
             const filteredOptions = options.filter(option => 
                 option.label.toLowerCase().includes(searchText.toLowerCase())
@@ -117,7 +107,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
             renderFilteredOptions(filteredOptions, selectedSet, isCampaign);
         }
 
-        // Função para renderizar as opções filtradas
         function renderFilteredOptions(filteredOptions, set, isCampaignParam) {
             container.innerHTML = '';
             filteredOptions.forEach(option => {
@@ -136,7 +125,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                         set.add(value);
                         div.classList.add('selected');
                     }
-                    // Atualiza o estado do filtro se não houver mais seleções
                     if (set.size === 0 && isFilterActivated) {
                         isFilterActivated = false;
                         if (isCampaignParam) {
@@ -149,22 +137,20 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                             filterCampaignsBtn.style.cursor = 'pointer';
                         }
                     }
-                    updateFilterButton(); // Atualiza o botão de ativação/desativação após cada clique
+                    updateFilterButton();
                 });
                 container.appendChild(div);
             });
 
-            // Adiciona botão de "Ativar Seleções/Desativar Seleção" ao final do modal
             const existingButton = container.querySelector('.btn-filter-toggle');
-            if (existingButton) existingButton.remove(); // Remove o botão antigo para evitar duplicação
+            if (existingButton) existingButton.remove();
 
             const filterButton = document.createElement('button');
             filterButton.textContent = isFilterActivated && (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) ? 'Desativar Seleção' : 'Ativar Seleções';
             filterButton.className = 'btn-filter-toggle';
-            filterButton.disabled = (isCampaignParam ? selectedCampaigns.size === 0 : selectedAdSets.size === 0); // Desativa se não houver seleções
+            filterButton.disabled = (isCampaignParam ? selectedCampaigns.size === 0 : selectedAdSets.size === 0);
             filterButton.addEventListener('click', () => {
                 if (isFilterActivated && (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0)) {
-                    // Desativa os filtros
                     isFilterActivated = false;
                     if (isCampaignParam) {
                         selectedCampaigns.clear();
@@ -178,7 +164,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                     filterCampaignsBtn.style.cursor = 'pointer';
                     filterAdSetsBtn.style.cursor = 'pointer';
                 } else if (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) {
-                    // Ativa os filtros apenas se houver seleções
                     isFilterActivated = true;
                     if (isCampaignParam) {
                         isCampaignFilterActive = true;
@@ -192,16 +177,14 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                         filterCampaignsBtn.style.cursor = 'not-allowed';
                     }
                 }
-                renderFilteredOptions(filteredOptions, set, isCampaignParam); // Re-renderiza para atualizar o botão
-                updateFilterButton(); // Garante que o estado do botão seja atualizado
+                renderFilteredOptions(filteredOptions, set, isCampaignParam);
+                updateFilterButton();
             });
             container.appendChild(filterButton);
         }
 
-        // Renderiza todas as opções inicialmente
         renderFilteredOptions(options, selectedSet, isCampaign);
 
-        // Adiciona evento de pesquisa
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 filterOptions(e.target.value);
@@ -210,7 +193,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
     }
 }
 
-// Login do app
 appLoginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value;
@@ -224,12 +206,10 @@ appLoginForm.addEventListener('submit', (e) => {
     }
 });
 
-// Seleção de relatório simplificado
 simpleReportBtn.addEventListener('click', () => {
     showScreen(loginScreen);
 });
 
-// Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', () => {
     FB.login(function(response) {
         if (response.authResponse) {
@@ -258,7 +238,6 @@ loginBtn.addEventListener('click', () => {
     }, {scope: 'ads_read'});
 });
 
-// Carrega os ad sets e campanhas quando o formulário é preenchido
 form.addEventListener('input', async function(e) {
     const unitId = document.getElementById('unitId').value;
     const startDate = document.getElementById('startDate').value;
@@ -283,7 +262,6 @@ form.addEventListener('input', async function(e) {
     }
 });
 
-// Função para carregar campanhas
 async function loadCampaigns(unitId, startDate, endDate) {
     FB.api(
         `/${unitId}/campaigns`,
@@ -315,7 +293,6 @@ async function loadCampaigns(unitId, startDate, endDate) {
     );
 }
 
-// Função para carregar ad sets, usando getAdSetInsights para garantir consistência
 async function loadAdSets(unitId, startDate, endDate) {
     FB.api(
         `/${unitId}/adsets`,
@@ -325,7 +302,6 @@ async function loadAdSets(unitId, startDate, endDate) {
                 adSetsMap[unitId] = {};
                 const adSetIds = adSetResponse.data.map(set => set.id);
 
-                // Usa getAdSetInsights individualmente para cada ad set, garantindo o valor correto de spend
                 for (const adSetId of adSetIds) {
                     try {
                         const insights = await getAdSetInsights(adSetId, startDate, endDate);
@@ -337,7 +313,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                                 spend = 0;
                             }
                         }
-                        console.log(`Spend inicial para ad set ${adSetId}: ${spend}`); // Log para depuração
+                        console.log(`Spend inicial para ad set ${adSetId}: ${spend}`);
                         if (spend > 0) {
                             const adSet = adSetResponse.data.find(set => set.id === adSetId);
                             adSetsMap[unitId][adSetId] = {
@@ -356,7 +332,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                         .map(id => ({
                             value: id,
                             label: adSetsMap[unitId][id].name,
-                            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
+                            spend: adSetsMap[unitId][id].insights.spend
                         }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
@@ -367,7 +343,6 @@ async function loadAdSets(unitId, startDate, endDate) {
     );
 }
 
-// Função para atualizar as opções de ad sets (não usada aqui, mas mantida para compatibilidade)
 function updateAdSets(selectedCampaigns) {
     const unitId = document.getElementById('unitId').value;
     const startDate = document.getElementById('startDate').value;
@@ -377,19 +352,18 @@ function updateAdSets(selectedCampaigns) {
         let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
         validAdSetIds = validAdSetIds.filter(id => {
             const adSetData = adSetsMap[unitId][id];
-            return adSetData && adSetData.insights.spend > 0; // Filtra apenas ad sets com gastos
+            return adSetData && adSetData.insights.spend > 0;
         });
 
         const adSetOptions = validAdSetIds.map(id => ({
             value: id,
             label: adSetsMap[unitId][id].name,
-            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
+            spend: adSetsMap[unitId][id].insights.spend
         }));
         renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
     }
 }
 
-// Funções para obter insights
 async function getCampaignInsights(campaignId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
@@ -414,7 +388,6 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
             { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate } },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
-                    // Log para depuração
                     console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
                     resolve(response.data[0]);
                 } else {
@@ -426,15 +399,14 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     });
 }
 
-// Configurar eventos para os botões de filtro com exclusão mútua simples
 filterCampaignsBtn.addEventListener('click', () => {
-    if (isFilterActivated && selectedAdSets.size > 0) return; // Impede abrir se há seleções ativas de ad sets
+    if (isFilterActivated && selectedAdSets.size > 0) return;
     isCampaignFilterActive = true;
     toggleModal(campaignsModal, true, true);
 });
 
 filterAdSetsBtn.addEventListener('click', () => {
-    if (isFilterActivated && selectedCampaigns.size > 0) return; // Impede abrir se há seleções ativas de campanhas
+    if (isFilterActivated && selectedCampaigns.size > 0) return;
     isAdSetFilterActive = true;
     toggleModal(adSetsModal, true, false);
 });
@@ -442,16 +414,15 @@ filterAdSetsBtn.addEventListener('click', () => {
 closeCampaignsModalBtn.addEventListener('click', () => {
     isCampaignFilterActive = false;
     toggleModal(campaignsModal, false, true);
-    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
+    updateFilterButton();
 });
 
 closeAdSetsModalBtn.addEventListener('click', () => {
     isAdSetFilterActive = false;
     toggleModal(adSetsModal, false, false);
-    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
+    updateFilterButton();
 });
 
-// Geração do relatório com soma consolidada dos itens filtrados ativados
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const unitId = document.getElementById('unitId').value;
@@ -488,7 +459,6 @@ form.addEventListener('submit', async (e) => {
             for (const adSetId of selectedAdSets) {
                 const insights = await getAdSetInsights(adSetId, startDate, endDate);
                 if (insights && insights.spend) {
-                    // Log para depuração do valor de spend
                     console.log(`Spend para ad set ${adSetId}: ${insights.spend}`);
                     totalSpend += parseFloat(insights.spend) || 0;
                 }
@@ -553,7 +523,6 @@ form.addEventListener('submit', async (e) => {
     shareWhatsAppBtn.style.display = 'block';
 });
 
-// Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {
     const reportText = reportContainer.innerText;
     const encodedText = encodeURIComponent(reportText);
@@ -561,5 +530,4 @@ shareWhatsAppBtn.addEventListener('click', () => {
     window.open(whatsappUrl, '_blank');
 });
 
-// Mostrar tela inicial
 showScreen(appLoginScreen);
