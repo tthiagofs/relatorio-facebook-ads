@@ -797,7 +797,7 @@ form.addEventListener('submit', async (e) => {
         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
     `;
     shareWhatsAppBtn.style.display = 'block';
-}
+});
 
 // Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {
