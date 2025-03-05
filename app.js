@@ -757,13 +757,19 @@ form.addEventListener('submit', async (e) => {
                         });
                     });
                     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
+                    // Formatar os valores antes de inserir na template literal
+                    const formattedSpend = totalSpend.toFixed(2).replace('.', ',');
+                    const formattedCostPerConversation = costPerConversation.replace('.', ',');
+                    const formattedReach = totalReach.toLocaleString('pt-BR');
+                    const formattedStartDate = startDate.split('-').reverse().join('/');
+                    const formattedEndDate = endDate.split('-').reverse().join('/');
                     reportContainer.innerHTML = `
                         <p>📊 RELATÓRIO - CA - ${unitName}</p>
-                        <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
-                        <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
+                        <p>📅 Período: ${formattedStartDate} a ${formattedEndDate}</p>
+                        <p>💰 Investimento Total: R$ ${formattedSpend}</p>
                         <p>💬 Mensagens Iniciadas: ${totalConversations}</p>
-                        <p>💵 Custo por Mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
-                        <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
+                        <p>💵 Custo por Mensagem: R$ ${formattedCostPerConversation}</p>
+                        <p>📢 Alcance Total: ${formattedReach} pessoas</p>
                     `;
                     shareWhatsAppBtn.style.display = 'block';
                 } else {
@@ -777,13 +783,19 @@ form.addEventListener('submit', async (e) => {
     }
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
+    // Formatar os valores antes de inserir na template literal
+    const formattedSpend = totalSpend.toFixed(2).replace('.', ',');
+    const formattedCostPerConversation = costPerConversation.replace('.', ',');
+    const formattedReach = totalReach.toLocaleString('pt-BR');
+    const formattedStartDate = startDate.split('-').reverse().join('/');
+    const formattedEndDate = endDate.split('-').reverse().join('/');
     reportContainer.innerHTML = `
         <p>📊 RELATÓRIO - CA - ${unitName}</p>
-        <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
-        <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
+        <p>📅 Período: ${formattedStartDate} a ${formattedEndDate}</p>
+        <p>💰 Investimento Total: R$ ${formattedSpend}</p>
         <p>💬 Mensagens Iniciadas: ${totalConversations}</p>
-        <p>💵 Custo por Mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
-        <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
+        <p>💵 Custo por Mensagem: R$ ${formattedCostPerConversation}</p>
+        <p>📢 Alcance Total: ${formattedReach} pessoas</p>
     `;
     shareWhatsAppBtn.style.display = 'block';
 }
