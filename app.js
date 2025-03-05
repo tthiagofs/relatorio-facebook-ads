@@ -32,11 +32,13 @@ let currentAccessToken = null;
 
 // Função para alternar telas
 function showScreen(screen) {
+    console.log('Alternando para a tela:', screen.id);
     appLoginScreen.style.display = 'none';
     reportSelectionScreen.style.display = 'none';
     loginScreen.style.display = 'none';
     mainContent.style.display = 'none';
     screen.style.display = 'block';
+    console.log('Tela atualizada com sucesso:', screen.id);
 }
 
 // Função para mostrar/esconder modais e gerenciar estado
@@ -228,20 +230,37 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
 
 // Login do app
 appLoginForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Impede o recarregamento da página
     console.log('Formulário de login submetido');
-    e.preventDefault();
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
+
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
 
     console.log('Dados do formulário:', { username, password });
 
+    if (username === '' || password === '') {
+        console.log('Campos vazios detectados');
+        appLoginError.textContent = 'Por favor, preencha todos os campos.';
+        appLoginError.style.display = 'block';
+        return;
+    }
+
     if (username === '@admin' && password === '134679') {
         console.log('Login bem-sucedido, alternando para reportSelectionScreen');
+        appLoginError.style.display = 'none'; // Limpa mensagem de erro
         showScreen(reportSelectionScreen);
+        // Limpa os campos do formulário
+        usernameInput.value = '';
+        passwordInput.value = '';
     } else {
         console.log('Login falhou: usuário ou senha inválidos');
         appLoginError.textContent = 'Usuário ou senha inválidos.';
         appLoginError.style.display = 'block';
+        // Limpa os campos do formulário
+        usernameInput.value = '';
+        passwordInput.value = '';
     }
 });
 
