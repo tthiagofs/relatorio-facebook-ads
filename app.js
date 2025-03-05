@@ -25,10 +25,9 @@ let selectedAdSets = new Set(); // Conjunto para armazenar ad sets selecionados
 let isCampaignFilterActive = false;
 let isAdSetFilterActive = false;
 let isFilterActivated = false; // Novo estado para indicar se os filtros estão ativados
-
-// Variáveis para armazenar o estado do filtro de pesquisa
 let campaignSearchText = '';
 let adSetSearchText = '';
+let currentAccessToken = null; // Armazena o token de acesso atual
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -69,9 +68,9 @@ function toggleModal(modal, show, isCampaign) {
                 filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0;
                 filterAdSetsBtn.style.cursor = isFilterActivated && selectedCampaigns.size > 0 ? 'not-allowed' : 'pointer';
             }
-            campaignSearchText = ''; // Limpa o texto de pesquisa ao fechar o modal
+            campaignSearchText = '';
             const campaignSearchInput = document.getElementById('campaignSearch');
-            if (campaignSearchInput) campaignSearchInput.value = ''; // Limpa o campo de pesquisa
+            if (campaignSearchInput) campaignSearchInput.value = '';
         } else {
             isAdSetFilterActive = false;
             if (isFilterActivated && selectedAdSets.size === 0) {
@@ -82,9 +81,9 @@ function toggleModal(modal, show, isCampaign) {
                 filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0;
                 filterCampaignsBtn.style.cursor = isFilterActivated && selectedAdSets.size > 0 ? 'not-allowed' : 'pointer';
             }
-            adSetSearchText = ''; // Limpa o texto de pesquisa ao fechar o modal
+            adSetSearchText = '';
             const adSetSearchInput = document.getElementById('adSetSearch');
-            if (adSetSearchInput) adSetSearchInput.value = ''; // Limpa o campo de pesquisa
+            if (adSetSearchInput) adSetSearchInput.value = '';
         }
     }
     updateFilterButton();
@@ -199,7 +198,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
             container.appendChild(filterButton);
         }
 
-        // Preserva o texto de pesquisa atual e aplica o filtro
         const currentSearchText = isCampaign ? campaignSearchText : adSetSearchText;
         if (currentSearchText) {
             filterOptions(currentSearchText);
@@ -208,7 +206,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
         }
 
         if (searchInput) {
-            // Remove ouvintes anteriores para evitar duplicação
             const newSearchInput = searchInput.cloneNode(true);
             searchInput.parentNode.replaceChild(newSearchInput, searchInput);
             newSearchInput.addEventListener('input', (e) => {
@@ -220,12 +217,11 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 }
                 filterOptions(searchText);
             });
-            // Restaura o valor do campo de pesquisa
             newSearchInput.value = currentSearchText;
         }
     } else {
         console.warn(`Nenhuma opção disponível para renderizar em ${containerId}`);
-        container.innerHTML = '<p>Nenhum dado encontrado para o período selecionado.</p>';
+        container.innerHTML = '<p>Nenhum dado encontrado para o período selecionado. Tente novamente ou faça login novamente.</p>';
     }
 }
 
@@ -276,10 +272,10 @@ loginBtn.addEventListener('click', (event) => {
             console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
             showScreen(mainContent);
 
-            const accessToken = response.authResponse.accessToken;
-            console.log('Access Token:', accessToken);
+            currentAccessToken = response.authResponse.accessToken;
+            console.log('Access Token:', currentAccessToken);
 
-            FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: accessToken }, function(statusResponse) {
+            FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: currentAccessToken }, function(statusResponse) {
                 if (statusResponse && !statusResponse.error) {
                     console.log('Status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse);
                     if (statusResponse.account_status !== 1) {
@@ -294,7 +290,7 @@ loginBtn.addEventListener('click', (event) => {
                 }
             });
 
-            FB.api('/me/adaccounts', { fields: 'id,name', access_token: accessToken }, function(accountResponse) {
+            FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
                 if (accountResponse && !accountResponse.error) {
                     console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
                     const unitSelect = document.getElementById('unitId');
@@ -310,7 +306,7 @@ loginBtn.addEventListener('click', (event) => {
                         }
                     });
 
-                    FB.api('/me/businesses', { fields: 'id,name', access_token: accessToken }, function(businessResponse) {
+                    FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
                         if (businessResponse && !businessResponse.error) {
                             console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
                             const businesses = businessResponse.data || [];
@@ -320,7 +316,7 @@ loginBtn.addEventListener('click', (event) => {
                                 businessAccountsPromises.push(new Promise((resolve) => {
                                     FB.api(
                                         `/${business.id}/owned_ad_accounts`,
-                                        { fields: 'id,name', access_token: accessToken },
+                                        { fields: 'id,name', access_token: currentAccessToken },
                                         function(ownedAccountResponse) {
                                             if (ownedAccountResponse && !ownedAccountResponse.error) {
                                                 console.log(`Contas próprias do Business Manager ${business.id} (${business.name}):`, ownedAccountResponse);
@@ -337,7 +333,7 @@ loginBtn.addEventListener('click', (event) => {
                                 businessAccountsPromises.push(new Promise((resolve) => {
                                     FB.api(
                                         `/${business.id}/client_ad_accounts`,
-                                        { fields: 'id,name', access_token: accessToken },
+                                        { fields: 'id,name', access_token: currentAccessToken },
                                         function(clientAccountResponse) {
                                             if (clientAccountResponse && !clientAccountResponse.error) {
                                                 console.log(`Contas compartilhadas com o Business Manager ${business.id} (${business.name}):`, clientAccountResponse);
@@ -431,7 +427,6 @@ form.addEventListener('input', async function(e) {
     const endDate = document.getElementById('endDate').value;
 
     if (unitId && startDate && endDate) {
-        // Evita re-renderizar se o modal de campanhas estiver aberto e com um filtro ativo
         if (isCampaignFilterActive && campaignSearchText) {
             console.log('Modal de campanhas aberto com filtro ativo, evitando re-renderização.');
             return;
@@ -461,7 +456,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     FB.api(
         `/${unitId}/campaigns`,
-        { fields: 'id,name' },
+        { fields: 'id,name', access_token: currentAccessToken },
         async function(campaignResponse) {
             if (campaignResponse && !campaignResponse.error) {
                 console.log(`Resposta da API para campanhas:`, campaignResponse);
@@ -491,6 +486,8 @@ async function loadCampaigns(unitId, startDate, endDate) {
                 console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
             } else {
                 console.error('Erro ao carregar campanhas:', campaignResponse.error);
+                const endTime = performance.now();
+                console.log(`Carregamento de campanhas falhou após ${(endTime - startTime) / 1000} segundos`);
             }
         }
     );
@@ -500,9 +497,26 @@ async function loadCampaigns(unitId, startDate, endDate) {
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
+    
+    // Verifica se já temos ad sets carregados para este unitId e período
+    if (adSetsMap[unitId] && Object.keys(adSetsMap[unitId]).length > 0) {
+        console.log(`Ad sets já carregados para unitId: ${unitId}, reutilizando dados existentes.`);
+        if (!isCampaignFilterActive) {
+            const adSetOptions = Object.keys(adSetsMap[unitId])
+                .filter(id => adSetsMap[unitId][id].insights.spend > 0)
+                .map(id => ({
+                    value: id,
+                    label: adSetsMap[unitId][id].name,
+                    spend: adSetsMap[unitId][id].insights.spend
+                }));
+            renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
+        }
+        return;
+    }
+
     FB.api(
         `/${unitId}/adsets`,
-        { fields: 'id,name', limit: 50 },
+        { fields: 'id,name', limit: 50, access_token: currentAccessToken },
         async function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
                 console.log(`Resposta da API para ad sets:`, adSetResponse);
@@ -547,9 +561,14 @@ async function loadAdSets(unitId, startDate, endDate) {
                 const endTime = performance.now();
                 console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`);
             } else {
-                console.error('Erro ao carregar ad sets:', adSetResponse.error);
+                console.error('Erro ao carregar ad sets. Detalhes:', adSetResponse.error);
                 const endTime = performance.now();
                 console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
+                // Exibe mensagem de erro no modal
+                const adSetsList = document.getElementById('adSetsList');
+                if (adSetsList) {
+                    adSetsList.innerHTML = '<p>Erro ao carregar os conjuntos de anúncios. Tente novamente ou faça login novamente.</p>';
+                }
             }
         }
     );
@@ -582,7 +601,7 @@ async function getCampaignInsights(campaignId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${campaignId}/insights`,
-            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'campaign' },
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'campaign', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error) {
                     resolve(response.data[0] || {});
@@ -599,7 +618,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${adSetId}/insights`,
-            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate } },
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
                     console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
@@ -691,7 +710,7 @@ form.addEventListener('submit', async (e) => {
     } else {
         FB.api(
             `/${unitId}/insights`,
-            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'account' },
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'account', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
