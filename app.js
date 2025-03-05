@@ -1,6 +1,6 @@
 const appLoginScreen = document.getElementById('appLoginScreen');
-const facebookLoginScreen = document.getElementById('facebookLoginScreen');
 const reportSelectionScreen = document.getElementById('reportSelectionScreen');
+const loginScreen = document.getElementById('loginScreen');
 const mainContent = document.getElementById('mainContent');
 const appLoginForm = document.getElementById('appLoginForm');
 const appLoginError = document.getElementById('appLoginError');
@@ -12,11 +12,11 @@ const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 const filterCampaignsBtn = document.getElementById('filterCampaigns');
 const filterAdSetsBtn = document.getElementById('filterAdSets');
+const backBtn = document.getElementById('backBtn'); // Botão Voltar
 const campaignsModal = document.getElementById('campaignsModal');
 const adSetsModal = document.getElementById('adSetsModal');
 const closeCampaignsModalBtn = document.getElementById('closeCampaignsModal');
 const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
-const backToSelectionBtnSimple = document.getElementById('backToSelectionBtnSimple');
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
@@ -35,8 +35,8 @@ let currentAccessToken = null;
 function showScreen(screen) {
     console.log('Alternando para a tela:', screen.id);
     appLoginScreen.style.display = 'none';
-    facebookLoginScreen.style.display = 'none';
     reportSelectionScreen.style.display = 'none';
+    loginScreen.style.display = 'none';
     mainContent.style.display = 'none';
     screen.style.display = 'block';
     console.log('Tela atualizada com sucesso:', screen.id);
@@ -231,7 +231,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
 
 // Login do app
 appLoginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Impede o recarregamento da página
     console.log('Formulário de login submetido');
 
     const usernameInput = document.getElementById('username');
@@ -249,15 +249,17 @@ appLoginForm.addEventListener('submit', (e) => {
     }
 
     if (username === '@admin' && password === '134679') {
-        console.log('Login bem-sucedido, alternando para facebookLoginScreen');
-        appLoginError.style.display = 'none';
-        showScreen(facebookLoginScreen);
+        console.log('Login bem-sucedido, alternando para loginScreen');
+        appLoginError.style.display = 'none'; // Limpa mensagem de erro
+        showScreen(loginScreen); // Vai direto para a tela de login no Facebook
+        // Limpa os campos do formulário
         usernameInput.value = '';
         passwordInput.value = '';
     } else {
         console.log('Login falhou: usuário ou senha inválidos');
         appLoginError.textContent = 'Usuário ou senha inválidos.';
         appLoginError.style.display = 'block';
+        // Limpa os campos do formulário
         usernameInput.value = '';
         passwordInput.value = '';
     }
@@ -291,7 +293,6 @@ loginBtn.addEventListener('click', (event) => {
 function handleFacebookLoginResponse(response) {
     if (response.authResponse) {
         console.log('Login com Facebook bem-sucedido - Versão Atualizada (03/03/2025):', response.authResponse);
-
         currentAccessToken = response.authResponse.accessToken;
         console.log('Access Token:', currentAccessToken);
 
@@ -418,7 +419,7 @@ function handleFacebookLoginResponse(response) {
                             } else {
                                 document.getElementById('loginError').textContent = '';
                                 document.getElementById('loginError').style.display = 'none';
-                                // Após o login bem-sucedido no Facebook, mostrar a tela de seleção de relatório
+                                // Após login bem-sucedido no Facebook, mostrar a tela de seleção de relatório
                                 showScreen(reportSelectionScreen);
                             }
 
@@ -450,6 +451,7 @@ function handleFacebookLoginResponse(response) {
 simpleReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Simplificado clicado - Versão Atualizada (03/03/2025)');
     showScreen(mainContent);
+    simpleReportBtn.classList.add('active');
 });
 
 // Seleção de relatório completo
@@ -458,10 +460,23 @@ completeReportBtn.addEventListener('click', () => {
     window.location.href = 'RelatorioCompleto.html';
 });
 
-// Botão Voltar no Relatório Simplificado
-backToSelectionBtnSimple.addEventListener('click', () => {
-    console.log('Botão Voltar clicado no Relatório Simplificado - Retornando para a tela de seleção');
+// Botão Voltar para a tela de seleção de relatório
+backBtn.addEventListener('click', () => {
+    console.log('Botão Voltar clicado - Retornando para reportSelectionScreen');
     showScreen(reportSelectionScreen);
+    // Limpar dados do relatório simplificado
+    reportContainer.innerHTML = '';
+    shareWhatsAppBtn.style.display = 'none';
+    form.reset();
+    selectedCampaigns.clear();
+    selectedAdSets.clear();
+    isCampaignFilterActive = false;
+    isAdSetFilterActive = false;
+    isFilterActivated = false;
+    filterCampaignsBtn.disabled = false;
+    filterAdSetsBtn.disabled = false;
+    filterCampaignsBtn.style.cursor = 'pointer';
+    filterAdSetsBtn.style.cursor = 'pointer';
 });
 
 // Carrega os ad sets e campanhas quando o formulário é preenchido
@@ -643,7 +658,7 @@ async function getCampaignInsights(campaignId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${campaignId}/insights`,
-            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'campaign', access_token: currentAccessToken },
+            { fields: 'spend,actions,reach', time_range: { since: startDate, until: endDate }, level: 'campaign', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error) {
                     resolve(response.data[0] || {});
@@ -660,7 +675,7 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${adSetId}/insights`,
-            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, access_token: currentAccessToken },
+            { fields: 'spend,actions,reach', time_range: { since: startDate, until: endDate }, access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
                     console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
@@ -752,7 +767,7 @@ form.addEventListener('submit', async (e) => {
     } else {
         FB.api(
             `/${unitId}/insights`,
-            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'account', access_token: currentAccessToken },
+            { fields: 'spend,actions,reach', time_range: { since: startDate, until: endDate }, level: 'account', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
