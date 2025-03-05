@@ -27,6 +27,12 @@ let adSetSearchText = '';
 let currentAccessToken = localStorage.getItem('fbAccessToken') || null;
 let comparisonData = null;
 
+const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
+
+backToReportSelectionBtn.addEventListener('click', () => {
+    showScreen(reportSelectionScreen);
+});
+
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
     console.log('Token de acesso não encontrado. Redirecionando para a página de login.');

@@ -17,6 +17,13 @@ const adSetsModal = document.getElementById('adSetsModal');
 const closeCampaignsModalBtn = document.getElementById('closeCampaignsModal');
 const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 
+const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
+
+backToReportSelectionBtn.addEventListener('click', () => {
+    showScreen(reportSelectionScreen);
+});
+
+
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
 const adSetsMap = {};
