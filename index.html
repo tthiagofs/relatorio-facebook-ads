@@ -237,21 +237,6 @@
             FB.AppEvents.logPageView();
             console.log("Facebook SDK inicializado com sucesso!");
         };
-
-        // Função para carregar o SDK do Facebook
-        (function(d, s, id) {
-            console.log("Carregando SDK do Facebook...");
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) {
-                console.log("SDK já carregado, ignorando...");
-                return;
-            }
-            js = d.createElement(s);
-            js.id = id;
-            js.src = "https://connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
-            console.log("Script do SDK do Facebook adicionado ao DOM.");
-        })(document, 'script', 'facebook-jssdk');
     </script>
     <script src="app.js"></script>
 </body>
