@@ -4,6 +4,7 @@ const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 const filterCampaignsBtn = document.getElementById('filterCampaigns');
 const filterAdSetsBtn = document.getElementById('filterAdSets');
+const comparePeriodsBtn = document.getElementById('comparePeriods'); // Novo botão
 const campaignsModal = document.getElementById('campaignsModal');
 const adSetsModal = document.getElementById('adSetsModal');
 const comparisonModal = document.getElementById('comparisonModal');
@@ -28,6 +29,7 @@ let comparisonData = null;
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
+    console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
     alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
     window.location.href = 'index.html';
 }
@@ -493,6 +495,11 @@ function calculatePreviousPeriod(startDate, endDate) {
     };
 }
 
+// Configurar evento para o botão "Período de Comparação"
+comparePeriodsBtn.addEventListener('click', () => {
+    toggleModal(comparisonModal, true, false);
+});
+
 // Configurar eventos para o modal de comparação
 confirmComparisonBtn.addEventListener('click', async () => {
     const option = document.querySelector('input[name="comparisonOption"]:checked').value;
@@ -515,7 +522,6 @@ confirmComparisonBtn.addEventListener('click', async () => {
     }
 
     toggleModal(comparisonModal, false, false);
-    await generateReport();
 });
 
 cancelComparisonBtn.addEventListener('click', () => {
@@ -533,7 +539,7 @@ function calculateVariation(currentValue, previousValue) {
 // Geração do relatório com soma consolidada dos itens filtrados ativados
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    toggleModal(comparisonModal, true, false);
+    await generateReport();
 });
 
 async function generateReport() {
