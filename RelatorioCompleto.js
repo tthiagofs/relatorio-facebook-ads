@@ -4,7 +4,7 @@ const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 const filterCampaignsBtn = document.getElementById('filterCampaigns');
 const filterAdSetsBtn = document.getElementById('filterAdSets');
-const comparePeriodsBtn = document.getElementById('comparePeriods'); // Novo botão
+const comparePeriodsBtn = document.getElementById('comparePeriods');
 const campaignsModal = document.getElementById('campaignsModal');
 const adSetsModal = document.getElementById('adSetsModal');
 const comparisonModal = document.getElementById('comparisonModal');
@@ -31,7 +31,11 @@ let comparisonData = null;
 if (!currentAccessToken) {
     console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
     alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
-    window.location.href = 'index.html';
+    // Usar window.location.replace para garantir o redirecionamento
+    setTimeout(() => {
+        window.location.replace('index.html');
+    }, 100); // Pequeno atraso para garantir que o alerta seja exibido
+    throw new Error('Token de acesso não encontrado. Redirecionamento iniciado.'); // Para interromper a execução
 }
 
 // Preencher o dropdown de unidades com os dados do localStorage
@@ -69,6 +73,18 @@ function toggleModal(modal, show, isCampaign) {
             filterCampaignsBtn.disabled = isFilterActivated;
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
+        // Ao abrir o modal de comparação, restaurar a seleção anterior, se houver
+        if (modal === comparisonModal && comparisonData) {
+            if (comparisonData.startDate && comparisonData.endDate) {
+                document.querySelector('input[name="comparisonOption"][value="custom"]').checked = true;
+                document.getElementById('compareStartDate').value = comparisonData.startDate;
+                document.getElementById('compareEndDate').value = comparisonData.endDate;
+            } else if (comparisonData.isPrevious) {
+                document.querySelector('input[name="comparisonOption"][value="previous"]').checked = true;
+            } else {
+                document.querySelector('input[name="comparisonOption"][value="none"]').checked = true;
+            }
+        }
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
@@ -84,10 +100,7 @@ function toggleModal(modal, show, isCampaign) {
             const campaignSearchInput = document.getElementById('campaignSearch');
             if (campaignSearchInput) campaignSearchInput.value = '';
         } else if (modal === comparisonModal) {
-            document.querySelector('input[name="comparisonOption"][value="custom"]').checked = true;
-            document.getElementById('compareStartDate').value = '';
-            document.getElementById('compareEndDate').value = '';
-            comparisonData = null;
+            // Não limpar os campos ou comparisonData aqui, apenas fechar o modal
         } else {
             isAdSetFilterActive = false;
             if (isFilterActivated && selectedAdSets.size === 0) {
@@ -513,18 +526,21 @@ confirmComparisonBtn.addEventListener('click', async () => {
             alert('Por favor, preencha as datas do período de comparação.');
             return;
         }
-        comparisonData = { startDate: compareStartDate, endDate: compareEndDate };
+        comparisonData = { startDate: compareStartDate, endDate: compareEndDate, isPrevious: false };
     } else if (option === 'previous') {
         const previousPeriod = calculatePreviousPeriod(startDate, endDate);
-        comparisonData = { startDate: previousPeriod.start, endDate: previousPeriod.end };
+        comparisonData = { startDate: previousPeriod.start, endDate: previousPeriod.end, isPrevious: true };
     } else {
         comparisonData = null;
     }
 
+    console.log('Dados de comparação salvos:', comparisonData); // Depuração
     toggleModal(comparisonModal, false, false);
 });
 
 cancelComparisonBtn.addEventListener('click', () => {
+    comparisonData = null; // Limpar dados de comparação ao cancelar
+    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData); // Depuração
     toggleModal(comparisonModal, false, false);
 });
 
@@ -624,7 +640,7 @@ async function generateReport() {
     }
 
     // Calcular métricas para o período de comparação, se aplicável
-    if (comparisonData) {
+    if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
         let compareSpend = 0;
         let compareConversations = 0;
         let compareReach = 0;
@@ -693,6 +709,9 @@ async function generateReport() {
             conversations: compareConversations,
             costPerConversation: parseFloat(compareCostPerConversation)
         };
+        console.log('Métricas de comparação calculadas:', comparisonMetrics); // Depuração
+    } else {
+        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData); // Depuração
     }
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
@@ -702,7 +721,7 @@ async function generateReport() {
         <div class="report-header">
             <h2>Relatório Completo - CA - ${unitName}</h2>
             <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
-            ${comparisonData ? `<p>📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}</p>` : ''}
+            ${comparisonData && comparisonData.startDate && comparisonData.endDate ? `<p>📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}</p>` : ''}
         </div>
         <div class="metrics-grid">
             <div class="metric-card reach">
