@@ -1,6 +1,7 @@
+// Elementos do DOM
 const appLoginScreen = document.getElementById('appLoginScreen');
 const reportSelectionScreen = document.getElementById('reportSelectionScreen');
-const loginScreen = document.getElementById('loginScreen');
+const facebookLoginScreen = document.getElementById('facebookLoginScreen');
 const mainContent = document.getElementById('mainContent');
 const appLoginForm = document.getElementById('appLoginForm');
 const appLoginError = document.getElementById('appLoginError');
@@ -12,7 +13,7 @@ const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 const filterCampaignsBtn = document.getElementById('filterCampaigns');
 const filterAdSetsBtn = document.getElementById('filterAdSets');
-const backBtn = document.getElementById('backBtn'); // Botão Voltar
+const backToSelectionBtnSimple = document.getElementById('backToSelectionBtnSimple'); // Botão Voltar
 const campaignsModal = document.getElementById('campaignsModal');
 const adSetsModal = document.getElementById('adSetsModal');
 const closeCampaignsModalBtn = document.getElementById('closeCampaignsModal');
@@ -31,12 +32,48 @@ let campaignSearchText = '';
 let adSetSearchText = '';
 let currentAccessToken = null;
 
+// Login do app (movido para o início para garantir que o evento seja registrado)
+appLoginForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Impede o recarregamento da página
+    console.log('Formulário de login submetido');
+
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    console.log('Dados do formulário:', { username, password });
+
+    if (username === '' || password === '') {
+        console.log('Campos vazios detectados');
+        appLoginError.textContent = 'Por favor, preencha todos os campos.';
+        appLoginError.style.display = 'block';
+        return;
+    }
+
+    if (username === '@admin' && password === '134679') {
+        console.log('Login bem-sucedido, alternando para facebookLoginScreen');
+        appLoginError.style.display = 'none'; // Limpa mensagem de erro
+        showScreen(facebookLoginScreen); // Vai direto para a tela de login no Facebook
+        // Limpa os campos do formulário
+        usernameInput.value = '';
+        passwordInput.value = '';
+    } else {
+        console.log('Login falhou: usuário ou senha inválidos');
+        appLoginError.textContent = 'Usuário ou senha inválidos.';
+        appLoginError.style.display = 'block';
+        // Limpa os campos do formulário
+        usernameInput.value = '';
+        passwordInput.value = '';
+    }
+});
+
 // Função para alternar telas
 function showScreen(screen) {
     console.log('Alternando para a tela:', screen.id);
     appLoginScreen.style.display = 'none';
     reportSelectionScreen.style.display = 'none';
-    loginScreen.style.display = 'none';
+    facebookLoginScreen.style.display = 'none';
     mainContent.style.display = 'none';
     screen.style.display = 'block';
     console.log('Tela atualizada com sucesso:', screen.id);
@@ -229,42 +266,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
     }
 }
 
-// Login do app
-appLoginForm.addEventListener('submit', (e) => {
-    e.preventDefault(); // Impede o recarregamento da página
-    console.log('Formulário de login submetido');
-
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value.trim();
-
-    console.log('Dados do formulário:', { username, password });
-
-    if (username === '' || password === '') {
-        console.log('Campos vazios detectados');
-        appLoginError.textContent = 'Por favor, preencha todos os campos.';
-        appLoginError.style.display = 'block';
-        return;
-    }
-
-    if (username === '@admin' && password === '134679') {
-        console.log('Login bem-sucedido, alternando para loginScreen');
-        appLoginError.style.display = 'none'; // Limpa mensagem de erro
-        showScreen(loginScreen); // Vai direto para a tela de login no Facebook
-        // Limpa os campos do formulário
-        usernameInput.value = '';
-        passwordInput.value = '';
-    } else {
-        console.log('Login falhou: usuário ou senha inválidos');
-        appLoginError.textContent = 'Usuário ou senha inválidos.';
-        appLoginError.style.display = 'block';
-        // Limpa os campos do formulário
-        usernameInput.value = '';
-        passwordInput.value = '';
-    }
-});
-
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
     event.preventDefault();
@@ -445,7 +446,7 @@ function handleFacebookLoginResponse(response) {
         document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente. Detalhes: ' + (response.error ? response.error.message : 'Erro desconhecido');
         document.getElementById('loginError').style.display = 'block';
     }
-}
+});
 
 // Seleção de relatório simplificado
 simpleReportBtn.addEventListener('click', () => {
@@ -461,7 +462,7 @@ completeReportBtn.addEventListener('click', () => {
 });
 
 // Botão Voltar para a tela de seleção de relatório
-backBtn.addEventListener('click', () => {
+backToSelectionBtnSimple.addEventListener('click', () => {
     console.log('Botão Voltar clicado - Retornando para reportSelectionScreen');
     showScreen(reportSelectionScreen);
     // Limpar dados do relatório simplificado
