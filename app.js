@@ -269,28 +269,27 @@ simpleReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Simplificado clicado - Versão Atualizada (03/03/2025)');
     showScreen(loginScreen);
     simpleReportBtn.classList.add('active');
-    completeReportBtn.classList.remove('active'); // Garantir que apenas um botão esteja ativo
 });
 
 // Seleção de relatório completo
 completeReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
-    showScreen(loginScreen); // Mostrar a tela de login do Facebook
-    completeReportBtn.classList.add('active');
-    simpleReportBtn.classList.remove('active'); // Garantir que apenas um botão esteja ativo
+    window.location.href = 'RelatorioCompleto.html';
 });
 
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
     event.preventDefault();
-    console.log(simpleReportBtn.classList.contains('active') 
-        ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' 
-        : 'Botão Login com Facebook clicado (Relatório Completo) - Versão Atualizada (03/03/2025)');
+    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Outro Contexto) - Versão Atualizada (03/03/2025)');
 
     if (typeof FB === 'undefined') {
         console.error('Facebook SDK não está carregado ou inicializado corretamente.');
         document.getElementById('loginError').textContent = 'Erro: Facebook SDK não está disponível. Verifique sua conexão ou tente novamente.';
         document.getElementById('loginError').style.display = 'block';
+        return;
+    }
+
+    if (!simpleReportBtn.classList.contains('active')) {
         return;
     }
 
@@ -309,11 +308,12 @@ loginBtn.addEventListener('click', (event) => {
 // Função para lidar com a resposta do login do Facebook
 function handleFacebookLoginResponse(response) {
     if (response.authResponse) {
-        console.log('Login com Facebook bem-sucedido - Versão Atualizada (03/03/2025):', response.authResponse);
+        console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
+        showScreen(mainContent);
+
         currentAccessToken = response.authResponse.accessToken;
         console.log('Access Token:', currentAccessToken);
 
-        // Verificar o status da conta específica (exemplo: Oral Centter Jaíba)
         FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: currentAccessToken }, function(statusResponse) {
             if (statusResponse && !statusResponse.error) {
                 console.log('Status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse);
@@ -329,10 +329,11 @@ function handleFacebookLoginResponse(response) {
             }
         });
 
-        // Carregar contas de anúncios
         FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
             if (accountResponse && !accountResponse.error) {
-                console.log('Resposta da API /me/adaccounts - Versão Atualizada (03/03/2025):', accountResponse);
+                console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
+                const unitSelect = document.getElementById('unitId');
+                unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
                 let accounts = accountResponse.data || [];
                 accounts.forEach(account => {
                     adAccountsMap[account.id] = account.name;
@@ -344,10 +345,9 @@ function handleFacebookLoginResponse(response) {
                     }
                 });
 
-                // Carregar contas do Business Manager
                 FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
                     if (businessResponse && !businessResponse.error) {
-                        console.log('Resposta da API /me/businesses - Versão Atualizada (03/03/2025):', businessResponse);
+                        console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
                         const businesses = businessResponse.data || [];
                         let businessAccountsPromises = [];
 
@@ -359,7 +359,8 @@ function handleFacebookLoginResponse(response) {
                                     function(ownedAccountResponse) {
                                         if (ownedAccountResponse && !ownedAccountResponse.error) {
                                             console.log(`Contas próprias do Business Manager ${business.id} (${business.name}):`, ownedAccountResponse);
-                                            resolve(ownedAccountResponse.data || []);
+                                            const ownedAccounts = ownedAccountResponse.data || [];
+                                            resolve(ownedAccounts);
                                         } else {
                                             console.error(`Erro ao carregar contas próprias do Business Manager ${business.id}:`, ownedAccountResponse.error);
                                             resolve([]);
@@ -375,7 +376,8 @@ function handleFacebookLoginResponse(response) {
                                     function(clientAccountResponse) {
                                         if (clientAccountResponse && !clientAccountResponse.error) {
                                             console.log(`Contas compartilhadas com o Business Manager ${business.id} (${business.name}):`, clientAccountResponse);
-                                            resolve(clientAccountResponse.data || []);
+                                            const clientAccounts = clientAccountResponse.data || [];
+                                            resolve(clientAccounts);
                                         } else {
                                             console.error(`Erro ao carregar contas compartilhadas do Business Manager ${business.id}:`, clientAccountResponse.error);
                                             resolve([]);
@@ -390,48 +392,57 @@ function handleFacebookLoginResponse(response) {
                             allBusinessAccounts.forEach(account => {
                                 if (!adAccountsMap[account.id]) {
                                     adAccountsMap[account.id] = account.name;
+                                    if (account.id === '1187332129240271') {
+                                        console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada (via Business Manager):', account);
+                                    }
+                                    if (account.id === '9586847491331372') {
+                                        console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba encontrada (via Business Manager):', account);
+                                    }
                                 }
                             });
 
-                            // Salvar o token de acesso e os dados no localStorage
-                            localStorage.setItem('fbAccessToken', currentAccessToken);
-                            localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
-                            console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap });
+                            const sortedAccounts = Object.keys(adAccountsMap)
+                                .map(accountId => ({
+                                    id: accountId,
+                                    name: adAccountsMap[accountId]
+                                }))
+                                .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
-                            // Verificar qual relatório foi selecionado e prosseguir
-                            if (simpleReportBtn.classList.contains('active')) {
-                                console.log('Prosseguindo para o Relatório Simplificado');
-                                const unitSelect = document.getElementById('unitId');
-                                unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-                                const sortedAccounts = Object.keys(adAccountsMap)
-                                    .map(accountId => ({
-                                        id: accountId,
-                                        name: adAccountsMap[accountId]
-                                    }))
-                                    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-                                sortedAccounts.forEach(account => {
-                                    const option = document.createElement('option');
-                                    option.value = account.id;
-                                    option.textContent = account.name;
-                                    unitSelect.appendChild(option);
-                                });
-                                showScreen(mainContent);
-                            } else if (completeReportBtn.classList.contains('active')) {
-                                console.log('Prosseguindo para o Relatório Completo');
-                                window.location.href = 'RelatorioCompleto.html';
-                            }
+                            unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+                            sortedAccounts.forEach(account => {
+                                const option = document.createElement('option');
+                                option.value = account.id;
+                                option.textContent = account.name;
+                                unitSelect.appendChild(option);
+                            });
 
-                            // Verificação de contas específicas
                             const seteLagoasFound = Object.keys(adAccountsMap).includes('1187332129240271');
                             const jaibaFound = Object.keys(adAccountsMap).includes('9586847491331372');
+
+                            if (!seteLagoasFound) {
+                                console.warn('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas NÃO encontrada após todas as chamadas da API.');
+                            } else {
+                                console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas confirmada no adAccountsMap.');
+                            }
+
+                            if (!jaibaFound) {
+                                console.warn('Conta 9586847491331372 - CA - Oral Centter Jaíba NÃO encontrada após todas as chamadas da API.');
+                            } else {
+                                console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba confirmada no adAccountsMap.');
+                            }
+
                             if (!seteLagoasFound || !jaibaFound) {
-                                console.warn('Uma ou mais contas esperadas (Sete Lagoas ou Jaíba) não foram encontradas.');
                                 document.getElementById('loginError').textContent = 'Uma ou mais contas esperadas (Sete Lagoas ou Jaíba) não foram encontradas. Verifique suas permissões ou o status das contas.';
                                 document.getElementById('loginError').style.display = 'block';
                             } else {
                                 document.getElementById('loginError').textContent = '';
                                 document.getElementById('loginError').style.display = 'none';
                             }
+
+                            // Salvar o token de acesso e os dados no localStorage para uso no Relatório Completo
+                            localStorage.setItem('fbAccessToken', currentAccessToken);
+                            localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
+                            console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap });
                         });
                     } else {
                         console.error('Erro ao carregar Business Managers:', businessResponse.error);
@@ -757,19 +768,13 @@ form.addEventListener('submit', async (e) => {
                         });
                     });
                     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
-                    // Formatar os valores antes de inserir na template literal
-                    const formattedSpend = totalSpend.toFixed(2).replace('.', ',');
-                    const formattedCostPerConversation = costPerConversation.replace('.', ',');
-                    const formattedReach = totalReach.toLocaleString('pt-BR');
-                    const formattedStartDate = startDate.split('-').reverse().join('/');
-                    const formattedEndDate = endDate.split('-').reverse().join('/');
                     reportContainer.innerHTML = `
                         <p>📊 RELATÓRIO - CA - ${unitName}</p>
-                        <p>📅 Período: ${formattedStartDate} a ${formattedEndDate}</p>
-                        <p>💰 Investimento Total: R$ ${formattedSpend}</p>
+                        <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
+                        <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
                         <p>💬 Mensagens Iniciadas: ${totalConversations}</p>
-                        <p>💵 Custo por Mensagem: R$ ${formattedCostPerConversation}</p>
-                        <p>📢 Alcance Total: ${formattedReach} pessoas</p>
+                        <p>💵 Custo por Mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
+                        <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
                     `;
                     shareWhatsAppBtn.style.display = 'block';
                 } else {
@@ -783,29 +788,23 @@ form.addEventListener('submit', async (e) => {
     }
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
-    // Formatar os valores antes de inserir na template literal
-    const formattedSpend = totalSpend.toFixed(2).replace('.', ',');
-    const formattedCostPerConversation = costPerConversation.replace('.', ',');
-    const formattedReach = totalReach.toLocaleString('pt-BR');
-    const formattedStartDate = startDate.split('-').reverse().join('/');
-    const formattedEndDate = endDate.split('-').reverse().join('/');
     reportContainer.innerHTML = `
         <p>📊 RELATÓRIO - CA - ${unitName}</p>
-        <p>📅 Período: ${formattedStartDate} a ${formattedEndDate}</p>
-        <p>💰 Investimento Total: R$ ${formattedSpend}</p>
+        <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
+        <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
         <p>💬 Mensagens Iniciadas: ${totalConversations}</p>
-        <p>💵 Custo por Mensagem: R$ ${formattedCostPerConversation}</p>
-        <p>📢 Alcance Total: ${formattedReach} pessoas</p>
+        <p>💵 Custo por Mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
+        <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
     `;
     shareWhatsAppBtn.style.display = 'block';
-}
+});
 
 // Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {
     const reportText = reportContainer.innerText;
     const encodedText = encodeURIComponent(reportText);
-    const whatsappUrl = "https://api.whatsapp.com/send?text=" + encodedText;
-    window.open(whatsappUrl, "_blank");
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    window.open(whatsappUrl, '_blank');
 });
 
 // Mostrar tela inicial
