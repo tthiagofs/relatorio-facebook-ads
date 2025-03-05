@@ -655,7 +655,7 @@ function updateAdSets(selectedCampaigns) {
 
 // Funções para obter insights
 async function getCampaignInsights(campaignId, startDate, endDate) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         FB.api(
             `/${campaignId}/insights`,
             {
@@ -677,7 +677,7 @@ async function getCampaignInsights(campaignId, startDate, endDate) {
 }
 
 async function getAdSetInsights(adSetId, startDate, endDate) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         FB.api(
             `/${adSetId}/insights`,
             {
