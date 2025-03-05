@@ -5,6 +5,7 @@ const mainContent = document.getElementById('mainContent');
 const appLoginForm = document.getElementById('appLoginForm');
 const appLoginError = document.getElementById('appLoginError');
 const simpleReportBtn = document.getElementById('simpleReportBtn');
+const completeReportBtn = document.getElementById('completeReportBtn');
 const loginBtn = document.getElementById('loginBtn');
 const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
@@ -18,16 +19,16 @@ const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
-const adSetsMap = {}; // Mapa para armazenar IDs, nomes e insights dos ad sets
-const campaignsMap = {}; // Mapa para armazenar IDs, nomes e insights das campanhas
-let selectedCampaigns = new Set(); // Conjunto para armazenar campanhas selecionadas
-let selectedAdSets = new Set(); // Conjunto para armazenar ad sets selecionados
+const adSetsMap = {};
+const campaignsMap = {};
+let selectedCampaigns = new Set();
+let selectedAdSets = new Set();
 let isCampaignFilterActive = false;
 let isAdSetFilterActive = false;
-let isFilterActivated = false; // Novo estado para indicar se os filtros estão ativados
+let isFilterActivated = false;
 let campaignSearchText = '';
 let adSetSearchText = '';
-let currentAccessToken = null; // Armazena o token de acesso atual
+let currentAccessToken = null;
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -41,7 +42,7 @@ function showScreen(screen) {
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
     if (show && isFilterActivated && ((isCampaign && selectedCampaigns.size === 0) || (!isCampaign && selectedAdSets.size === 0))) {
-        return; // Impede abrir o modal se os filtros já estiverem ativados sem seleções
+        return;
     }
 
     modal.style.display = show ? 'block' : 'none';
@@ -251,6 +252,12 @@ simpleReportBtn.addEventListener('click', () => {
     simpleReportBtn.classList.add('active');
 });
 
+// Seleção de relatório completo
+completeReportBtn.addEventListener('click', () => {
+    console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
+    window.location.href = 'RelatorioCompleto.html';
+});
+
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
     event.preventDefault();
@@ -399,6 +406,10 @@ loginBtn.addEventListener('click', (event) => {
                                     document.getElementById('loginError').textContent = '';
                                     document.getElementById('loginError').style.display = 'none';
                                 }
+
+                                // Salvar o token de acesso no localStorage para uso no Relatório Completo
+                                localStorage.setItem('fbAccessToken', currentAccessToken);
+                                localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
                             });
                         } else {
                             console.error('Erro ao carregar Business Managers:', businessResponse.error);
@@ -498,7 +509,6 @@ async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     
-    // Verifica se já temos ad sets carregados para este unitId e período
     if (adSetsMap[unitId] && Object.keys(adSetsMap[unitId]).length > 0) {
         console.log(`Ad sets já carregados para unitId: ${unitId}, reutilizando dados existentes.`);
         if (!isCampaignFilterActive) {
@@ -564,7 +574,6 @@ async function loadAdSets(unitId, startDate, endDate) {
                 console.error('Erro ao carregar ad sets. Detalhes:', adSetResponse.error);
                 const endTime = performance.now();
                 console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
-                // Exibe mensagem de erro no modal
                 const adSetsList = document.getElementById('adSetsList');
                 if (adSetsList) {
                     adSetsList.innerHTML = '<p>Erro ao carregar os conjuntos de anúncios. Tente novamente ou faça login novamente.</p>';

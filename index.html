@@ -3,112 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InsightFlow - Relatório Facebook Ads</title>
-    <link rel="stylesheet" href="style.css">
-    <script>
-        window.fbAsyncInit = function() {
-            FB.init({
-                appId      : '618519427538646',
-                cookie     : true,
-                xfbml      : true,
-                version    : 'v19.0' // Atualizado para a versão mais recente em março de 2025
-            });
-            FB.AppEvents.logPageView();
-            console.log('Facebook SDK inicializado com sucesso - Versão Atualizada (03/03/2025)');
-        };
+    <title>Relatório de Anúncios do Facebook</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-        (function(d, s, id){
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) {return;}
-            js = d.createElement(s); js.id = id;
-            js.src = "https://connect.facebook.net/pt_BR/sdk.js";
-            js.onload = function() {
-                console.log('Facebook SDK carregado com sucesso - Versão Atualizada (03/03/2025)');
-            };
-            js.onerror = function() {
-                console.error('Erro ao carregar o Facebook SDK');
-            };
-            fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
-    </script>
+        .container {
+            max-width: 800px;
+            margin: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #1e3c72;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        select, input[type="date"], input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #1e90ff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1c86ee;
+        }
+
+        .btn-primary {
+            background-color: #1e90ff;
+        }
+
+        .btn-primary:hover {
+            background-color: #1c86ee;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-option {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f5f5f5;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .filter-option:hover {
+            background: #e0e0e0;
+        }
+
+        .filter-option.selected {
+            background: #1e90ff;
+            color: #fff;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .btn-filter-toggle {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            background-color: #1e90ff;
+        }
+
+        .btn-filter-toggle:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #ff0000;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #reportContainer {
+            margin-top: 20px;
+        }
+
+        #shareWhatsAppBtn {
+            display: none;
+            margin-top: 20px;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <!-- Tela de Login do App -->
-    <div id="appLoginScreen" class="login-container">
-        <div class="login-box">
-            <h1>Login no App</h1>
-            <form id="appLoginForm">
+    <div class="container" id="appLoginScreen">
+        <h1>Login</h1>
+        <form id="appLoginForm">
+            <div class="form-group">
                 <label for="username">Usuário:</label>
-                <input type="text" id="username" placeholder="@admin" required>
-                <label for="password">Senha:</label>
-                <input type="password" id="password" placeholder="Digite a senha" required>
-                <button type="submit">Entrar</button>
-                <p id="appLoginError" class="error-message"></p>
-            </form>
-        </div>
-    </div>
-
-    <!-- Tela de Seleção de Relatórios -->
-    <div id="reportSelectionScreen" class="container" style="display: none;">
-        <h1>Escolha o Tipo de Relatório</h1>
-        <button id="simpleReportBtn" class="btn-primary">Relatório Simplificado</button>
-        <button id="fullReportBtn" class="btn-primary">Relatório Completo</button>
-    </div>
-
-    <!-- Tela de Login do Facebook -->
-    <div id="loginScreen" class="login-container" style="display: none;">
-        <div class="login-box">
-            <h1>Login com Facebook</h1>
-            <button id="loginBtn">Login com Facebook</button>
-            <p id="loginError" class="error-message"></p>
-        </div>
-    </div>
-
-    <!-- Tela de Geração de Relatório (Relatório Simplificado) -->
-    <div id="mainContent" class="container" style="display: none;">
-        <h1>Gerar Relatório - Facebook Ads</h1>
-        <form id="form">
-            <label for="unitId">Selecione a Unidade:</label>
-            <select id="unitId" required>
-                <option value="">Escolha a unidade</option>
-            </select>
-            <label for="startDate">Data Início:</label>
-            <input type="date" id="startDate" required>
-            <label for="endDate">Data Fim:</label>
-            <input type="date" id="endDate" required>
-            <label>Filtrar por:</label>
-            <button type="button" id="filterCampaigns" class="btn-primary">Campanhas</button>
-            <button type="button" id="filterAdSets" class="btn-primary">Conjuntos</button>
-            <div id="campaignsModal" class="modal" style="display: none;">
-                <div class="modal-content">
-                    <h2>Selecione as Campanhas</h2>
-                    <input type="text" id="campaignSearch" class="search-bar" placeholder="Pesquisar campanhas...">
-                    <div id="campaignsList"></div>
-                    <button type="button" id="closeCampaignsModal" class="btn-primary">Fechar</button>
-                </div>
+                <input type="text" id="username" required>
             </div>
-            <div id="adSetsModal" class="modal" style="display: none;">
-                <div class="modal-content">
-                    <h2>Selecione os Conjuntos de Anúncios</h2>
-                    <input type="text" id="adSetSearch" class="search-bar" placeholder="Pesquisar conjuntos...">
-                    <div id="adSetsList"></div>
-                    <button type="button" id="closeAdSetsModal" class="btn-primary">Fechar</button>
-                </div>
+            <div class="form-group">
+                <label for="password">Senha:</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit">Entrar</button>
+            <div id="appLoginError" class="error-message"></div>
+        </form>
+    </div>
+
+    <div class="container" id="reportSelectionScreen" style="display: none;">
+        <h1>Selecione o Tipo de Relatório</h1>
+        <button id="simpleReportBtn">Relatório Simplificado</button>
+        <button id="completeReportBtn" style="margin-top: 10px;">Relatório Completo</button>
+    </div>
+
+    <div class="container" id="loginScreen" style="display: none;">
+        <h1>Login com Facebook</h1>
+        <button id="loginBtn">Login com Facebook</button>
+        <div id="loginError" class="error-message"></div>
+    </div>
+
+    <div class="container" id="mainContent" style="display: none;">
+        <h1>Relatório Simplificado</h1>
+        <form id="form">
+            <div class="form-group">
+                <label for="unitId">Unidade:</label>
+                <select id="unitId" required>
+                    <option value="">Escolha a unidade</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="startDate">Data Início:</label>
+                <input type="date" id="startDate" required>
+            </div>
+            <div class="form-group">
+                <label for="endDate">Data Fim:</label>
+                <input type="date" id="endDate" required>
+            </div>
+            <div class="form-group">
+                <button type="button" id="filterCampaigns" class="btn-primary">Campanhas</button>
+                <button type="button" id="filterAdSets" class="btn-primary">Conjuntos</button>
             </div>
             <button type="submit">Gerar Relatório</button>
         </form>
-        <div id="reportContainer" class="report-container"></div>
-        <button id="shareWhatsAppBtn" style="display: none;">Compartilhar no WhatsApp</button>
+        <div id="reportContainer"></div>
+        <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
     </div>
 
-    <!-- Tela de Relatório Completo (nova tela) -->
-    <div id="fullReportScreen" class="container" style="display: none;">
-        <h1>Relatório Completo - Facebook Ads</h1>
-        <p>Aqui será desenvolvido o módulo do Relatório Completo.</p>
-        <button id="backToSelectionBtn" class="btn-primary">Voltar ao Início</button>
+    <div id="campaignsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Selecione as Campanhas</h2>
+            <input type="text" id="campaignSearch" class="search-bar" placeholder="Pesquisar campanhas...">
+            <div id="campaignsList"></div>
+            <button type="button" id="closeCampaignsModal" class="btn-primary">Fechar</button>
+        </div>
     </div>
 
+    <div id="adSetsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Selecione os Conjuntos de Anúncios</h2>
+            <input type="text" id="adSetSearch" class="search-bar" placeholder="Pesquisar conjuntos...">
+            <div id="adSetsList"></div>
+            <button type="button" id="closeAdSetsModal" class="btn-primary">Fechar</button>
+        </div>
+    </div>
+
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <script src="app.js"></script>
-    <script src="RelatorioCompleto.js"></script>
 </body>
 </html>
