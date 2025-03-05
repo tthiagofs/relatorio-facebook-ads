@@ -792,8 +792,8 @@ form.addEventListener('submit', async (e) => {
 shareWhatsAppBtn.addEventListener('click', () => {
     const reportText = reportContainer.innerText;
     const encodedText = encodeURIComponent(reportText);
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
-    window.open(whatsappUrl, '_blank');
+    const whatsappUrl = "https://api.whatsapp.com/send?text=" + encodedText;
+    window.open(whatsappUrl, "_blank");
 });
 
 // Mostrar tela inicial
