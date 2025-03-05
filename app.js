@@ -282,7 +282,7 @@ loginBtn.addEventListener('click', (event) => {
         console.log('Inicializando login com Facebook...');
         FB.login(function(response) {
             handleFacebookLoginResponse(response);
-        }, {scope: 'ads_read,ads_management,business_management'});
+        }, { scope: 'ads_read,ads_management,business_management' });
     } else {
         console.log('Token de acesso já existe, prosseguindo...');
         handleFacebookLoginResponse({ authResponse: { accessToken: FB.getAccessToken() } });
@@ -528,7 +528,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
                     const spend = insights[index].spend !== undefined && insights[index].spend !== null ? parseFloat(insights[index].spend) : 0;
                     campaignsMap[unitId][campaignId] = {
                         name: campaignResponse.data.find(camp => camp.id === campaignId).name.toLowerCase(),
-                        insights: { spend: spend }
+                        insights: { spend }
                     };
                 });
 
@@ -658,7 +658,12 @@ async function getCampaignInsights(campaignId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${campaignId}/insights`,
-            { fields: 'spend,actions,reach', time_range: { since: startDate, until: endDate }, level: 'campaign', access_token: currentAccessToken },
+            {
+                fields: 'spend,actions,reach',
+                time_range: { since: startDate, until: endDate },
+                level: 'campaign',
+                access_token: currentAccessToken
+            },
             function(response) {
                 if (response && !response.error) {
                     resolve(response.data[0] || {});
@@ -675,7 +680,11 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
             `/${adSetId}/insights`,
-            { fields: 'spend,actions,reach', time_range: { since: startDate, until: endDate }, access_token: currentAccessToken },
+            {
+                fields: 'spend,actions,reach',
+                time_range: { since: startDate, until: endDate },
+                access_token: currentAccessToken
+            },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
                     console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
@@ -767,7 +776,12 @@ form.addEventListener('submit', async (e) => {
     } else {
         FB.api(
             `/${unitId}/insights`,
-            { fields: 'spend,actions,reach', time_range: { since: startDate, until: endDate }, level: 'account', access_token: currentAccessToken },
+            {
+                fields: 'spend,actions,reach',
+                time_range: { since: startDate, until: endDate },
+                level: 'account',
+                access_token: currentAccessToken
+            },
             function(response) {
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
