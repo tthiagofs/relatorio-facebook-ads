@@ -364,6 +364,7 @@ loginBtn.addEventListener('click', (event) => {
                                     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
                                 // Preenche o dropdown com as contas ordenadas
+                                unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
                                 sortedAccounts.forEach(account => {
                                     const option = document.createElement('option');
                                     option.value = account.id;
@@ -372,15 +373,29 @@ loginBtn.addEventListener('click', (event) => {
                                 });
 
                                 // Verifica se as contas específicas foram encontradas após todas as chamadas
-                                if (!Object.keys(adAccountsMap).includes('1187332129240271')) {
+                                const seteLagoasFound = Object.keys(adAccountsMap).includes('1187332129240271');
+                                const jaibaFound = Object.keys(adAccountsMap).includes('9586847491331372');
+
+                                if (!seteLagoasFound) {
                                     console.warn('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas NÃO encontrada após todas as chamadas da API.');
+                                } else {
+                                    console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas confirmada no adAccountsMap.');
                                 }
-                                if (!Object.keys(adAccountsMap).includes('9586847491331372')) {
+
+                                if (!jaibaFound) {
                                     console.warn('Conta 9586847491331372 - CA - Oral Centter Jaíba NÃO encontrada após todas as chamadas da API.');
+                                } else {
+                                    console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba confirmada no adAccountsMap.');
                                 }
-                                if (!Object.keys(adAccountsMap).includes('1187332129240271') || !Object.keys(adAccountsMap).includes('9586847491331372')) {
+
+                                // Exibe mensagem de erro apenas se uma das contas não foi encontrada
+                                if (!seteLagoasFound || !jaibaFound) {
                                     document.getElementById('loginError').textContent = 'Uma ou mais contas esperadas (Sete Lagoas ou Jaíba) não foram encontradas. Verifique suas permissões ou o status das contas.';
                                     document.getElementById('loginError').style.display = 'block';
+                                } else {
+                                    // Se ambas as contas foram encontradas, limpa qualquer mensagem de erro
+                                    document.getElementById('loginError').textContent = '';
+                                    document.getElementById('loginError').style.display = 'none';
                                 }
                             });
                         } else {
