@@ -1,6 +1,6 @@
 const appLoginScreen = document.getElementById('appLoginScreen');
 const reportSelectionScreen = document.getElementById('reportSelectionScreen');
-const loginScreen = document.getElementById('facebookLoginScreen');
+const loginScreen = document.getElementById('loginScreen');
 const mainContent = document.getElementById('mainContent');
 const appLoginForm = document.getElementById('appLoginForm');
 const appLoginError = document.getElementById('appLoginError');
@@ -248,9 +248,9 @@ appLoginForm.addEventListener('submit', (e) => {
     }
 
     if (username === '@admin' && password === '134679') {
-        console.log('Login bem-sucedido, alternando para loginScreen');
+        console.log('Login bem-sucedido, alternando para reportSelectionScreen');
         appLoginError.style.display = 'none'; // Limpa mensagem de erro
-        showScreen(loginScreen); // Alterado para ir direto para a tela de login no Facebook
+        showScreen(reportSelectionScreen);
         // Limpa os campos do formulário
         usernameInput.value = '';
         passwordInput.value = '';
@@ -267,20 +267,20 @@ appLoginForm.addEventListener('submit', (e) => {
 // Seleção de relatório simplificado
 simpleReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Simplificado clicado - Versão Atualizada (03/03/2025)');
-    showScreen(mainContent); // Após selecionar o relatório simplificado, vai para a tela de geração de relatório
+    showScreen(loginScreen);
     simpleReportBtn.classList.add('active');
 });
 
 // Seleção de relatório completo
 completeReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
-    window.location.href = 'RelatorioCompleto.html'; // Redireciona para o relatório completo
+    window.location.href = 'RelatorioCompleto.html';
 });
 
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
     event.preventDefault();
-    console.log('Botão Login com Facebook clicado - Versão Atualizada (03/03/2025)');
+    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Outro Contexto) - Versão Atualizada (03/03/2025)');
 
     if (typeof FB === 'undefined') {
         console.error('Facebook SDK não está carregado ou inicializado corretamente.');
@@ -289,12 +289,16 @@ loginBtn.addEventListener('click', (event) => {
         return;
     }
 
+    if (!simpleReportBtn.classList.contains('active')) {
+        return;
+    }
+
     // Verificar se o SDK está inicializado antes de chamar FB.login
     if (!FB.getAccessToken()) {
         console.log('Inicializando login com Facebook...');
         FB.login(function(response) {
             handleFacebookLoginResponse(response);
-        }, { scope: 'ads_read,ads_management,business_management' });
+        }, {scope: 'ads_read,ads_management,business_management'});
     } else {
         console.log('Token de acesso já existe, prosseguindo...');
         handleFacebookLoginResponse({ authResponse: { accessToken: FB.getAccessToken() } });
@@ -304,7 +308,9 @@ loginBtn.addEventListener('click', (event) => {
 // Função para lidar com a resposta do login do Facebook
 function handleFacebookLoginResponse(response) {
     if (response.authResponse) {
-        console.log('Login com Facebook bem-sucedido - Versão Atualizada (03/03/2025):', response.authResponse);
+        console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
+        showScreen(mainContent);
+
         currentAccessToken = response.authResponse.accessToken;
         console.log('Access Token:', currentAccessToken);
 
@@ -325,7 +331,7 @@ function handleFacebookLoginResponse(response) {
 
         FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
             if (accountResponse && !accountResponse.error) {
-                console.log('Resposta da API /me/adaccounts - Versão Atualizada (03/03/2025):', accountResponse);
+                console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
                 const unitSelect = document.getElementById('unitId');
                 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
                 let accounts = accountResponse.data || [];
@@ -341,7 +347,7 @@ function handleFacebookLoginResponse(response) {
 
                 FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
                     if (businessResponse && !businessResponse.error) {
-                        console.log('Resposta da API /me/businesses - Versão Atualizada (03/03/2025):', businessResponse);
+                        console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
                         const businesses = businessResponse.data || [];
                         let businessAccountsPromises = [];
 
@@ -431,14 +437,12 @@ function handleFacebookLoginResponse(response) {
                             } else {
                                 document.getElementById('loginError').textContent = '';
                                 document.getElementById('loginError').style.display = 'none';
-                                // Após login bem-sucedido no Facebook, mostrar a tela de seleção de relatório
-                                showScreen(reportSelectionScreen);
                             }
 
                             // Salvar o token de acesso e os dados no localStorage para uso no Relatório Completo
                             localStorage.setItem('fbAccessToken', currentAccessToken);
                             localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
-                            console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap: adAccountsMap });
+                            console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap });
                         });
                     } else {
                         console.error('Erro ao carregar Business Managers:', businessResponse.error);
@@ -793,7 +797,7 @@ form.addEventListener('submit', async (e) => {
         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
     `;
     shareWhatsAppBtn.style.display = 'block';
-}
+});
 
 // Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {
