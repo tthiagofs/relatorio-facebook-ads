@@ -85,24 +85,35 @@
         }
 
         .btn-generate {
-            background-color: #28a745; /* Verde para o botão Gerar Relatório */
+            background-color: #28a745;
             padding: 12px 24px;
             font-size: 16px;
         }
 
         .btn-generate:hover {
-            background-color: #218838; /* Tom mais escuro de verde ao passar o mouse */
+            background-color: #218838;
         }
 
         .btn-filter {
             background-color: #1e3c72;
-            padding: 6px 12px; /* Botões menores */
-            font-size: 14px; /* Fonte menor */
+            padding: 6px 12px;
+            font-size: 14px;
             margin: 0 5px;
         }
 
         .btn-filter:hover {
             background-color: #2a5298;
+        }
+
+        .btn-back {
+            background-color: #6c757d;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .btn-back:hover {
+            background-color: #5a6268;
         }
 
         .filter-label {
@@ -258,6 +269,7 @@
 <body>
     <div class="container" id="mainContent">
         <h1>Relatório Completo</h1>
+        <button id="backToSelectionBtnComplete" class="btn-back">Voltar</button>
         <form id="form">
             <div class="form-group">
                 <label for="unitId">Unidade:</label>
@@ -332,7 +344,7 @@
         // Inicializar o SDK do Facebook
         window.fbAsyncInit = function() {
             FB.init({
-                appId: '618519427538646', // Seu App ID
+                appId: '618519427538646',
                 cookie: true,
                 xfbml: true,
                 version: 'v20.0'

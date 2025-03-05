@@ -73,24 +73,35 @@
         }
 
         .btn-generate {
-            background-color: #28a745; /* Verde para o botão Gerar Relatório */
+            background-color: #28a745;
             padding: 12px 24px;
             font-size: 16px;
         }
 
         .btn-generate:hover {
-            background-color: #218838; /* Tom mais escuro de verde ao passar o mouse */
+            background-color: #218838;
         }
 
         .btn-filter {
             background-color: #1e3c72;
-            padding: 6px 12px; /* Botões menores */
-            font-size: 14px; /* Fonte menor */
+            padding: 6px 12px;
+            font-size: 14px;
             margin: 0 5px;
         }
 
         .btn-filter:hover {
             background-color: #2a5298;
+        }
+
+        .btn-back {
+            background-color: #6c757d; /* Cor cinza para o botão Voltar */
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .btn-back:hover {
+            background-color: #5a6268;
         }
 
         .filter-label {
@@ -194,20 +205,21 @@
         </form>
     </div>
 
+    <div class="container" id="facebookLoginScreen" style="display: none;">
+        <h1>Login com Facebook</h1>
+        <button id="loginBtn">Login com Facebook</button>
+        <div id="loginError" class="error-message"></div>
+    </div>
+
     <div class="container" id="reportSelectionScreen" style="display: none;">
         <h1>Selecione o Tipo de Relatório</h1>
         <button id="simpleReportBtn">Relatório Simplificado</button>
         <button id="completeReportBtn">Relatório Completo</button>
     </div>
 
-    <div class="container" id="loginScreen" style="display: none;">
-        <h1>Login com Facebook</h1>
-        <button id="loginBtn">Login com Facebook</button>
-        <div id="loginError" class="error-message"></div>
-    </div>
-
     <div class="container" id="mainContent" style="display: none;">
         <h1>Relatório Simplificado</h1>
+        <button id="backToSelectionBtnSimple" class="btn-back">Voltar</button>
         <form id="form">
             <div class="form-group">
                 <label for="unitId">Unidade:</label>
