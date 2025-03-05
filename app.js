@@ -107,7 +107,8 @@ function updateFilterButton() {
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
     const searchInput = document.getElementById(isCampaign ? 'campaignSearch' : 'adSetSearch');
-    container.innerHTML = options.length === 0 ? '<p>Buscando...</p>' : ''; // Mostra "Buscando..." enquanto carrega
+    container.innerHTML = options.length === 0 ? '<p>Carregando dados, por favor aguarde...</p>' : ''; // Feedback visual melhorado
+    console.log(`Renderizando opções para ${isCampaign ? 'campanhas' : 'conjuntos'} - Total de opções: ${options.length}`); // Log para depuração
     if (options.length > 0) {
         // Função para filtrar opções com base no texto de pesquisa
         function filterOptions(searchText) {
@@ -207,6 +208,9 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 filterOptions(e.target.value);
             });
         }
+    } else {
+        console.warn(`Nenhuma opção disponível para renderizar em ${containerId}`); // Log para depuração
+        container.innerHTML = '<p>Nenhum dado encontrado para o período selecionado.</p>';
     }
 }
 
@@ -445,21 +449,27 @@ form.addEventListener('input', async function(e) {
 
 // Função para carregar campanhas
 async function loadCampaigns(unitId, startDate, endDate) {
+    const startTime = performance.now(); // Medir tempo de carregamento
+    console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`); // Log para depuração
     FB.api(
         `/${unitId}/campaigns`,
         { fields: 'id,name' },
         async function(campaignResponse) {
             if (campaignResponse && !campaignResponse.error) {
+                console.log(`Resposta da API para campanhas:`, campaignResponse); // Log para depuração
                 campaignsMap[unitId] = {};
                 const campaignIds = campaignResponse.data.map(camp => camp.id);
-                for (const campaignId of campaignIds) {
-                    const insights = await getCampaignInsights(campaignId, startDate, endDate);
-                    const spend = insights.spend !== undefined && insights.spend !== null ? parseFloat(insights.spend) : 0;
+                const insightPromises = campaignIds.map(campaignId => getCampaignInsights(campaignId, startDate, endDate));
+
+                const insights = await Promise.all(insightPromises);
+                campaignIds.forEach((campaignId, index) => {
+                    const spend = insights[index].spend !== undefined && insights[index].spend !== null ? parseFloat(insights[index].spend) : 0;
                     campaignsMap[unitId][campaignId] = {
                         name: campaignResponse.data.find(camp => camp.id === campaignId).name.toLowerCase(),
                         insights: { spend: spend }
                     };
-                }
+                });
+
                 if (!isAdSetFilterActive) {
                     const campaignOptions = campaignIds.map(id => ({
                         value: id,
@@ -468,6 +478,9 @@ async function loadCampaigns(unitId, startDate, endDate) {
                     }));
                     renderOptions('campaignsList', campaignOptions, selectedCampaigns, true);
                 }
+
+                const endTime = performance.now();
+                console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`); // Log do tempo de carregamento
             } else {
                 console.error('Erro ao carregar campanhas:', campaignResponse.error);
             }
@@ -477,38 +490,42 @@ async function loadCampaigns(unitId, startDate, endDate) {
 
 // Função para carregar ad sets, usando getAdSetInsights para garantir consistência
 async function loadAdSets(unitId, startDate, endDate) {
+    const startTime = performance.now(); // Medir tempo de carregamento
+    console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`); // Log para depuração
     FB.api(
         `/${unitId}/adsets`,
-        { fields: 'id,name' },
+        { fields: 'id,name', limit: 50 }, // Adiciona limite inicial para evitar sobrecarga
         async function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
+                console.log(`Resposta da API para ad sets:`, adSetResponse); // Log para depuração
                 adSetsMap[unitId] = {};
                 const adSetIds = adSetResponse.data.map(set => set.id);
 
-                // Usa getAdSetInsights individualmente para cada ad set, garantindo o valor correto de spend
-                for (const adSetId of adSetIds) {
-                    try {
-                        const insights = await getAdSetInsights(adSetId, startDate, endDate);
-                        let spend = 0;
-                        if (insights.spend !== undefined && insights.spend !== null) {
-                            spend = parseFloat(insights.spend) || 0;
-                            if (isNaN(spend)) {
-                                console.warn(`Valor inválido de spend para ad set ${adSetId}: ${insights.spend}`);
-                                spend = 0;
-                            }
+                // Paraleliza as chamadas para getAdSetInsights
+                const insightPromises = adSetIds.map(adSetId => getAdSetInsights(adSetId, startDate, endDate));
+                const insights = await Promise.all(insightPromises);
+
+                adSetIds.forEach((adSetId, index) => {
+                    let spend = 0;
+                    if (insights[index].spend !== undefined && insights[index].spend !== null) {
+                        spend = parseFloat(insights[index].spend) || 0;
+                        if (isNaN(spend)) {
+                            console.warn(`Valor inválido de spend para ad set ${adSetId}: ${insights[index].spend}`);
+                            spend = 0;
                         }
-                        console.log(`Spend inicial para ad set ${adSetId}: ${spend}`); // Log para depuração
-                        if (spend > 0) {
-                            const adSet = adSetResponse.data.find(set => set.id === adSetId);
-                            adSetsMap[unitId][adSetId] = {
-                                name: adSet.name.toLowerCase(),
-                                insights: { spend: spend, actions: insights.actions || [], reach: insights.reach || 0 }
-                            };
-                        }
-                    } catch (error) {
-                        console.error(`Erro ao carregar insights para ad set ${adSetId}:`, error);
                     }
-                }
+                    console.log(`Spend para ad set ${adSetId}: ${spend}`); // Log para depuração
+                    // Só adiciona ad sets com spend > 0
+                    if (spend > 0) {
+                        const adSet = adSetResponse.data.find(set => set.id === adSetId);
+                        adSetsMap[unitId][adSetId] = {
+                            name: adSet.name.toLowerCase(),
+                            insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
+                        };
+                    }
+                });
+
+                console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]); // Log para depuração
 
                 if (!isCampaignFilterActive) {
                     const adSetOptions = Object.keys(adSetsMap[unitId])
@@ -520,8 +537,13 @@ async function loadAdSets(unitId, startDate, endDate) {
                         }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
+
+                const endTime = performance.now();
+                console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`); // Log do tempo de carregamento
             } else {
                 console.error('Erro ao carregar ad sets:', adSetResponse.error);
+                const endTime = performance.now();
+                console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`); // Log do tempo de falha
             }
         }
     );
@@ -574,7 +596,6 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
             { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate } },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
-                    // Log para depuração
                     console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
                     resolve(response.data[0]);
                 } else {
