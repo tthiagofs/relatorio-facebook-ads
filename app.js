@@ -274,162 +274,175 @@ loginBtn.addEventListener('click', (event) => {
         return;
     }
 
-    FB.login(function(response) {
-        if (response.authResponse) {
-            console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
-            showScreen(mainContent);
+    // Verificar se o SDK está inicializado antes de chamar FB.login
+    if (!FB.getAccessToken()) {
+        console.log('Inicializando login com Facebook...');
+        FB.login(function(response) {
+            handleFacebookLoginResponse(response);
+        }, {scope: 'ads_read,ads_management,business_management'});
+    } else {
+        console.log('Token de acesso já existe, prosseguindo...');
+        handleFacebookLoginResponse({ authResponse: { accessToken: FB.getAccessToken() } });
+    }
+});
 
-            currentAccessToken = response.authResponse.accessToken;
-            console.log('Access Token:', currentAccessToken);
+// Função para lidar com a resposta do login do Facebook
+function handleFacebookLoginResponse(response) {
+    if (response.authResponse) {
+        console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
+        showScreen(mainContent);
 
-            FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: currentAccessToken }, function(statusResponse) {
-                if (statusResponse && !statusResponse.error) {
-                    console.log('Status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse);
-                    if (statusResponse.account_status !== 1) {
-                        console.warn('A conta CA - Oral Centter Jaíba (ID: 9586847491331372) não está ativa. Status:', statusResponse.account_status);
-                        document.getElementById('loginError').textContent = 'A conta CA - Oral Centter Jaíba (ID: 9586847491331372) não está ativa. Verifique o status no Business Manager.';
-                        document.getElementById('loginError').style.display = 'block';
-                    }
-                } else {
-                    console.error('Erro ao verificar o status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse.error);
-                    document.getElementById('loginError').textContent = 'Erro ao verificar o status da conta CA - Oral Centter Jaíba: ' + (statusResponse.error.message || 'Erro desconhecido') + '. Verifique se a conta existe e se você tem permissões.';
+        currentAccessToken = response.authResponse.accessToken;
+        console.log('Access Token:', currentAccessToken);
+
+        FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: currentAccessToken }, function(statusResponse) {
+            if (statusResponse && !statusResponse.error) {
+                console.log('Status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse);
+                if (statusResponse.account_status !== 1) {
+                    console.warn('A conta CA - Oral Centter Jaíba (ID: 9586847491331372) não está ativa. Status:', statusResponse.account_status);
+                    document.getElementById('loginError').textContent = 'A conta CA - Oral Centter Jaíba (ID: 9586847491331372) não está ativa. Verifique o status no Business Manager.';
                     document.getElementById('loginError').style.display = 'block';
                 }
-            });
+            } else {
+                console.error('Erro ao verificar o status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse.error);
+                document.getElementById('loginError').textContent = 'Erro ao verificar o status da conta CA - Oral Centter Jaíba: ' + (statusResponse.error.message || 'Erro desconhecido') + '. Verifique se a conta existe e se você tem permissões.';
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
 
-            FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
-                if (accountResponse && !accountResponse.error) {
-                    console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
-                    const unitSelect = document.getElementById('unitId');
-                    unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-                    let accounts = accountResponse.data || [];
-                    accounts.forEach(account => {
-                        adAccountsMap[account.id] = account.name;
-                        if (account.id === '1187332129240271') {
-                            console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada:', account);
-                        }
-                        if (account.id === '9586847491331372') {
-                            console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba encontrada:', account);
-                        }
-                    });
+        FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
+            if (accountResponse && !accountResponse.error) {
+                console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
+                const unitSelect = document.getElementById('unitId');
+                unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+                let accounts = accountResponse.data || [];
+                accounts.forEach(account => {
+                    adAccountsMap[account.id] = account.name;
+                    if (account.id === '1187332129240271') {
+                        console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada:', account);
+                    }
+                    if (account.id === '9586847491331372') {
+                        console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba encontrada:', account);
+                    }
+                });
 
-                    FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
-                        if (businessResponse && !businessResponse.error) {
-                            console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
-                            const businesses = businessResponse.data || [];
-                            let businessAccountsPromises = [];
+                FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
+                    if (businessResponse && !businessResponse.error) {
+                        console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
+                        const businesses = businessResponse.data || [];
+                        let businessAccountsPromises = [];
 
-                            businesses.forEach(business => {
-                                businessAccountsPromises.push(new Promise((resolve) => {
-                                    FB.api(
-                                        `/${business.id}/owned_ad_accounts`,
-                                        { fields: 'id,name', access_token: currentAccessToken },
-                                        function(ownedAccountResponse) {
-                                            if (ownedAccountResponse && !ownedAccountResponse.error) {
-                                                console.log(`Contas próprias do Business Manager ${business.id} (${business.name}):`, ownedAccountResponse);
-                                                const ownedAccounts = ownedAccountResponse.data || [];
-                                                resolve(ownedAccounts);
-                                            } else {
-                                                console.error(`Erro ao carregar contas próprias do Business Manager ${business.id}:`, ownedAccountResponse.error);
-                                                resolve([]);
-                                            }
-                                        }
-                                    );
-                                }));
-
-                                businessAccountsPromises.push(new Promise((resolve) => {
-                                    FB.api(
-                                        `/${business.id}/client_ad_accounts`,
-                                        { fields: 'id,name', access_token: currentAccessToken },
-                                        function(clientAccountResponse) {
-                                            if (clientAccountResponse && !clientAccountResponse.error) {
-                                                console.log(`Contas compartilhadas com o Business Manager ${business.id} (${business.name}):`, clientAccountResponse);
-                                                const clientAccounts = clientAccountResponse.data || [];
-                                                resolve(clientAccounts);
-                                            } else {
-                                                console.error(`Erro ao carregar contas compartilhadas do Business Manager ${business.id}:`, clientAccountResponse.error);
-                                                resolve([]);
-                                            }
-                                        }
-                                    );
-                                }));
-                            });
-
-                            Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
-                                let allBusinessAccounts = [].concat(...businessAccountsArrays);
-                                allBusinessAccounts.forEach(account => {
-                                    if (!adAccountsMap[account.id]) {
-                                        adAccountsMap[account.id] = account.name;
-                                        if (account.id === '1187332129240271') {
-                                            console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada (via Business Manager):', account);
-                                        }
-                                        if (account.id === '9586847491331372') {
-                                            console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba encontrada (via Business Manager):', account);
+                        businesses.forEach(business => {
+                            businessAccountsPromises.push(new Promise((resolve) => {
+                                FB.api(
+                                    `/${business.id}/owned_ad_accounts`,
+                                    { fields: 'id,name', access_token: currentAccessToken },
+                                    function(ownedAccountResponse) {
+                                        if (ownedAccountResponse && !ownedAccountResponse.error) {
+                                            console.log(`Contas próprias do Business Manager ${business.id} (${business.name}):`, ownedAccountResponse);
+                                            const ownedAccounts = ownedAccountResponse.data || [];
+                                            resolve(ownedAccounts);
+                                        } else {
+                                            console.error(`Erro ao carregar contas próprias do Business Manager ${business.id}:`, ownedAccountResponse.error);
+                                            resolve([]);
                                         }
                                     }
-                                });
+                                );
+                            }));
 
-                                const sortedAccounts = Object.keys(adAccountsMap)
-                                    .map(accountId => ({
-                                        id: accountId,
-                                        name: adAccountsMap[accountId]
-                                    }))
-                                    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+                            businessAccountsPromises.push(new Promise((resolve) => {
+                                FB.api(
+                                    `/${business.id}/client_ad_accounts`,
+                                    { fields: 'id,name', access_token: currentAccessToken },
+                                    function(clientAccountResponse) {
+                                        if (clientAccountResponse && !clientAccountResponse.error) {
+                                            console.log(`Contas compartilhadas com o Business Manager ${business.id} (${business.name}):`, clientAccountResponse);
+                                            const clientAccounts = clientAccountResponse.data || [];
+                                            resolve(clientAccounts);
+                                        } else {
+                                            console.error(`Erro ao carregar contas compartilhadas do Business Manager ${business.id}:`, clientAccountResponse.error);
+                                            resolve([]);
+                                        }
+                                    }
+                                );
+                            }));
+                        });
 
-                                unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-                                sortedAccounts.forEach(account => {
-                                    const option = document.createElement('option');
-                                    option.value = account.id;
-                                    option.textContent = account.name;
-                                    unitSelect.appendChild(option);
-                                });
-
-                                const seteLagoasFound = Object.keys(adAccountsMap).includes('1187332129240271');
-                                const jaibaFound = Object.keys(adAccountsMap).includes('9586847491331372');
-
-                                if (!seteLagoasFound) {
-                                    console.warn('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas NÃO encontrada após todas as chamadas da API.');
-                                } else {
-                                    console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas confirmada no adAccountsMap.');
+                        Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
+                            let allBusinessAccounts = [].concat(...businessAccountsArrays);
+                            allBusinessAccounts.forEach(account => {
+                                if (!adAccountsMap[account.id]) {
+                                    adAccountsMap[account.id] = account.name;
+                                    if (account.id === '1187332129240271') {
+                                        console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada (via Business Manager):', account);
+                                    }
+                                    if (account.id === '9586847491331372') {
+                                        console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba encontrada (via Business Manager):', account);
+                                    }
                                 }
-
-                                if (!jaibaFound) {
-                                    console.warn('Conta 9586847491331372 - CA - Oral Centter Jaíba NÃO encontrada após todas as chamadas da API.');
-                                } else {
-                                    console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba confirmada no adAccountsMap.');
-                                }
-
-                                if (!seteLagoasFound || !jaibaFound) {
-                                    document.getElementById('loginError').textContent = 'Uma ou mais contas esperadas (Sete Lagoas ou Jaíba) não foram encontradas. Verifique suas permissões ou o status das contas.';
-                                    document.getElementById('loginError').style.display = 'block';
-                                } else {
-                                    document.getElementById('loginError').textContent = '';
-                                    document.getElementById('loginError').style.display = 'none';
-                                }
-
-                                // Salvar o token de acesso e os dados no localStorage para uso no Relatório Completo
-                                localStorage.setItem('fbAccessToken', currentAccessToken);
-                                localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
                             });
-                        } else {
-                            console.error('Erro ao carregar Business Managers:', businessResponse.error);
-                            document.getElementById('loginError').textContent = 'Erro ao carregar Business Managers: ' + (businessResponse.error.message || 'Erro desconhecido');
-                            document.getElementById('loginError').style.display = 'block';
-                        }
-                    });
-                } else {
-                    console.error('Erro ao carregar contas:', accountResponse.error);
-                    document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios: ' + (accountResponse.error.message || 'Erro desconhecido');
-                    document.getElementById('loginError').style.display = 'block';
-                }
-            });
-        } else {
-            console.error('Falha no login com Facebook:', response);
-            document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente. Detalhes: ' + (response.error ? response.error.message : 'Erro desconhecido');
-            document.getElementById('loginError').style.display = 'block';
-        }
-    }, {scope: 'ads_read,ads_management,business_management'});
-});
+
+                            const sortedAccounts = Object.keys(adAccountsMap)
+                                .map(accountId => ({
+                                    id: accountId,
+                                    name: adAccountsMap[accountId]
+                                }))
+                                .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+                            unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+                            sortedAccounts.forEach(account => {
+                                const option = document.createElement('option');
+                                option.value = account.id;
+                                option.textContent = account.name;
+                                unitSelect.appendChild(option);
+                            });
+
+                            const seteLagoasFound = Object.keys(adAccountsMap).includes('1187332129240271');
+                            const jaibaFound = Object.keys(adAccountsMap).includes('9586847491331372');
+
+                            if (!seteLagoasFound) {
+                                console.warn('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas NÃO encontrada após todas as chamadas da API.');
+                            } else {
+                                console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas confirmada no adAccountsMap.');
+                            }
+
+                            if (!jaibaFound) {
+                                console.warn('Conta 9586847491331372 - CA - Oral Centter Jaíba NÃO encontrada após todas as chamadas da API.');
+                            } else {
+                                console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba confirmada no adAccountsMap.');
+                            }
+
+                            if (!seteLagoasFound || !jaibaFound) {
+                                document.getElementById('loginError').textContent = 'Uma ou mais contas esperadas (Sete Lagoas ou Jaíba) não foram encontradas. Verifique suas permissões ou o status das contas.';
+                                document.getElementById('loginError').style.display = 'block';
+                            } else {
+                                document.getElementById('loginError').textContent = '';
+                                document.getElementById('loginError').style.display = 'none';
+                            }
+
+                            // Salvar o token de acesso e os dados no localStorage para uso no Relatório Completo
+                            localStorage.setItem('fbAccessToken', currentAccessToken);
+                            localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
+                            console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap });
+                        });
+                    } else {
+                        console.error('Erro ao carregar Business Managers:', businessResponse.error);
+                        document.getElementById('loginError').textContent = 'Erro ao carregar Business Managers: ' + (businessResponse.error.message || 'Erro desconhecido');
+                        document.getElementById('loginError').style.display = 'block';
+                    }
+                });
+            } else {
+                console.error('Erro ao carregar contas:', accountResponse.error);
+                document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios: ' + (accountResponse.error.message || 'Erro desconhecido');
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
+    } else {
+        console.error('Falha no login com Facebook:', response);
+        document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente. Detalhes: ' + (response.error ? response.error.message : 'Erro desconhecido');
+        document.getElementById('loginError').style.display = 'block';
+    }
+}
 
 // Carrega os ad sets e campanhas quando o formulário é preenchido
 form.addEventListener('input', async function(e) {
@@ -765,7 +778,7 @@ form.addEventListener('submit', async (e) => {
         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
     `;
     shareWhatsAppBtn.style.display = 'block';
-});
+}
 
 // Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {
