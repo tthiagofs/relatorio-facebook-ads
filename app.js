@@ -274,7 +274,18 @@ simpleReportBtn.addEventListener('click', () => {
 // Seleção de relatório completo
 completeReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
-    window.location.href = 'RelatorioCompleto.html';
+    
+    // Verificar se o token de acesso está disponível
+    if (!currentAccessToken) {
+        console.log('Token de acesso não encontrado. Iniciando login com Facebook...');
+        // Iniciar o login com Facebook
+        FB.login(function(response) {
+            handleFacebookLoginResponse(response);
+        }, {scope: 'ads_read,ads_management,business_management'});
+    } else {
+        // Se o token já estiver disponível, redirecionar para o relatório completo
+        window.location.href = 'RelatorioCompleto.html';
+    }
 });
 
 // Login com Facebook e carregamento das contas
