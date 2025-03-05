@@ -72,6 +72,34 @@
             background-color: #2a5298;
         }
 
+        .btn-generate {
+            background-color: #28a745; /* Verde para o botão Gerar Relatório */
+            padding: 12px 24px;
+            font-size: 16px;
+        }
+
+        .btn-generate:hover {
+            background-color: #218838; /* Tom mais escuro de verde ao passar o mouse */
+        }
+
+        .btn-filter {
+            background-color: #1e3c72;
+            padding: 6px 12px; /* Botões menores */
+            font-size: 14px; /* Fonte menor */
+            margin: 0 5px;
+        }
+
+        .btn-filter:hover {
+            background-color: #2a5298;
+        }
+
+        .filter-label {
+            font-size: 16px;
+            color: #1e3c72;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
         .modal {
             position: fixed;
             top: 0;
@@ -196,10 +224,11 @@
                 <input type="date" id="endDate" required>
             </div>
             <div class="form-group">
-                <button type="button" id="filterCampaigns" class="btn-primary">Campanhas</button>
-                <button type="button" id="filterAdSets" class="btn-primary">Conjuntos</button>
+                <div class="filter-label">Deseja filtrar?</div>
+                <button type="button" id="filterCampaigns" class="btn-filter">Campanhas</button>
+                <button type="button" id="filterAdSets" class="btn-filter">Conjuntos</button>
             </div>
-            <button type="submit">Gerar Relatório</button>
+            <button type="submit" class="btn-generate">Gerar Relatório</button>
         </form>
         <div id="reportContainer"></div>
         <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>

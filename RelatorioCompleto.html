@@ -5,7 +5,255 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório Completo de Anúncios do Facebook</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1e3c72;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #1e3c72;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        select,
+        input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #1e3c72;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        button:hover {
+            background-color: #2a5298;
+        }
+
+        .btn-primary {
+            background-color: #1e3c72;
+        }
+
+        .btn-primary:hover {
+            background-color: #2a5298;
+        }
+
+        .btn-generate {
+            background-color: #28a745; /* Verde para o botão Gerar Relatório */
+            padding: 12px 24px;
+            font-size: 16px;
+        }
+
+        .btn-generate:hover {
+            background-color: #218838; /* Tom mais escuro de verde ao passar o mouse */
+        }
+
+        .btn-filter {
+            background-color: #1e3c72;
+            padding: 6px 12px; /* Botões menores */
+            font-size: 14px; /* Fonte menor */
+            margin: 0 5px;
+        }
+
+        .btn-filter:hover {
+            background-color: #2a5298;
+        }
+
+        .filter-label {
+            font-size: 16px;
+            color: #1e3c72;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-option {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f5f5f5;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .filter-option:hover {
+            background: #e0e0e0;
+        }
+
+        .filter-option.selected {
+            background: #1e3c72;
+            color: #fff;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .btn-filter-toggle {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            background-color: #1e3c72;
+        }
+
+        .btn-filter-toggle:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #reportContainer.complete {
+            margin-top: 20px;
+        }
+
+        .report-header h2 {
+            font-size: 24px;
+            margin: 0 0 10px;
+        }
+
+        .report-header p {
+            font-size: 16px;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric-card {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card.reach {
+            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+        }
+
+        .metric-card.messages {
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+        }
+
+        .metric-card.cost {
+            background: linear-gradient(135deg, #fffde7, #fff9c4);
+        }
+
+        .metric-card.investment {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .metric-comparison {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .metric-comparison.increase {
+            color: #28a745;
+        }
+
+        .metric-comparison.decrease {
+            color: #dc3545;
+        }
+
+        #shareWhatsAppBtn {
+            display: none;
+            margin-top: 20px;
+            width: 100%;
+            background-color: #25D366;
+        }
+
+        #shareWhatsAppBtn:hover {
+            background-color: #20c058;
+        }
+    </style>
 </head>
 <body>
     <div class="container" id="mainContent">
@@ -26,10 +274,11 @@
                 <input type="date" id="endDate" required>
             </div>
             <div class="form-group">
-                <button type="button" id="filterCampaigns" class="btn-primary">Campanhas</button>
-                <button type="button" id="filterAdSets" class="btn-primary">Conjuntos</button>
+                <div class="filter-label">Deseja filtrar?</div>
+                <button type="button" id="filterCampaigns" class="btn-filter">Campanhas</button>
+                <button type="button" id="filterAdSets" class="btn-filter">Conjuntos</button>
             </div>
-            <button type="submit">Gerar Relatório</button>
+            <button type="submit" class="btn-generate">Gerar Relatório</button>
         </form>
         <div id="reportContainer" class="report-container"></div>
         <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
