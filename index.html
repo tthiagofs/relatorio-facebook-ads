@@ -18,7 +18,7 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 600px;
             margin: 20px;
             padding: 20px;
             background: #fff;
@@ -38,20 +38,20 @@
         label {
             display: block;
             margin-bottom: 5px;
-            font-weight: 600;
+            font-weight: bold;
         }
 
         select, input[type="date"], input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            font-size: 16px;
+            box-sizing: border-box;
         }
 
         button {
             padding: 10px 20px;
-            background-color: #1e90ff;
+            background-color: #1e3c72;
             color: #fff;
             border: none;
             border-radius: 5px;
@@ -61,15 +61,15 @@
         }
 
         button:hover {
-            background-color: #1c86ee;
+            background-color: #2a5298;
         }
 
         .btn-primary {
-            background-color: #1e90ff;
+            background-color: #1e3c72;
         }
 
         .btn-primary:hover {
-            background-color: #1c86ee;
+            background-color: #2a5298;
         }
 
         .modal {
@@ -108,7 +108,7 @@
         }
 
         .filter-option.selected {
-            background: #1e90ff;
+            background: #1e3c72;
             color: #fff;
         }
 
@@ -124,7 +124,7 @@
             display: block;
             width: 100%;
             margin-top: 10px;
-            background-color: #1e90ff;
+            background-color: #1e3c72;
         }
 
         .btn-filter-toggle:disabled {
@@ -169,7 +169,7 @@
     <div class="container" id="reportSelectionScreen" style="display: none;">
         <h1>Selecione o Tipo de Relatório</h1>
         <button id="simpleReportBtn">Relatório Simplificado</button>
-        <button id="completeReportBtn" style="margin-top: 10px;">Relatório Completo</button>
+        <button id="completeReportBtn">Relatório Completo</button>
     </div>
 
     <div class="container" id="loginScreen" style="display: none;">
@@ -224,6 +224,18 @@
     </div>
 
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    <script>
+        // Inicializar o SDK do Facebook
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId: 'YOUR_APP_ID', // Substitua por seu App ID do Facebook
+                cookie: true,
+                xfbml: true,
+                version: 'v20.0'
+            });
+            FB.AppEvents.logPageView();
+        };
+    </script>
     <script src="app.js"></script>
 </body>
 </html>

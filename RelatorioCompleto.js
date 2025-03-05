@@ -1,9 +1,4 @@
-// RelatorioCompleto.js
-const appLoginScreen = document.getElementById('appLoginScreen');
-const reportSelectionScreen = document.getElementById('reportSelectionScreen');
-const loginScreen = document.getElementById('loginScreen');
 const mainContent = document.getElementById('mainContent');
-const mainContentTitle = document.getElementById('mainContentTitle');
 const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
@@ -18,7 +13,7 @@ const confirmComparisonBtn = document.getElementById('confirmComparison');
 const cancelComparisonBtn = document.getElementById('cancelComparison');
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
-const adAccountsMap = {};
+const adAccountsMap = JSON.parse(localStorage.getItem('adAccountsMap')) || {};
 const adSetsMap = {};
 const campaignsMap = {};
 let selectedCampaigns = new Set();
@@ -28,17 +23,30 @@ let isAdSetFilterActive = false;
 let isFilterActivated = false;
 let campaignSearchText = '';
 let adSetSearchText = '';
-let currentAccessToken = null;
+let currentAccessToken = localStorage.getItem('fbAccessToken') || null;
 let comparisonData = null;
 
-// Função para alternar telas
-function showScreen(screen) {
-    appLoginScreen.style.display = 'none';
-    reportSelectionScreen.style.display = 'none';
-    loginScreen.style.display = 'none';
-    mainContent.style.display = 'none';
-    screen.style.display = 'block';
+// Verificar se o token de acesso está disponível
+if (!currentAccessToken) {
+    alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
+    window.location.href = 'index.html';
 }
+
+// Preencher o dropdown de unidades com os dados do localStorage
+const unitSelect = document.getElementById('unitId');
+unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+const sortedAccounts = Object.keys(adAccountsMap)
+    .map(accountId => ({
+        id: accountId,
+        name: adAccountsMap[accountId]
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+sortedAccounts.forEach(account => {
+    const option = document.createElement('option');
+    option.value = account.id;
+    option.textContent = account.name;
+    unitSelect.appendChild(option);
+});
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {

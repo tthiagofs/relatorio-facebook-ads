@@ -1,237 +1,234 @@
 body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #e0f7fa, #b2ebf2); /* Fundo azul claro, consistente com a imagem */
+    font-family: 'Poppins', sans-serif;
     margin: 0;
     padding: 0;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #333;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    width: 100%;
 }
 
-.login-container, .container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    background-color: transparent; /* Remove o overlay semi-transparente para maior clareza */
+.container {
+    max-width: 800px;
+    margin: 20px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-.login-box, .container {
-    background-color: #fff;
-    padding: 40px; /* Aumenta o padding interno para maior espaço */
-    border-radius: 12px; /* Bordas mais arredondadas para um visual moderno */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
-    width: 100%;
-    max-width: 800px; /* Aumenta o tamanho máximo da caixa para um padrão consistente e maior */
+h1, h2 {
+    color: #1e3c72;
     text-align: center;
-    margin: 0 auto; /* Garante centralização horizontal */
 }
 
-.login-box h1, .container h1 {
-    margin-bottom: 30px; /* Aumenta o espaçamento abaixo do título */
-    color: #333;
-    font-size: 24px; /* Tamanho de fonte maior para títulos */
+.form-group {
+    margin-bottom: 15px;
 }
 
-.login-box label {
+label {
     display: block;
-    text-align: left;
-    margin-bottom: 10px; /* Ajusta o espaçamento entre labels e inputs */
-    color: #333;
-    font-size: 16px; /* Fonte maior para labels */
+    margin-bottom: 5px;
+    font-weight: 600;
 }
 
-.login-box input {
+select, input[type="date"], input[type="text"], input[type="password"] {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 20px; /* Aumenta o espaçamento entre inputs */
+    padding: 10px;
     border: 1px solid #ccc;
-    border-radius: 8px; /* Bordas mais arredondadas para inputs */
+    border-radius: 5px;
     font-size: 16px;
-    background-color: #fff;
-    color: #333;
 }
 
-.login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button {
-    width: 100%;
-    padding: 12px;
-    background-color: #4CAF50; /* Ajusta o botão "Gerar Relatório" para o mesmo verde dos outros botões */
-    color: white;
+button {
+    padding: 10px 20px;
+    background-color: #ff6200;
+    color: #fff;
     border: none;
-    border-radius: 8px; /* Bordas mais arredondadas para botões */
+    border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    margin: 10px 0; /* Ajusta o espaçamento entre botões */
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s;
 }
 
-.login-box button:hover, .btn-primary:hover, #loginBtn:hover, #shareWhatsAppBtn:hover, .btn-filter-toggle:hover, #form button:hover {
-    background-color: #45a049;
+button:hover {
+    background-color: #e55a00;
 }
 
-.btn-primary:disabled, .btn-disabled, .btn-filter-toggle:disabled {
-    background-color: #bdc3c7;
-    color: #7f8c8d;
-    cursor: not-allowed;
+.btn-primary {
+    background-color: #ff6200;
 }
 
-.error-message {
-    color: #ff0000; /* Vermelho mais vivo para mensagens de erro */
-    margin-top: 15px;
-    display: none;
+.btn-primary:hover {
+    background-color: #e55a00;
 }
 
-#loginBtn::before {
-    content: '';
-    background-image: url('https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg');
-    background-size: cover;
-    width: 20px;
-    height: 20px;
-}
-
-#form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px; /* Aumenta o espaçamento entre os elementos do formulário */
-}
-
-#form label {
-    font-weight: bold;
-    color: #333;
-    font-size: 16px; /* Fonte maior para labels no formulário */
-}
-
-#form select, #form input[type="date"] {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px; /* Bordas mais arredondadas para selects e dates */
-    font-size: 16px;
-    background-color: #fff;
-    color: #333;
-}
-
-.report-container {
-    margin-top: 20px;
-    background-color: #f9f9f9;
-    padding: 30px; /* Aumenta o padding interno do relatório */
-    border-radius: 12px; /* Bordas mais arredondadas para o relatório */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
-    width: 100%;
-}
-
-.report-container p {
-    color: #555;
-    font-size: 16px; /* Mantém o tamanho da fonte para legibilidade */
-    margin: 15px 0; /* Ajusta o espaçamento entre linhas do relatório */
-}
-
-#shareWhatsAppBtn::before {
-    content: '';
-    background-image: url('https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg');
-    background-size: cover;
-    width: 20px;
-    height: 20px;
-}
-
-@media (max-width: 480px) {
-    .login-box, .container {
-        max-width: 90%;
-        padding: 20px; /* Reduz o padding em telas menores para melhor adaptação */
-    }
-
-    .login-box button, .btn-primary, .btn-disabled, #loginBtn, #shareWhatsAppBtn, .btn-filter-toggle, #form button {
-        padding: 10px;
-        font-size: 14px; /* Reduz o tamanho da fonte dos botões em telas menores */
-    }
-
-    #form select, #form input[type="date"], .login-box input {
-        padding: 10px;
-        font-size: 14px; /* Reduz o tamanho da fonte dos inputs em telas menores */
-    }
-
-    .report-container {
-        padding: 20px; /* Reduz o padding do relatório em telas menores */
-    }
-}
-
-/* Novos estilos específicos para a tela de relatório (#mainContent) */
-#mainContent .modal {
-    display: none;
+.modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
     z-index: 1000;
 }
 
-#mainContent .modal-content {
-    background-color: #fff;
-    padding: 40px; /* Aumenta o padding interno dos modais */
-    border-radius: 12px; /* Bordas mais arredondadas para os modais */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra mais suave e visível */
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 500px;
     width: 90%;
-    max-width: 800px; /* Aumenta o tamanho máximo dos modais para padrão consistente */
-    max-height: 80vh; /* Limita a altura para evitar overflow excessivo */
-    overflow-y: auto;
-    margin: 0 auto; /* Centraliza horizontalmente */
-    position: relative; /* Garante posicionamento relativo para centralização */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-#mainContent .modal-content h2 {
-    margin-top: 0;
-    color: #333;
-    text-align: center;
-    font-size: 24px; /* Tamanho de fonte maior para títulos nos modais */
-}
-
-#mainContent .search-bar {
-    width: 100%;
-    padding: 12px;
-    margin: 15px 0; /* Ajusta o espaçamento da barra de pesquisa */
-    border: 1px solid #ccc;
-    border-radius: 8px; /* Bordas mais arredondadas para a barra de pesquisa */
-    font-size: 16px;
-    background-color: #fff;
-    color: #333;
-}
-
-#mainContent #campaignsList, #mainContent #adSetsList {
-    margin: 15px 0; /* Ajusta o espaçamento das listas de opções */
-    max-height: 50vh;
-    overflow-y: auto;
-}
-
-#mainContent .filter-option {
-    padding: 12px;
-    margin: 8px 0; /* Ajusta o espaçamento entre as opções */
-    border: 1px solid #ccc;
-    border-radius: 8px; /* Bordas mais arredondadas para as opções */
+.filter-option {
+    padding: 10px;
+    margin: 5px 0;
+    background: #f5f5f5;
+    border-radius: 5px;
     cursor: pointer;
-    background-color: #fff;
-    transition: background-color 0.3s ease;
+    transition: background 0.3s;
+}
+
+.filter-option:hover {
+    background: #e0e0e0;
+}
+
+.filter-option.selected {
+    background: #ff6200;
+    color: #fff;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.btn-filter-toggle {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    background-color: #ff6200;
+}
+
+.btn-filter-toggle:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: #ff0000;
+    margin-top: 10px;
+    display: none;
+}
+
+.report-container {
+    background: linear-gradient(135deg, #2a5298, #1e3c72);
+    color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.report-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.report-header h2 {
+    color: #fff;
+    margin: 0;
+    font-size: 24px;
+}
+
+.report-header p {
+    margin: 5px 0;
+    font-size: 16px;
+    color: #ddd;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.metric-card {
+    background: #fff;
+    color: #333;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     display: flex;
+    align-items: center;
     justify-content: space-between;
+}
+
+.metric-card .metric-label {
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
     align-items: center;
 }
 
-#mainContent .filter-option.selected {
-    background-color: #4CAF50;
-    color: white;
+.metric-card .metric-label::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    background-size: cover;
 }
 
-#mainContent .filter-option:hover {
-    background-color: #e0e0e0;
+.metric-card.reach .metric-label::before {
+    content: '📢';
 }
 
-/* Estilo para o texto "Buscando..." */
-#mainContent .modal-content p {
-    text-align: center;
+.metric-card.messages .metric-label::before {
+    content: '💬';
+}
+
+.metric-card.cost .metric-label::before {
+    content: '💵';
+}
+
+.metric-card.investment .metric-label::before {
+    content: '💰';
+}
+
+.metric-value {
     font-size: 16px;
-    color: #666;
+    font-weight: 400;
+}
+
+.metric-comparison {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.metric-comparison.increase {
+    color: #28a745;
+}
+
+.metric-comparison.decrease {
+    color: #dc3545;
+}
+
+#shareWhatsAppBtn {
+    display: none;
+    margin-top: 20px;
+    width: 100%;
 }

@@ -407,7 +407,7 @@ loginBtn.addEventListener('click', (event) => {
                                     document.getElementById('loginError').style.display = 'none';
                                 }
 
-                                // Salvar o token de acesso no localStorage para uso no Relatório Completo
+                                // Salvar o token de acesso e os dados no localStorage para uso no Relatório Completo
                                 localStorage.setItem('fbAccessToken', currentAccessToken);
                                 localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
                             });

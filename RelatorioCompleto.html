@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Completo de Anúncios do Facebook</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" id="mainContent">
+        <h1>Relatório Completo</h1>
+        <form id="form">
+            <div class="form-group">
+                <label for="unitId">Unidade:</label>
+                <select id="unitId" required>
+                    <option value="">Escolha a unidade</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="startDate">Data Início:</label>
+                <input type="date" id="startDate" required>
+            </div>
+            <div class="form-group">
+                <label for="endDate">Data Fim:</label>
+                <input type="date" id="endDate" required>
+            </div>
+            <div class="form-group">
+                <button type="button" id="filterCampaigns" class="btn-primary">Campanhas</button>
+                <button type="button" id="filterAdSets" class="btn-primary">Conjuntos</button>
+            </div>
+            <button type="submit">Gerar Relatório</button>
+        </form>
+        <div id="reportContainer" class="report-container"></div>
+        <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
+    </div>
+
+    <div id="campaignsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Selecione as Campanhas</h2>
+            <input type="text" id="campaignSearch" class="search-bar" placeholder="Pesquisar campanhas...">
+            <div id="campaignsList"></div>
+            <button type="button" id="closeCampaignsModal" class="btn-primary">Fechar</button>
+        </div>
+    </div>
+
+    <div id="adSetsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Selecione os Conjuntos de Anúncios</h2>
+            <input type="text" id="adSetSearch" class="search-bar" placeholder="Pesquisar conjuntos...">
+            <div id="adSetsList"></div>
+            <button type="button" id="closeAdSetsModal" class="btn-primary">Fechar</button>
+        </div>
+    </div>
+
+    <div id="comparisonModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Comparação de Períodos</h2>
+            <p>Deseja adicionar um período de comparação?</p>
+            <div class="form-group">
+                <label><input type="radio" name="comparisonOption" value="custom" checked> Sim, período personalizado</label>
+                <div id="customPeriod" style="margin-top: 10px;">
+                    <label for="compareStartDate">Data Início:</label>
+                    <input type="date" id="compareStartDate">
+                    <label for="compareEndDate">Data Fim:</label>
+                    <input type="date" id="compareEndDate">
+                </div>
+            </div>
+            <div class="form-group">
+                <label><input type="radio" name="comparisonOption" value="previous"> Sim, mesmo período anterior</label>
+            </div>
+            <div class="form-group">
+                <label><input type="radio" name="comparisonOption" value="none"> Não</label>
+            </div>
+            <button type="button" id="confirmComparison" class="btn-primary">Confirmar</button>
+            <button type="button" id="cancelComparison" class="btn-primary">Cancelar</button>
+        </div>
+    </div>
+
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    <script>
+        // Inicializar o SDK do Facebook
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId: 'YOUR_APP_ID', // Substitua por seu App ID do Facebook
+                cookie: true,
+                xfbml: true,
+                version: 'v20.0'
+            });
+            FB.AppEvents.logPageView();
+        };
+    </script>
+    <script src="RelatorioCompleto.js"></script>
+</body>
+</html>
