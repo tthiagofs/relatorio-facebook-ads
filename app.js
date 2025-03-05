@@ -1,6 +1,6 @@
 const appLoginScreen = document.getElementById('appLoginScreen');
 const reportSelectionScreen = document.getElementById('reportSelectionScreen');
-const loginScreen = document.getElementById('loginScreen');
+const loginScreen = document.getElementById('facebookLoginScreen');
 const mainContent = document.getElementById('mainContent');
 const appLoginForm = document.getElementById('appLoginForm');
 const appLoginError = document.getElementById('appLoginError');
