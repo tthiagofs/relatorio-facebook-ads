@@ -438,7 +438,7 @@ function handleFacebookLoginResponse(response) {
                             // Salvar o token de acesso e os dados no localStorage para uso no Relatório Completo
                             localStorage.setItem('fbAccessToken', currentAccessToken);
                             localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
-                            console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap });
+                            console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap: adAccountsMap });
                         });
                     } else {
                         console.error('Erro ao carregar Business Managers:', businessResponse.error);
