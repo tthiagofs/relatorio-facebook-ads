@@ -1,7 +1,7 @@
 // Elementos do DOM
 const appLoginScreen = document.getElementById('appLoginScreen');
 const reportSelectionScreen = document.getElementById('reportSelectionScreen');
-const facebookLoginScreen = document.getElementById('facebookLoginScreen');
+const loginScreen = document.getElementById('facebookLoginScreen'); // Ajustado para corresponder ao ID no index.html
 const mainContent = document.getElementById('mainContent');
 const appLoginForm = document.getElementById('appLoginForm');
 const appLoginError = document.getElementById('appLoginError');
@@ -32,48 +32,12 @@ let campaignSearchText = '';
 let adSetSearchText = '';
 let currentAccessToken = null;
 
-// Login do app (movido para o início para garantir que o evento seja registrado)
-appLoginForm.addEventListener('submit', (e) => {
-    e.preventDefault(); // Impede o recarregamento da página
-    console.log('Formulário de login submetido');
-
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value.trim();
-
-    console.log('Dados do formulário:', { username, password });
-
-    if (username === '' || password === '') {
-        console.log('Campos vazios detectados');
-        appLoginError.textContent = 'Por favor, preencha todos os campos.';
-        appLoginError.style.display = 'block';
-        return;
-    }
-
-    if (username === '@admin' && password === '134679') {
-        console.log('Login bem-sucedido, alternando para facebookLoginScreen');
-        appLoginError.style.display = 'none'; // Limpa mensagem de erro
-        showScreen(facebookLoginScreen); // Vai direto para a tela de login no Facebook
-        // Limpa os campos do formulário
-        usernameInput.value = '';
-        passwordInput.value = '';
-    } else {
-        console.log('Login falhou: usuário ou senha inválidos');
-        appLoginError.textContent = 'Usuário ou senha inválidos.';
-        appLoginError.style.display = 'block';
-        // Limpa os campos do formulário
-        usernameInput.value = '';
-        passwordInput.value = '';
-    }
-});
-
 // Função para alternar telas
 function showScreen(screen) {
     console.log('Alternando para a tela:', screen.id);
     appLoginScreen.style.display = 'none';
     reportSelectionScreen.style.display = 'none';
-    facebookLoginScreen.style.display = 'none';
+    loginScreen.style.display = 'none';
     mainContent.style.display = 'none';
     screen.style.display = 'block';
     console.log('Tela atualizada com sucesso:', screen.id);
@@ -266,10 +230,60 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
     }
 }
 
+// Login do app (movido para o início para garantir que o evento seja registrado)
+appLoginForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Impede o recarregamento da página
+    console.log('Formulário de login submetido');
+
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    console.log('Dados do formulário:', { username, password });
+
+    if (username === '' || password === '') {
+        console.log('Campos vazios detectados');
+        appLoginError.textContent = 'Por favor, preencha todos os campos.';
+        appLoginError.style.display = 'block';
+        return;
+    }
+
+    if (username === '@admin' && password === '134679') {
+        console.log('Login bem-sucedido, alternando para reportSelectionScreen');
+        appLoginError.style.display = 'none'; // Limpa mensagem de erro
+        showScreen(reportSelectionScreen);
+        // Limpa os campos do formulário
+        usernameInput.value = '';
+        passwordInput.value = '';
+    } else {
+        console.log('Login falhou: usuário ou senha inválidos');
+        appLoginError.textContent = 'Usuário ou senha inválidos.';
+        appLoginError.style.display = 'block';
+        // Limpa os campos do formulário
+        usernameInput.value = '';
+        passwordInput.value = '';
+    }
+});
+
+// Seleção de relatório simplificado
+simpleReportBtn.addEventListener('click', () => {
+    console.log('Botão Relatório Simplificado clicado - Versão Atualizada (03/03/2025)');
+    showScreen(loginScreen);
+    simpleReportBtn.classList.add('active');
+});
+
+// Seleção de relatório completo
+completeReportBtn.addEventListener('click', () => {
+    console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
+    showScreen(loginScreen);
+    completeReportBtn.classList.add('active');
+});
+
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
     event.preventDefault();
-    console.log('Botão Login com Facebook clicado - Versão Atualizada (03/03/2025)');
+    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Relatório Completo) - Versão Atualizada (03/03/2025)');
 
     if (typeof FB === 'undefined') {
         console.error('Facebook SDK não está carregado ou inicializado corretamente.');
@@ -283,7 +297,7 @@ loginBtn.addEventListener('click', (event) => {
         console.log('Inicializando login com Facebook...');
         FB.login(function(response) {
             handleFacebookLoginResponse(response);
-        }, { scope: 'ads_read,ads_management,business_management' });
+        }, { scope: 'ads_read,ads_management,business_management' }); // Corrigido: removido parêntese extra
     } else {
         console.log('Token de acesso já existe, prosseguindo...');
         handleFacebookLoginResponse({ authResponse: { accessToken: FB.getAccessToken() } });
@@ -293,9 +307,14 @@ loginBtn.addEventListener('click', (event) => {
 // Função para lidar com a resposta do login do Facebook
 function handleFacebookLoginResponse(response) {
     if (response.authResponse) {
-        console.log('Login com Facebook bem-sucedido - Versão Atualizada (03/03/2025):', response.authResponse);
+        console.log(simpleReportBtn.classList.contains('active') ? 'Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):' : 'Login com Facebook bem-sucedido (Relatório Completo) - Versão Atualizada (03/03/2025):', response.authResponse);
+        showScreen(simpleReportBtn.classList.contains('active') ? mainContent : mainContent); // Ajustar conforme necessário para Relatório Completo
+
         currentAccessToken = response.authResponse.accessToken;
         console.log('Access Token:', currentAccessToken);
+
+        // Salvar o token de acesso no localStorage para uso no Relatório Completo
+        localStorage.setItem('fbAccessToken', currentAccessToken);
 
         FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: currentAccessToken }, function(statusResponse) {
             if (statusResponse && !statusResponse.error) {
@@ -420,12 +439,9 @@ function handleFacebookLoginResponse(response) {
                             } else {
                                 document.getElementById('loginError').textContent = '';
                                 document.getElementById('loginError').style.display = 'none';
-                                // Após login bem-sucedido no Facebook, mostrar a tela de seleção de relatório
-                                showScreen(reportSelectionScreen);
                             }
 
-                            // Salvar o token de acesso e os dados no localStorage para uso no Relatório Completo
-                            localStorage.setItem('fbAccessToken', currentAccessToken);
+                            // Salvar adAccountsMap no localStorage para uso no Relatório Completo
                             localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
                             console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap });
                         });
@@ -446,20 +462,7 @@ function handleFacebookLoginResponse(response) {
         document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente. Detalhes: ' + (response.error ? response.error.message : 'Erro desconhecido');
         document.getElementById('loginError').style.display = 'block';
     }
-});
-
-// Seleção de relatório simplificado
-simpleReportBtn.addEventListener('click', () => {
-    console.log('Botão Relatório Simplificado clicado - Versão Atualizada (03/03/2025)');
-    showScreen(mainContent);
-    simpleReportBtn.classList.add('active');
-});
-
-// Seleção de relatório completo
-completeReportBtn.addEventListener('click', () => {
-    console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
-    window.location.href = 'RelatorioCompleto.html';
-});
+}
 
 // Botão Voltar para a tela de seleção de relatório
 backToSelectionBtnSimple.addEventListener('click', () => {
