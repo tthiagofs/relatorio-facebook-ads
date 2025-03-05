@@ -26,6 +26,10 @@ let isCampaignFilterActive = false;
 let isAdSetFilterActive = false;
 let isFilterActivated = false; // Novo estado para indicar se os filtros estão ativados
 
+// Variáveis para armazenar o estado do filtro de pesquisa
+let campaignSearchText = '';
+let adSetSearchText = '';
+
 // Função para alternar telas
 function showScreen(screen) {
     appLoginScreen.style.display = 'none';
@@ -37,7 +41,6 @@ function showScreen(screen) {
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
-    // Permite abrir o modal para desativar, mesmo com filtros ativados, se houver seleções ativas
     if (show && isFilterActivated && ((isCampaign && selectedCampaigns.size === 0) || (!isCampaign && selectedAdSets.size === 0))) {
         return; // Impede abrir o modal se os filtros já estiverem ativados sem seleções
     }
@@ -47,40 +50,44 @@ function toggleModal(modal, show, isCampaign) {
         if (isCampaign) {
             isCampaignFilterActive = true;
             isAdSetFilterActive = false;
-            filterAdSetsBtn.disabled = isFilterActivated; // Desativa o botão de conjuntos se filtros ativados
+            filterAdSetsBtn.disabled = isFilterActivated;
             filterAdSetsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
-            filterCampaignsBtn.disabled = isFilterActivated; // Desativa o botão de campanhas se filtros ativados
+            filterCampaignsBtn.disabled = isFilterActivated;
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
     } else {
         if (isCampaign) {
             isCampaignFilterActive = false;
-            // Verifica se os filtros devem ser desativados ao fechar o modal sem seleções
             if (isFilterActivated && selectedCampaigns.size === 0) {
                 isFilterActivated = false;
                 filterAdSetsBtn.disabled = false;
                 filterAdSetsBtn.style.cursor = 'pointer';
             } else {
-                filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0; // Mantém desativado se filtros ativos com seleções
+                filterAdSetsBtn.disabled = isFilterActivated && selectedCampaigns.size > 0;
                 filterAdSetsBtn.style.cursor = isFilterActivated && selectedCampaigns.size > 0 ? 'not-allowed' : 'pointer';
             }
+            campaignSearchText = ''; // Limpa o texto de pesquisa ao fechar o modal
+            const campaignSearchInput = document.getElementById('campaignSearch');
+            if (campaignSearchInput) campaignSearchInput.value = ''; // Limpa o campo de pesquisa
         } else {
             isAdSetFilterActive = false;
-            // Verifica se os filtros devem ser desativados ao fechar o modal sem seleções
             if (isFilterActivated && selectedAdSets.size === 0) {
                 isFilterActivated = false;
                 filterCampaignsBtn.disabled = false;
                 filterCampaignsBtn.style.cursor = 'pointer';
             } else {
-                filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0; // Mantém desativado se filtros ativos com seleções
+                filterCampaignsBtn.disabled = isFilterActivated && selectedAdSets.size > 0;
                 filterCampaignsBtn.style.cursor = isFilterActivated && selectedAdSets.size > 0 ? 'not-allowed' : 'pointer';
             }
+            adSetSearchText = ''; // Limpa o texto de pesquisa ao fechar o modal
+            const adSetSearchInput = document.getElementById('adSetSearch');
+            if (adSetSearchInput) adSetSearchInput.value = ''; // Limpa o campo de pesquisa
         }
     }
-    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
+    updateFilterButton();
 }
 
 // Função para atualizar o botão de ativação/desativação
@@ -90,13 +97,12 @@ function updateFilterButton() {
 
     if (campaignsButton) {
         campaignsButton.textContent = isFilterActivated && selectedCampaigns.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
-        campaignsButton.disabled = !isFilterActivated && selectedCampaigns.size === 0; // Desativa se não houver seleções antes de ativar
+        campaignsButton.disabled = !isFilterActivated && selectedCampaigns.size === 0;
     }
     if (adSetsButton) {
         adSetsButton.textContent = isFilterActivated && selectedAdSets.size > 0 ? 'Desativar Seleção' : 'Ativar Seleções';
-        adSetsButton.disabled = !isFilterActivated && selectedAdSets.size === 0; // Desativa se não houver seleções antes de ativar
+        adSetsButton.disabled = !isFilterActivated && selectedAdSets.size === 0;
     }
-    // Atualiza o estado dos botões de filtro com base nos filtros ativados
     filterCampaignsBtn.disabled = isFilterActivated && (selectedAdSets.size > 0 || (selectedCampaigns.size === 0 && !isCampaignFilterActive));
     filterAdSetsBtn.disabled = isFilterActivated && (selectedCampaigns.size > 0 || (selectedAdSets.size === 0 && !isAdSetFilterActive));
     filterCampaignsBtn.style.cursor = filterCampaignsBtn.disabled ? 'not-allowed' : 'pointer';
@@ -107,10 +113,9 @@ function updateFilterButton() {
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
     const searchInput = document.getElementById(isCampaign ? 'campaignSearch' : 'adSetSearch');
-    container.innerHTML = options.length === 0 ? '<p>Carregando dados, por favor aguarde...</p>' : ''; // Feedback visual melhorado
-    console.log(`Renderizando opções para ${isCampaign ? 'campanhas' : 'conjuntos'} - Total de opções: ${options.length}`); // Log para depuração
+    container.innerHTML = options.length === 0 ? '<p>Carregando dados, por favor aguarde...</p>' : '';
+    console.log(`Renderizando opções para ${isCampaign ? 'campanhas' : 'conjuntos'} - Total de opções: ${options.length}`);
     if (options.length > 0) {
-        // Função para filtrar opções com base no texto de pesquisa
         function filterOptions(searchText) {
             const filteredOptions = options.filter(option => 
                 option.label.toLowerCase().includes(searchText.toLowerCase())
@@ -118,7 +123,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
             renderFilteredOptions(filteredOptions, selectedSet, isCampaign);
         }
 
-        // Função para renderizar as opções filtradas
         function renderFilteredOptions(filteredOptions, set, isCampaignParam) {
             container.innerHTML = '';
             filteredOptions.forEach(option => {
@@ -137,7 +141,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                         set.add(value);
                         div.classList.add('selected');
                     }
-                    // Atualiza o estado do filtro se não houver mais seleções
                     if (set.size === 0 && isFilterActivated) {
                         isFilterActivated = false;
                         if (isCampaignParam) {
@@ -150,22 +153,20 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                             filterCampaignsBtn.style.cursor = 'pointer';
                         }
                     }
-                    updateFilterButton(); // Atualiza o botão de ativação/desativação após cada clique
+                    updateFilterButton();
                 });
                 container.appendChild(div);
             });
 
-            // Adiciona botão de "Ativar Seleções/Desativar Seleção" ao final do modal
             const existingButton = container.querySelector('.btn-filter-toggle');
-            if (existingButton) existingButton.remove(); // Remove o botão antigo para evitar duplicação
+            if (existingButton) existingButton.remove();
 
             const filterButton = document.createElement('button');
             filterButton.textContent = isFilterActivated && (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) ? 'Desativar Seleção' : 'Ativar Seleções';
             filterButton.className = 'btn-filter-toggle';
-            filterButton.disabled = (isCampaignParam ? selectedCampaigns.size === 0 : selectedAdSets.size === 0); // Desativa se não houver seleções
+            filterButton.disabled = (isCampaignParam ? selectedCampaigns.size === 0 : selectedAdSets.size === 0);
             filterButton.addEventListener('click', () => {
                 if (isFilterActivated && (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0)) {
-                    // Desativa os filtros
                     isFilterActivated = false;
                     if (isCampaignParam) {
                         selectedCampaigns.clear();
@@ -179,7 +180,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                     filterCampaignsBtn.style.cursor = 'pointer';
                     filterAdSetsBtn.style.cursor = 'pointer';
                 } else if (isCampaignParam ? selectedCampaigns.size > 0 : selectedAdSets.size > 0) {
-                    // Ativa os filtros apenas se houver seleções
                     isFilterActivated = true;
                     if (isCampaignParam) {
                         isCampaignFilterActive = true;
@@ -193,41 +193,56 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                         filterCampaignsBtn.style.cursor = 'not-allowed';
                     }
                 }
-                renderFilteredOptions(filteredOptions, set, isCampaignParam); // Re-renderiza para atualizar o botão
-                updateFilterButton(); // Garante que o estado do botão seja atualizado
+                renderFilteredOptions(filteredOptions, set, isCampaignParam);
+                updateFilterButton();
             });
             container.appendChild(filterButton);
         }
 
-        // Renderiza todas as opções inicialmente
-        renderFilteredOptions(options, selectedSet, isCampaign);
+        // Preserva o texto de pesquisa atual e aplica o filtro
+        const currentSearchText = isCampaign ? campaignSearchText : adSetSearchText;
+        if (currentSearchText) {
+            filterOptions(currentSearchText);
+        } else {
+            renderFilteredOptions(options, selectedSet, isCampaign);
+        }
 
-        // Adiciona evento de pesquisa
         if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                filterOptions(e.target.value);
+            // Remove ouvintes anteriores para evitar duplicação
+            const newSearchInput = searchInput.cloneNode(true);
+            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+            newSearchInput.addEventListener('input', (e) => {
+                const searchText = e.target.value;
+                if (isCampaign) {
+                    campaignSearchText = searchText;
+                } else {
+                    adSetSearchText = searchText;
+                }
+                filterOptions(searchText);
             });
+            // Restaura o valor do campo de pesquisa
+            newSearchInput.value = currentSearchText;
         }
     } else {
-        console.warn(`Nenhuma opção disponível para renderizar em ${containerId}`); // Log para depuração
+        console.warn(`Nenhuma opção disponível para renderizar em ${containerId}`);
         container.innerHTML = '<p>Nenhum dado encontrado para o período selecionado.</p>';
     }
 }
 
 // Login do app
 appLoginForm.addEventListener('submit', (e) => {
-    console.log('Formulário de login submetido'); // Log para depuração
-    e.preventDefault(); // Impede o comportamento padrão do formulário
+    console.log('Formulário de login submetido');
+    e.preventDefault();
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    console.log('Dados do formulário:', { username, password }); // Log para depuração
+    console.log('Dados do formulário:', { username, password });
 
     if (username === '@admin' && password === '134679') {
-        console.log('Login bem-sucedido, alternando para reportSelectionScreen'); // Log para depuração
+        console.log('Login bem-sucedido, alternando para reportSelectionScreen');
         showScreen(reportSelectionScreen);
     } else {
-        console.log('Login falhou: usuário ou senha inválidos'); // Log para depuração
+        console.log('Login falhou: usuário ou senha inválidos');
         appLoginError.textContent = 'Usuário ou senha inválidos.';
         appLoginError.style.display = 'block';
     }
@@ -237,13 +252,13 @@ appLoginForm.addEventListener('submit', (e) => {
 simpleReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Simplificado clicado - Versão Atualizada (03/03/2025)');
     showScreen(loginScreen);
-    simpleReportBtn.classList.add('active'); // Marca o botão como ativo para identificar o contexto
+    simpleReportBtn.classList.add('active');
 });
 
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
-    event.preventDefault(); // Impede qualquer comportamento padrão do botão
-    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Outro Contexto) - Versão Atualizada (03/03/2025)'); // Log para confirmar evento
+    event.preventDefault();
+    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Outro Contexto) - Versão Atualizada (03/03/2025)');
 
     if (typeof FB === 'undefined') {
         console.error('Facebook SDK não está carregado ou inicializado corretamente.');
@@ -253,20 +268,17 @@ loginBtn.addEventListener('click', (event) => {
     }
 
     if (!simpleReportBtn.classList.contains('active')) {
-        return; // Impede a execução se não for o contexto do Relatório Simplificado
+        return;
     }
 
-    // Adiciona permissões extras, incluindo business_management
     FB.login(function(response) {
         if (response.authResponse) {
             console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
             showScreen(mainContent);
 
-            // Obtém o token de acesso para verificar permissões
             const accessToken = response.authResponse.accessToken;
             console.log('Access Token:', accessToken);
 
-            // Verifica o status da conta específica CA - Oral Centter Jaíba (ID: 9586847491331372)
             FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: accessToken }, function(statusResponse) {
                 if (statusResponse && !statusResponse.error) {
                     console.log('Status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse);
@@ -282,7 +294,6 @@ loginBtn.addEventListener('click', (event) => {
                 }
             });
 
-            // Lista as contas diretamente com /me/adaccounts
             FB.api('/me/adaccounts', { fields: 'id,name', access_token: accessToken }, function(accountResponse) {
                 if (accountResponse && !accountResponse.error) {
                     console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
@@ -299,7 +310,6 @@ loginBtn.addEventListener('click', (event) => {
                         }
                     });
 
-                    // Lista os Business Managers associados ao usuário
                     FB.api('/me/businesses', { fields: 'id,name', access_token: accessToken }, function(businessResponse) {
                         if (businessResponse && !businessResponse.error) {
                             console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
@@ -307,7 +317,6 @@ loginBtn.addEventListener('click', (event) => {
                             let businessAccountsPromises = [];
 
                             businesses.forEach(business => {
-                                // Lista contas pertencentes ao Business Manager (owned_ad_accounts)
                                 businessAccountsPromises.push(new Promise((resolve) => {
                                     FB.api(
                                         `/${business.id}/owned_ad_accounts`,
@@ -325,7 +334,6 @@ loginBtn.addEventListener('click', (event) => {
                                     );
                                 }));
 
-                                // Lista contas compartilhadas com o Business Manager (client_ad_accounts)
                                 businessAccountsPromises.push(new Promise((resolve) => {
                                     FB.api(
                                         `/${business.id}/client_ad_accounts`,
@@ -344,11 +352,10 @@ loginBtn.addEventListener('click', (event) => {
                                 }));
                             });
 
-                            // Aguarda todas as chamadas para Business Managers
                             Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
                                 let allBusinessAccounts = [].concat(...businessAccountsArrays);
                                 allBusinessAccounts.forEach(account => {
-                                    if (!adAccountsMap[account.id]) { // Evita duplicatas
+                                    if (!adAccountsMap[account.id]) {
                                         adAccountsMap[account.id] = account.name;
                                         if (account.id === '1187332129240271') {
                                             console.log('Conta 1187332129240271 - CA 01 - Oral Centter Sete Lagoas encontrada (via Business Manager):', account);
@@ -359,7 +366,6 @@ loginBtn.addEventListener('click', (event) => {
                                     }
                                 });
 
-                                // Organiza as contas em ordem alfabética
                                 const sortedAccounts = Object.keys(adAccountsMap)
                                     .map(accountId => ({
                                         id: accountId,
@@ -367,7 +373,6 @@ loginBtn.addEventListener('click', (event) => {
                                     }))
                                     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
-                                // Preenche o dropdown com as contas ordenadas
                                 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
                                 sortedAccounts.forEach(account => {
                                     const option = document.createElement('option');
@@ -376,7 +381,6 @@ loginBtn.addEventListener('click', (event) => {
                                     unitSelect.appendChild(option);
                                 });
 
-                                // Verifica se as contas específicas foram encontradas após todas as chamadas
                                 const seteLagoasFound = Object.keys(adAccountsMap).includes('1187332129240271');
                                 const jaibaFound = Object.keys(adAccountsMap).includes('9586847491331372');
 
@@ -392,12 +396,10 @@ loginBtn.addEventListener('click', (event) => {
                                     console.log('Conta 9586847491331372 - CA - Oral Centter Jaíba confirmada no adAccountsMap.');
                                 }
 
-                                // Exibe mensagem de erro apenas se uma das contas não foi encontrada
                                 if (!seteLagoasFound || !jaibaFound) {
                                     document.getElementById('loginError').textContent = 'Uma ou mais contas esperadas (Sete Lagoas ou Jaíba) não foram encontradas. Verifique suas permissões ou o status das contas.';
                                     document.getElementById('loginError').style.display = 'block';
                                 } else {
-                                    // Se ambas as contas foram encontradas, limpa qualquer mensagem de erro
                                     document.getElementById('loginError').textContent = '';
                                     document.getElementById('loginError').style.display = 'none';
                                 }
@@ -419,7 +421,7 @@ loginBtn.addEventListener('click', (event) => {
             document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente. Detalhes: ' + (response.error ? response.error.message : 'Erro desconhecido');
             document.getElementById('loginError').style.display = 'block';
         }
-    }, {scope: 'ads_read,ads_management,business_management'}); // Adiciona business_management
+    }, {scope: 'ads_read,ads_management,business_management'});
 });
 
 // Carrega os ad sets e campanhas quando o formulário é preenchido
@@ -429,6 +431,12 @@ form.addEventListener('input', async function(e) {
     const endDate = document.getElementById('endDate').value;
 
     if (unitId && startDate && endDate) {
+        // Evita re-renderizar se o modal de campanhas estiver aberto e com um filtro ativo
+        if (isCampaignFilterActive && campaignSearchText) {
+            console.log('Modal de campanhas aberto com filtro ativo, evitando re-renderização.');
+            return;
+        }
+
         campaignsMap[unitId] = {};
         adSetsMap[unitId] = {};
         selectedCampaigns.clear();
@@ -449,14 +457,14 @@ form.addEventListener('input', async function(e) {
 
 // Função para carregar campanhas
 async function loadCampaigns(unitId, startDate, endDate) {
-    const startTime = performance.now(); // Medir tempo de carregamento
-    console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`); // Log para depuração
+    const startTime = performance.now();
+    console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     FB.api(
         `/${unitId}/campaigns`,
         { fields: 'id,name' },
         async function(campaignResponse) {
             if (campaignResponse && !campaignResponse.error) {
-                console.log(`Resposta da API para campanhas:`, campaignResponse); // Log para depuração
+                console.log(`Resposta da API para campanhas:`, campaignResponse);
                 campaignsMap[unitId] = {};
                 const campaignIds = campaignResponse.data.map(camp => camp.id);
                 const insightPromises = campaignIds.map(campaignId => getCampaignInsights(campaignId, startDate, endDate));
@@ -480,7 +488,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
                 }
 
                 const endTime = performance.now();
-                console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`); // Log do tempo de carregamento
+                console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
             } else {
                 console.error('Erro ao carregar campanhas:', campaignResponse.error);
             }
@@ -488,20 +496,19 @@ async function loadCampaigns(unitId, startDate, endDate) {
     );
 }
 
-// Função para carregar ad sets, usando getAdSetInsights para garantir consistência
+// Função para carregar ad sets
 async function loadAdSets(unitId, startDate, endDate) {
-    const startTime = performance.now(); // Medir tempo de carregamento
-    console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`); // Log para depuração
+    const startTime = performance.now();
+    console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     FB.api(
         `/${unitId}/adsets`,
-        { fields: 'id,name', limit: 50 }, // Adiciona limite inicial para evitar sobrecarga
+        { fields: 'id,name', limit: 50 },
         async function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
-                console.log(`Resposta da API para ad sets:`, adSetResponse); // Log para depuração
+                console.log(`Resposta da API para ad sets:`, adSetResponse);
                 adSetsMap[unitId] = {};
                 const adSetIds = adSetResponse.data.map(set => set.id);
 
-                // Paraleliza as chamadas para getAdSetInsights
                 const insightPromises = adSetIds.map(adSetId => getAdSetInsights(adSetId, startDate, endDate));
                 const insights = await Promise.all(insightPromises);
 
@@ -514,8 +521,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                             spend = 0;
                         }
                     }
-                    console.log(`Spend para ad set ${adSetId}: ${spend}`); // Log para depuração
-                    // Só adiciona ad sets com spend > 0
+                    console.log(`Spend para ad set ${adSetId}: ${spend}`);
                     if (spend > 0) {
                         const adSet = adSetResponse.data.find(set => set.id === adSetId);
                         adSetsMap[unitId][adSetId] = {
@@ -525,7 +531,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                     }
                 });
 
-                console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]); // Log para depuração
+                console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]);
 
                 if (!isCampaignFilterActive) {
                     const adSetOptions = Object.keys(adSetsMap[unitId])
@@ -533,23 +539,23 @@ async function loadAdSets(unitId, startDate, endDate) {
                         .map(id => ({
                             value: id,
                             label: adSetsMap[unitId][id].name,
-                            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
+                            spend: adSetsMap[unitId][id].insights.spend
                         }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
 
                 const endTime = performance.now();
-                console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`); // Log do tempo de carregamento
+                console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`);
             } else {
                 console.error('Erro ao carregar ad sets:', adSetResponse.error);
                 const endTime = performance.now();
-                console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`); // Log do tempo de falha
+                console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
             }
         }
     );
 }
 
-// Função para atualizar as opções de ad sets (não usada aqui, mas mantida para compatibilidade)
+// Função para atualizar as opções de ad sets
 function updateAdSets(selectedCampaigns) {
     const unitId = document.getElementById('unitId').value;
     const startDate = document.getElementById('startDate').value;
@@ -559,13 +565,13 @@ function updateAdSets(selectedCampaigns) {
         let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
         validAdSetIds = validAdSetIds.filter(id => {
             const adSetData = adSetsMap[unitId][id];
-            return adSetData && adSetData.insights.spend > 0; // Filtra apenas ad sets com gastos
+            return adSetData && adSetData.insights.spend > 0;
         });
 
         const adSetOptions = validAdSetIds.map(id => ({
             value: id,
             label: adSetsMap[unitId][id].name,
-            spend: adSetsMap[unitId][id].insights.spend // Usa o spend correto da API
+            spend: adSetsMap[unitId][id].insights.spend
         }));
         renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
     }
@@ -607,15 +613,15 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
     });
 }
 
-// Configurar eventos para os botões de filtro com exclusão mútua simples
+// Configurar eventos para os botões de filtro
 filterCampaignsBtn.addEventListener('click', () => {
-    if (isFilterActivated && selectedAdSets.size > 0) return; // Impede abrir se há seleções ativas de ad sets
+    if (isFilterActivated && selectedAdSets.size > 0) return;
     isCampaignFilterActive = true;
     toggleModal(campaignsModal, true, true);
 });
 
 filterAdSetsBtn.addEventListener('click', () => {
-    if (isFilterActivated && selectedCampaigns.size > 0) return; // Impede abrir se há seleções ativas de campanhas
+    if (isFilterActivated && selectedCampaigns.size > 0) return;
     isAdSetFilterActive = true;
     toggleModal(adSetsModal, true, false);
 });
@@ -623,13 +629,13 @@ filterAdSetsBtn.addEventListener('click', () => {
 closeCampaignsModalBtn.addEventListener('click', () => {
     isCampaignFilterActive = false;
     toggleModal(campaignsModal, false, true);
-    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
+    updateFilterButton();
 });
 
 closeAdSetsModalBtn.addEventListener('click', () => {
     isAdSetFilterActive = false;
     toggleModal(adSetsModal, false, false);
-    updateFilterButton(); // Atualiza o estado do botão de ativação/desativação
+    updateFilterButton();
 });
 
 // Geração do relatório com soma consolidada dos itens filtrados ativados
@@ -669,7 +675,6 @@ form.addEventListener('submit', async (e) => {
             for (const adSetId of selectedAdSets) {
                 const insights = await getAdSetInsights(adSetId, startDate, endDate);
                 if (insights && insights.spend) {
-                    // Log para depuração do valor de spend
                     console.log(`Spend para ad set ${adSetId}: ${insights.spend}`);
                     totalSpend += parseFloat(insights.spend) || 0;
                 }
