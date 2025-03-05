@@ -1,7 +1,6 @@
-// Elementos do DOM
 const appLoginScreen = document.getElementById('appLoginScreen');
 const reportSelectionScreen = document.getElementById('reportSelectionScreen');
-const loginScreen = document.getElementById('facebookLoginScreen'); // Ajustado para corresponder ao ID no index.html
+const loginScreen = document.getElementById('loginScreen');
 const mainContent = document.getElementById('mainContent');
 const appLoginForm = document.getElementById('appLoginForm');
 const appLoginError = document.getElementById('appLoginError');
@@ -13,7 +12,6 @@ const reportContainer = document.getElementById('reportContainer');
 const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 const filterCampaignsBtn = document.getElementById('filterCampaigns');
 const filterAdSetsBtn = document.getElementById('filterAdSets');
-const backToSelectionBtnSimple = document.getElementById('backToSelectionBtnSimple'); // Botão Voltar
 const campaignsModal = document.getElementById('campaignsModal');
 const adSetsModal = document.getElementById('adSetsModal');
 const closeCampaignsModalBtn = document.getElementById('closeCampaignsModal');
@@ -230,7 +228,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
     }
 }
 
-// Login do app (movido para o início para garantir que o evento seja registrado)
+// Login do app
 appLoginForm.addEventListener('submit', (e) => {
     e.preventDefault(); // Impede o recarregamento da página
     console.log('Formulário de login submetido');
@@ -276,14 +274,13 @@ simpleReportBtn.addEventListener('click', () => {
 // Seleção de relatório completo
 completeReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
-    showScreen(loginScreen);
-    completeReportBtn.classList.add('active');
+    window.location.href = 'RelatorioCompleto.html';
 });
 
 // Login com Facebook e carregamento das contas
 loginBtn.addEventListener('click', (event) => {
     event.preventDefault();
-    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Relatório Completo) - Versão Atualizada (03/03/2025)');
+    console.log(simpleReportBtn.classList.contains('active') ? 'Botão Login com Facebook clicado (Relatório Simplificado) - Versão Atualizada (03/03/2025)' : 'Botão Login com Facebook clicado (Outro Contexto) - Versão Atualizada (03/03/2025)');
 
     if (typeof FB === 'undefined') {
         console.error('Facebook SDK não está carregado ou inicializado corretamente.');
@@ -292,12 +289,16 @@ loginBtn.addEventListener('click', (event) => {
         return;
     }
 
+    if (!simpleReportBtn.classList.contains('active')) {
+        return;
+    }
+
     // Verificar se o SDK está inicializado antes de chamar FB.login
     if (!FB.getAccessToken()) {
         console.log('Inicializando login com Facebook...');
         FB.login(function(response) {
             handleFacebookLoginResponse(response);
-        }, { scope: 'ads_read,ads_management,business_management' }); // Corrigido: removido parêntese extra
+        }, {scope: 'ads_read,ads_management,business_management'});
     } else {
         console.log('Token de acesso já existe, prosseguindo...');
         handleFacebookLoginResponse({ authResponse: { accessToken: FB.getAccessToken() } });
@@ -307,14 +308,11 @@ loginBtn.addEventListener('click', (event) => {
 // Função para lidar com a resposta do login do Facebook
 function handleFacebookLoginResponse(response) {
     if (response.authResponse) {
-        console.log(simpleReportBtn.classList.contains('active') ? 'Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):' : 'Login com Facebook bem-sucedido (Relatório Completo) - Versão Atualizada (03/03/2025):', response.authResponse);
-        showScreen(simpleReportBtn.classList.contains('active') ? mainContent : mainContent); // Ajustar conforme necessário para Relatório Completo
+        console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
+        showScreen(mainContent);
 
         currentAccessToken = response.authResponse.accessToken;
         console.log('Access Token:', currentAccessToken);
-
-        // Salvar o token de acesso no localStorage para uso no Relatório Completo
-        localStorage.setItem('fbAccessToken', currentAccessToken);
 
         FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: currentAccessToken }, function(statusResponse) {
             if (statusResponse && !statusResponse.error) {
@@ -333,7 +331,7 @@ function handleFacebookLoginResponse(response) {
 
         FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
             if (accountResponse && !accountResponse.error) {
-                console.log('Resposta da API /me/adaccounts - Versão Atualizada (03/03/2025):', accountResponse);
+                console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
                 const unitSelect = document.getElementById('unitId');
                 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
                 let accounts = accountResponse.data || [];
@@ -349,7 +347,7 @@ function handleFacebookLoginResponse(response) {
 
                 FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
                     if (businessResponse && !businessResponse.error) {
-                        console.log('Resposta da API /me/businesses - Versão Atualizada (03/03/2025):', businessResponse);
+                        console.log('Resposta da API /me/businesses (Relatório Simplificado) - Versão Atualizada (03/03/2025):', businessResponse);
                         const businesses = businessResponse.data || [];
                         let businessAccountsPromises = [];
 
@@ -441,7 +439,8 @@ function handleFacebookLoginResponse(response) {
                                 document.getElementById('loginError').style.display = 'none';
                             }
 
-                            // Salvar adAccountsMap no localStorage para uso no Relatório Completo
+                            // Salvar o token de acesso e os dados no localStorage para uso no Relatório Completo
+                            localStorage.setItem('fbAccessToken', currentAccessToken);
                             localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
                             console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap });
                         });
@@ -463,25 +462,6 @@ function handleFacebookLoginResponse(response) {
         document.getElementById('loginError').style.display = 'block';
     }
 }
-
-// Botão Voltar para a tela de seleção de relatório
-backToSelectionBtnSimple.addEventListener('click', () => {
-    console.log('Botão Voltar clicado - Retornando para reportSelectionScreen');
-    showScreen(reportSelectionScreen);
-    // Limpar dados do relatório simplificado
-    reportContainer.innerHTML = '';
-    shareWhatsAppBtn.style.display = 'none';
-    form.reset();
-    selectedCampaigns.clear();
-    selectedAdSets.clear();
-    isCampaignFilterActive = false;
-    isAdSetFilterActive = false;
-    isFilterActivated = false;
-    filterCampaignsBtn.disabled = false;
-    filterAdSetsBtn.disabled = false;
-    filterCampaignsBtn.style.cursor = 'pointer';
-    filterAdSetsBtn.style.cursor = 'pointer';
-});
 
 // Carrega os ad sets e campanhas quando o formulário é preenchido
 form.addEventListener('input', async function(e) {
@@ -532,7 +512,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
                     const spend = insights[index].spend !== undefined && insights[index].spend !== null ? parseFloat(insights[index].spend) : 0;
                     campaignsMap[unitId][campaignId] = {
                         name: campaignResponse.data.find(camp => camp.id === campaignId).name.toLowerCase(),
-                        insights: { spend }
+                        insights: { spend: spend }
                     };
                 });
 
@@ -659,15 +639,10 @@ function updateAdSets(selectedCampaigns) {
 
 // Funções para obter insights
 async function getCampaignInsights(campaignId, startDate, endDate) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         FB.api(
             `/${campaignId}/insights`,
-            {
-                fields: 'spend,actions,reach',
-                time_range: { since: startDate, until: endDate },
-                level: 'campaign',
-                access_token: currentAccessToken
-            },
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'campaign', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error) {
                     resolve(response.data[0] || {});
@@ -681,14 +656,10 @@ async function getCampaignInsights(campaignId, startDate, endDate) {
 }
 
 async function getAdSetInsights(adSetId, startDate, endDate) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         FB.api(
             `/${adSetId}/insights`,
-            {
-                fields: 'spend,actions,reach',
-                time_range: { since: startDate, until: endDate },
-                access_token: currentAccessToken
-            },
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
                     console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
@@ -780,12 +751,7 @@ form.addEventListener('submit', async (e) => {
     } else {
         FB.api(
             `/${unitId}/insights`,
-            {
-                fields: 'spend,actions,reach',
-                time_range: { since: startDate, until: endDate },
-                level: 'account',
-                access_token: currentAccessToken
-            },
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'account', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error && response.data.length > 0) {
                     response.data.forEach(data => {
@@ -831,7 +797,7 @@ form.addEventListener('submit', async (e) => {
         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
     `;
     shareWhatsAppBtn.style.display = 'block';
-}
+});
 
 // Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {

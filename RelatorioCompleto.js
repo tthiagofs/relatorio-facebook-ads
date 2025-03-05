@@ -5,7 +5,6 @@ const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
 const filterCampaignsBtn = document.getElementById('filterCampaigns');
 const filterAdSetsBtn = document.getElementById('filterAdSets');
 const comparePeriodsBtn = document.getElementById('comparePeriods');
-const backBtn = document.getElementById('backBtn'); // Botão Voltar
 const campaignsModal = document.getElementById('campaignsModal');
 const adSetsModal = document.getElementById('adSetsModal');
 const comparisonModal = document.getElementById('comparisonModal');
@@ -32,10 +31,11 @@ let comparisonData = null;
 if (!currentAccessToken) {
     console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
     alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
+    // Usar window.location.replace para garantir o redirecionamento
     setTimeout(() => {
         window.location.replace('index.html');
-    }, 100);
-    throw new Error('Token de acesso não encontrado. Redirecionamento iniciado.');
+    }, 100); // Pequeno atraso para garantir que o alerta seja exibido
+    throw new Error('Token de acesso não encontrado. Redirecionamento iniciado.'); // Para interromper a execução
 }
 
 // Preencher o dropdown de unidades com os dados do localStorage
@@ -777,24 +777,4 @@ shareWhatsAppBtn.addEventListener('click', () => {
     const encodedText = encodeURIComponent(reportText);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
     window.open(whatsappUrl, '_blank');
-});
-
-// Botão Voltar para a tela de seleção de relatório
-backBtn.addEventListener('click', () => {
-    console.log('Botão Voltar clicado - Retornando para a tela de seleção de relatório no index.html');
-    window.location.href = 'index.html';
-    // Limpar dados do relatório completo
-    reportContainer.innerHTML = '';
-    shareWhatsAppBtn.style.display = 'none';
-    form.reset();
-    selectedCampaigns.clear();
-    selectedAdSets.clear();
-    isCampaignFilterActive = false;
-    isAdSetFilterActive = false;
-    isFilterActivated = false;
-    filterCampaignsBtn.disabled = false;
-    filterAdSetsBtn.disabled = false;
-    filterCampaignsBtn.style.cursor = 'pointer';
-    filterAdSetsBtn.style.cursor = 'pointer';
-    comparisonData = null;
 });
