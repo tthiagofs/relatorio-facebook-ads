@@ -557,7 +557,8 @@ function calculateVariation(currentValue, previousValue) {
 
 // Geração do relatório com soma consolidada dos itens filtrados ativados
 form.addEventListener('submit', async (e) => {
-    await generateReport();
+    e.preventDefault(); // Impede o recarregamento da página
+    await generateReport(); // Executa a geração do relatório
 });
 
 async function generateReport() {
