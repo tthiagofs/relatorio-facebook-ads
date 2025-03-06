@@ -274,7 +274,12 @@ appLoginForm.addEventListener('submit', (e) => {
 // Seleção de relatório simplificado
 simpleReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Simplificado clicado - Versão Atualizada (03/03/2025)');
-    showScreen(loginScreen);
+    if (currentAccessToken) {
+        console.log('Token de acesso já existe, indo direto para mainContent');
+        showScreen(mainContent);
+    } else {
+        showScreen(loginScreen);
+    }
     simpleReportBtn.classList.add('active');
 });
 
@@ -306,13 +311,16 @@ loginBtn.addEventListener('click', (event) => {
         return;
     }
 
-    if (!FB.getAccessToken()) {
+    if (currentAccessToken) {
+        console.log('Usando token existente do localStorage:', currentAccessToken);
+        handleSimpleReportLoginResponse({ authResponse: { accessToken: currentAccessToken } });
+    } else if (!FB.getAccessToken()) {
         console.log('Inicializando login com Facebook...');
         FB.login(function(response) {
             handleSimpleReportLoginResponse(response);
         }, {scope: 'ads_read,ads_management,business_management'});
     } else {
-        console.log('Token de acesso já existe, prosseguindo...');
+        console.log('Token de acesso já existe no SDK, prosseguindo...');
         handleSimpleReportLoginResponse({ authResponse: { accessToken: FB.getAccessToken() } });
     }
 });
