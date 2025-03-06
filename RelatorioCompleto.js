@@ -30,7 +30,7 @@ let comparisonData = null;
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
 
 backToReportSelectionBtn.addEventListener('click', () => {
-    window.location.href = 'index.html'; // Redireciona para a página inicial
+    window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
 });
 
 // Verificar se o token de acesso está disponível

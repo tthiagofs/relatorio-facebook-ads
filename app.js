@@ -825,5 +825,20 @@ shareWhatsAppBtn.addEventListener('click', () => {
     window.open(whatsappUrl, '_blank');
 });
 
-// Mostrar tela inicial
-showScreen(appLoginScreen);
+// Função para obter parâmetros da URL
+function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+}
+
+// Verificar autenticação e decidir a tela inicial
+const storedToken = localStorage.getItem('fbAccessToken');
+const targetScreen = getQueryParam('screen');
+
+if (storedToken && targetScreen === 'reportSelection') {
+    console.log('Usuário autenticado e redirecionado para reportSelectionScreen');
+    showScreen(reportSelectionScreen);
+} else {
+    console.log('Mostrando tela de login inicial');
+    showScreen(appLoginScreen);
+}
