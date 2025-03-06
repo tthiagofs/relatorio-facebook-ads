@@ -19,11 +19,6 @@ const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
 
-backToReportSelectionBtn.addEventListener('click', () => {
-    showScreen(reportSelectionScreen);
-});
-
-
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
 const adSetsMap = {};
@@ -36,6 +31,11 @@ let isFilterActivated = false;
 let campaignSearchText = '';
 let adSetSearchText = '';
 let currentAccessToken = null;
+let selectedReportType = null; // 'simple' ou 'complete'
+
+backToReportSelectionBtn.addEventListener('click', () => {
+    showScreen(reportSelectionScreen);
+});
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -274,6 +274,7 @@ appLoginForm.addEventListener('submit', (e) => {
 // Seleção de relatório simplificado
 simpleReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Simplificado clicado - Versão Atualizada (03/03/2025)');
+    selectedReportType = 'simple'; // Define o tipo de relatório
     showScreen(loginScreen);
     simpleReportBtn.classList.add('active');
 });
@@ -281,18 +282,8 @@ simpleReportBtn.addEventListener('click', () => {
 // Seleção de relatório completo
 completeReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
-    
-    // Verificar se o token de acesso está disponível
-    if (!currentAccessToken) {
-        console.log('Token de acesso não encontrado. Iniciando login com Facebook...');
-        // Iniciar o login com Facebook
-        FB.login(function(response) {
-            handleFacebookLoginResponse(response);
-        }, {scope: 'ads_read,ads_management,business_management'});
-    } else {
-        // Se o token já estiver disponível, redirecionar para o relatório completo
-        window.location.href = 'RelatorioCompleto.html';
-    }
+    selectedReportType = 'complete'; // Define o tipo de relatório
+    showScreen(loginScreen);
 });
 
 // Login com Facebook e carregamento das contas
@@ -304,10 +295,6 @@ loginBtn.addEventListener('click', (event) => {
         console.error('Facebook SDK não está carregado ou inicializado corretamente.');
         document.getElementById('loginError').textContent = 'Erro: Facebook SDK não está disponível. Verifique sua conexão ou tente novamente.';
         document.getElementById('loginError').style.display = 'block';
-        return;
-    }
-
-    if (!simpleReportBtn.classList.contains('active')) {
         return;
     }
 
@@ -326,12 +313,11 @@ loginBtn.addEventListener('click', (event) => {
 // Função para lidar com a resposta do login do Facebook
 function handleFacebookLoginResponse(response) {
     if (response.authResponse) {
-        console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
-        showScreen(mainContent);
-
+        console.log(`Login com Facebook bem-sucedido (${selectedReportType === 'simple' ? 'Relatório Simplificado' : 'Relatório Completo'}) - Versão Atualizada (03/03/2025):`, response.authResponse);
         currentAccessToken = response.authResponse.accessToken;
         console.log('Access Token:', currentAccessToken);
 
+        // Verificar o status da conta específica (exemplo: Oral Centter Jaíba)
         FB.api('/9586847491331372', { fields: 'id,name,account_status', access_token: currentAccessToken }, function(statusResponse) {
             if (statusResponse && !statusResponse.error) {
                 console.log('Status da conta CA - Oral Centter Jaíba (ID: 9586847491331372):', statusResponse);
@@ -347,6 +333,7 @@ function handleFacebookLoginResponse(response) {
             }
         });
 
+        // Carregar contas de anúncios
         FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
             if (accountResponse && !accountResponse.error) {
                 console.log('Resposta da API /me/adaccounts (Relatório Simplificado) - Versão Atualizada (03/03/2025):', accountResponse);
@@ -461,6 +448,13 @@ function handleFacebookLoginResponse(response) {
                             localStorage.setItem('fbAccessToken', currentAccessToken);
                             localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
                             console.log('Token e adAccountsMap salvos no localStorage:', { token: currentAccessToken, adAccountsMap });
+
+                            // Redirecionar com base no tipo de relatório selecionado
+                            if (selectedReportType === 'simple') {
+                                showScreen(mainContent);
+                            } else if (selectedReportType === 'complete') {
+                                window.location.href = 'RelatorioCompleto.html';
+                            }
                         });
                     } else {
                         console.error('Erro ao carregar Business Managers:', businessResponse.error);
@@ -795,10 +789,12 @@ form.addEventListener('submit', async (e) => {
                         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
                     `;
                     shareWhatsAppBtn.style.display = 'block';
+                    backToReportSelectionBtn.style.display = 'block';
                 } else {
                     reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
                     if (response.error) console.error('Erro da API:', response.error);
                     shareWhatsAppBtn.style.display = 'none';
+                    backToReportSelectionBtn.style.display = 'none';
                 }
             }
         );
@@ -815,6 +811,7 @@ form.addEventListener('submit', async (e) => {
         <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
     `;
     shareWhatsAppBtn.style.display = 'block';
+    backToReportSelectionBtn.style.display = 'block';
 });
 
 // Compartilhar no WhatsApp
