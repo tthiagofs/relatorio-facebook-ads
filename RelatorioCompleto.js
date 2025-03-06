@@ -30,18 +30,17 @@ let comparisonData = null;
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
 
 backToReportSelectionBtn.addEventListener('click', () => {
-    showScreen(reportSelectionScreen);
+    window.location.href = 'index.html'; // Redireciona para a página inicial
 });
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
     console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
     alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
-    // Usar window.location.replace para garantir o redirecionamento
     setTimeout(() => {
         window.location.replace('index.html');
-    }, 100); // Pequeno atraso para garantir que o alerta seja exibido
-    throw new Error('Token de acesso não encontrado. Redirecionamento iniciado.'); // Para interromper a execução
+    }, 100);
+    throw new Error('Token de acesso não encontrado. Redirecionamento iniciado.');
 }
 
 // Preencher o dropdown de unidades com os dados do localStorage
