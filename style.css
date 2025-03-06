@@ -25,7 +25,7 @@ h1, h2 {
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px; /* Aumentar o espaçamento entre os grupos de formulário */
 }
 
 label {
@@ -34,35 +34,28 @@ label {
     font-weight: 600;
 }
 
-select, input[type="date"], input[type="text"], input[type="password"] {
+select, input[type="date"], input[type="text"], input[type="password"], button {
     width: 100%;
-    padding: 10px;
+    padding: 12px; /* Aumentar o preenchimento para melhor usabilidade */
     border: 1px solid #ccc;
     border-radius: 5px;
+    box-sizing: border-box;
     font-size: 16px;
+    margin-top: 5px; /* Adicionar margem superior para espaçamento */
 }
 
 button {
-    padding: 10px 20px;
-    background-color: #ff6200;
+    background-color: #1e3c72;
     color: #fff;
     border: none;
-    border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
     transition: background-color 0.3s;
+    padding: 12px; /* Aumentar o preenchimento dos botões */
+    font-size: 16px; /* Tamanho da fonte dos botões */
 }
 
 button:hover {
-    background-color: #e55a00;
-}
-
-.btn-primary {
-    background-color: #ff6200;
-}
-
-.btn-primary:hover {
-    background-color: #e55a00;
+    background-color: #2a5298;
 }
 
 .modal {
@@ -101,7 +94,7 @@ button:hover {
 }
 
 .filter-option.selected {
-    background: #ff6200;
+    background: #1e3c72;
     color: #fff;
 }
 
@@ -117,7 +110,7 @@ button:hover {
     display: block;
     width: 100%;
     margin-top: 10px;
-    background-color: #ff6200;
+    background-color: #1e3c72;
 }
 
 .btn-filter-toggle:disabled {
@@ -159,8 +152,8 @@ button:hover {
 
 .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px; /* Aumentar o espaço entre as métricas */
 }
 
 .metric-card {
