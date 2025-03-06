@@ -4,150 +4,255 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório de Anúncios do Facebook</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            color: #333;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+   <style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 
+    .container {
+        max-width: 600px;
+        width: 90%; /* Garante que o container seja mais fluido em telas menores */
+        margin: 20px;
+        padding: 20px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2 {
+        color: #1e3c72;
+        text-align: center;
+        margin-bottom: 20px; /* Espaçamento consistente abaixo dos títulos */
+    }
+
+    .form-group {
+        margin-bottom: 20px; /* Espaçamento consistente entre grupos de formulário */
+    }
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    select, input[type="date"], input[type="text"], input[type="password"] {
+        width: 100%;
+        padding: 10px; /* Aumenta o preenchimento para melhor toque em mobile */
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-size: 16px; /* Garante legibilidade em mobile */
+    }
+
+    button {
+        padding: 10px 20px;
+        background-color: #1e3c72;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+        width: 100%; /* Botões ocupam a largura total por padrão */
+        margin: 10px 0; /* Espaçamento consistente entre botões */
+    }
+
+    button:hover {
+        background-color: #2a5298;
+    }
+
+    .btn-primary {
+        background-color: #1e3c72;
+    }
+
+    .btn-primary:hover {
+        background-color: #2a5298;
+    }
+
+    /* Estilo específico para a tela de seleção de relatório */
+    #reportSelectionScreen {
+        text-align: center;
+    }
+
+    #reportSelectionScreen button {
+        width: auto; /* Botões não ocupam a largura total */
+        padding: 12px 24px; /* Aumenta o preenchimento para melhor toque */
+        margin: 10px; /* Espaçamento entre os botões */
+        display: inline-block; /* Permite que os botões fiquem lado a lado */
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-option {
+        padding: 10px;
+        margin: 5px 0;
+        background: #f5f5f5;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .filter-option:hover {
+        background: #e0e0e0;
+    }
+
+    .filter-option.selected {
+        background: #1e3c72;
+        color: #fff;
+    }
+
+    .search-bar {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px; /* Ajuste no espaçamento */
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+
+    .btn-filter-toggle {
+        display: block;
+        width: 100%;
+        margin-top: 15px; /* Ajuste no espaçamento */
+        padding: 10px;
+        background-color: #1e3c72;
+        font-size: 16px;
+    }
+
+    .btn-filter-toggle:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .error-message {
+        color: #ff0000;
+        margin-top: 15px; /* Ajuste no espaçamento */
+        display: none;
+        text-align: center;
+    }
+
+    #reportContainer {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 5px;
+    }
+
+    #shareWhatsAppBtn, #backToReportSelectionBtn {
+        display: none;
+        margin-top: 15px; /* Ajuste no espaçamento */
+        width: 100%;
+    }
+
+    #shareWhatsAppBtn {
+        background-color: #25D366; /* Cor do WhatsApp */
+    }
+
+    #shareWhatsAppBtn:hover {
+        background-color: #20c058;
+    }
+
+    #backToReportSelectionBtn {
+        background-color: #6c757d; /* Cor cinza para o botão Voltar */
+    }
+
+    #backToReportSelectionBtn:hover {
+        background-color: #5a6268;
+    }
+
+    /* Media Queries para dispositivos móveis */
+    @media (max-width: 768px) {
         .container {
-            max-width: 600px;
-            margin: 20px;
-            padding: 20px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin: 15px;
+            padding: 15px;
         }
 
         h1, h2 {
-            color: #1e3c72;
-            text-align: center;
-        }
-
-        .form-group {
+            font-size: 24px; /* Reduz o tamanho do título em mobile */
             margin-bottom: 15px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+        .form-group {
+            margin-bottom: 15px; /* Ajuste no espaçamento para mobile */
         }
 
         select, input[type="date"], input[type="text"], input[type="password"] {
-            width: 100%;
             padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
+            font-size: 14px; /* Reduz o tamanho da fonte para melhor ajuste */
         }
 
         button {
-            padding: 10px 20px;
-            background-color: #1e3c72;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
+            padding: 10px;
+            font-size: 14px;
         }
 
-        button:hover {
-            background-color: #2a5298;
-        }
-
-        .btn-primary {
-            background-color: #1e3c72;
-        }
-
-        .btn-primary:hover {
-            background-color: #2a5298;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+        /* Ajuste específico para os botões de seleção de relatório */
+        #reportSelectionScreen {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            z-index: 1000;
+        }
+
+        #reportSelectionScreen button {
+            width: 100%; /* Botões ocupam a largura total em mobile */
+            max-width: 300px; /* Limita a largura máxima */
+            margin: 10px 0; /* Empilha os botões com espaçamento vertical */
         }
 
         .modal-content {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .filter-option {
-            padding: 10px;
-            margin: 5px 0;
-            background: #f5f5f5;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .filter-option:hover {
-            background: #e0e0e0;
-        }
-
-        .filter-option.selected {
-            background: #1e3c72;
-            color: #fff;
+            padding: 15px;
+            max-width: 90%;
         }
 
         .search-bar {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            padding: 8px;
+            font-size: 14px;
         }
 
         .btn-filter-toggle {
-            display: block;
-            width: 100%;
-            margin-top: 10px;
-            background-color: #1e3c72;
-        }
-
-        .btn-filter-toggle:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .error-message {
-            color: #ff0000;
-            margin-top: 10px;
-            display: none;
+            padding: 8px;
+            font-size: 14px;
         }
 
         #reportContainer {
-            margin-top: 20px;
+            padding: 10px;
         }
 
-        #shareWhatsAppBtn {
-            display: none;
-            margin-top: 20px;
-            width: 100%;
+        #shareWhatsAppBtn, #backToReportSelectionBtn {
+            padding: 10px;
+            font-size: 14px;
         }
-    </style>
+    }
+</style>
+
 </head>
 <body>
     <div class="container" id="appLoginScreen">
