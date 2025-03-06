@@ -30,7 +30,7 @@ let comparisonData = null;
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
 
 backToReportSelectionBtn.addEventListener('click', () => {
-    window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
+    window.location.href = 'index.html?screen=reportSelection';
 });
 
 // Verificar se o token de acesso está disponível
@@ -78,7 +78,6 @@ function toggleModal(modal, show, isCampaign) {
             filterCampaignsBtn.disabled = isFilterActivated;
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
-        // Ao abrir o modal de comparação, restaurar a seleção anterior, se houver
         if (modal === comparisonModal && comparisonData) {
             if (comparisonData.startDate && comparisonData.endDate) {
                 document.querySelector('input[name="comparisonOption"][value="custom"]').checked = true;
@@ -105,7 +104,6 @@ function toggleModal(modal, show, isCampaign) {
             const campaignSearchInput = document.getElementById('campaignSearch');
             if (campaignSearchInput) campaignSearchInput.value = '';
         } else if (modal === comparisonModal) {
-            // Não limpar os campos ou comparisonData aqui, apenas fechar o modal
         } else {
             isAdSetFilterActive = false;
             if (isFilterActivated && selectedAdSets.size === 0) {
@@ -499,13 +497,13 @@ closeAdSetsModalBtn.addEventListener('click', () => {
 function calculatePreviousPeriod(startDate, endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const diffDays = (end - start) / (1000 * 60 * 60 * 24); // Diferença em dias
+    const diffDays = (end - start) / (1000 * 60 * 60 * 24);
 
     const previousEnd = new Date(start);
-    previousEnd.setDate(previousEnd.getDate() - 1); // Um dia antes do startDate
+    previousEnd.setDate(previousEnd.getDate() - 1);
 
     const previousStart = new Date(previousEnd);
-    previousStart.setDate(previousStart.getDate() - diffDays); // Mesmo número de dias antes
+    previousStart.setDate(previousStart.getDate() - diffDays);
 
     return {
         start: previousStart.toISOString().split('T')[0],
@@ -539,13 +537,13 @@ confirmComparisonBtn.addEventListener('click', async () => {
         comparisonData = null;
     }
 
-    console.log('Dados de comparação salvos:', comparisonData); // Depuração
+    console.log('Dados de comparação salvos:', comparisonData);
     toggleModal(comparisonModal, false, false);
 });
 
 cancelComparisonBtn.addEventListener('click', () => {
-    comparisonData = null; // Limpar dados de comparação ao cancelar
-    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData); // Depuração
+    comparisonData = null;
+    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData);
     toggleModal(comparisonModal, false, false);
 });
 
@@ -559,7 +557,6 @@ function calculateVariation(currentValue, previousValue) {
 
 // Geração do relatório com soma consolidada dos itens filtrados ativados
 form.addEventListener('submit', async (e) => {
-    e.preventDefault();
     await generateReport();
 });
 
@@ -714,9 +711,9 @@ async function generateReport() {
             conversations: compareConversations,
             costPerConversation: parseFloat(compareCostPerConversation)
         };
-        console.log('Métricas de comparação calculadas:', comparisonMetrics); // Depuração
+        console.log('Métricas de comparação calculadas:', comparisonMetrics);
     } else {
-        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData); // Depuração
+        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData);
     }
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
@@ -894,141 +891,6 @@ async function getAdInsights(adId, startDate, endDate) {
             }
         );
     });
-}
-
-
-
-
-    // Calcular métricas para o período de comparação, se aplicável
-    if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
-        let compareSpend = 0;
-        let compareConversations = 0;
-        let compareReach = 0;
-
-        if (isFilterActivated) {
-            if (selectedCampaigns.size > 0) {
-                for (const campaignId of selectedCampaigns) {
-                    const insights = await getCampaignInsights(campaignId, comparisonData.startDate, comparisonData.endDate);
-                    if (insights && insights.spend) {
-                        compareSpend += parseFloat(insights.spend) || 0;
-                    }
-                    if (insights && insights.reach) {
-                        compareReach += parseInt(insights.reach) || 0;
-                    }
-                    (insights.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
-                        }
-                    });
-                }
-            } else if (selectedAdSets.size > 0) {
-                for (const adSetId of selectedAdSets) {
-                    const insights = await getAdSetInsights(adSetId, comparisonData.startDate, comparisonData.endDate);
-                    if (insights && insights.spend) {
-                        compareSpend += parseFloat(insights.spend) || 0;
-                    }
-                    if (insights && insights.reach) {
-                        compareReach += parseInt(insights.reach) || 0;
-                    }
-                    (insights.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
-                        }
-                    });
-                }
-            }
-        } else {
-            const response = await new Promise(resolve => {
-                FB.api(
-                    `/${unitId}/insights`,
-                    { fields: ['spend', 'actions', 'reach'], time_range: { since: comparisonData.startDate, until: comparisonData.endDate }, level: 'account', access_token: currentAccessToken },
-                    resolve
-                );
-            });
-
-            if (response && !response.error && response.data.length > 0) {
-                response.data.forEach(data => {
-                    if (data.spend) {
-                        compareSpend += parseFloat(data.spend) || 0;
-                    }
-                    if (data.reach) {
-                        compareReach += parseInt(data.reach) || 0;
-                    }
-                    (data.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
-                        }
-                    });
-                });
-            }
-        }
-
-        const compareCostPerConversation = compareConversations > 0 ? (compareSpend / compareConversations).toFixed(2) : '0';
-        comparisonMetrics = {
-            reach: compareReach,
-            conversations: compareConversations,
-            costPerConversation: parseFloat(compareCostPerConversation)
-        };
-        console.log('Métricas de comparação calculadas:', comparisonMetrics); // Depuração
-    } else {
-        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData); // Depuração
-    }
-
-    const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
-
-    // Construir o relatório com design bonito
-    let reportHTML = `
-        <div class="report-header">
-            <h2>Relatório Completo - CA - ${unitName}</h2>
-            <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
-            ${comparisonData && comparisonData.startDate && comparisonData.endDate ? `<p>📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}</p>` : ''}
-        </div>
-        <div class="metrics-grid">
-            <div class="metric-card reach">
-                <div>
-                    <div class="metric-label">Alcance Total</div>
-                    <div class="metric-value">${totalReach.toLocaleString('pt-BR')} pessoas</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.reach <= totalReach ? 'increase' : 'decrease'}">
-                            ${calculateVariation(totalReach, comparisonMetrics.reach).percentage}% ${calculateVariation(totalReach, comparisonMetrics.reach).icon}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="metric-card messages">
-                <div>
-                    <div class="metric-label">Mensagens Iniciadas</div>
-                    <div class="metric-value">${totalConversations}</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.conversations <= totalConversations ? 'increase' : 'decrease'}">
-                            ${calculateVariation(totalConversations, comparisonMetrics.conversations).percentage}% ${calculateVariation(totalConversations, comparisonMetrics.conversations).icon}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="metric-card cost">
-                <div>
-                    <div class="metric-label">Custo por Mensagem</div>
-                    <div class="metric-value">R$ ${costPerConversation.replace('.', ',')}</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.costPerConversation >= parseFloat(costPerConversation) ? 'increase' : 'decrease'}">
-                            ${calculateVariation(parseFloat(costPerConversation), comparisonMetrics.costPerConversation).percentage}% ${calculateVariation(parseFloat(costPerConversation), comparisonMetrics.costPerConversation).icon}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="metric-card investment">
-                <div>
-                    <div class="metric-label">Investimento Total</div>
-                    <div class="metric-value">R$ ${totalSpend.toFixed(2).replace('.', ',')}</div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    reportContainer.classList.add('complete');
-    reportContainer.innerHTML = reportHTML;
-    shareWhatsAppBtn.style.display = 'block';
 }
 
 // Compartilhar no WhatsApp
