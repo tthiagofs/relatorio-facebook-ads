@@ -12,98 +12,51 @@ body {
 
 .container {
     max-width: 800px;
-    width: 90%;
-    margin: 20px auto;
+    margin: 20px;
     padding: 20px;
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-h1 {
+h1, h2 {
     color: #1e3c72;
     text-align: center;
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 20px;
-}
-
-h2 {
-    color: #1e3c72;
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 15px;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 20px; /* Espaçamento consistente entre grupos de formulário */
 }
 
 label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    font-size: 14px;
+    margin-bottom: 5px;
+    font-weight: 600;
 }
 
-select, input[type="date"] {
+select, input[type="date"], input[type="text"], input[type="password"], button {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    padding: 12px; /* Preenchimento consistente */
+    border: 1px solid #ccc;
+    border-radius: 5px;
     box-sizing: border-box;
     font-size: 16px;
-    background: #f9f9f9;
-    transition: border-color 0.3s;
-}
-
-select:focus, input:focus {
-    border-color: #1e3c72;
-    outline: none;
+    margin-top: 5px; /* Margem superior para espaçamento */
 }
 
 button {
-    width: 100%;
-    padding: 12px;
     background-color: #1e3c72;
     color: #fff;
     border: none;
-    border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-    transition: background-color 0.3s, transform 0.2s;
+    transition: background-color 0.3s;
+    padding: 12px; /* Preenchimento dos botões */
+    font-size: 16px; /* Tamanho da fonte dos botões */
+    margin-top: 10px; /* Margem superior para espaçamento entre botões */
 }
 
 button:hover {
     background-color: #2a5298;
-    transform: translateY(-2px);
-}
-
-.btn-generate {
-    background: linear-gradient(135deg, #28a745, #34c759);
-}
-
-.btn-generate:hover {
-    background: linear-gradient(135deg, #218838, #2db34a);
-}
-
-.btn-filter {
-    width: auto;
-    padding: 8px 16px;
-    margin: 5px;
-    background: #355e9c;
-}
-
-.btn-filter:hover {
-    background: #2a5298;
-}
-
-.filter-label {
-    font-size: 16px;
-    color: #1e3c72;
-    margin-bottom: 10px;
-    font-weight: bold;
 }
 
 .modal {
@@ -112,7 +65,7 @@ button:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -122,17 +75,17 @@ button:hover {
 .modal-content {
     background: #fff;
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 10px;
     max-width: 500px;
     width: 90%;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .filter-option {
-    padding: 12px;
-    margin: 8px 0;
+    padding: 10px;
+    margin: 5px 0;
     background: #f5f5f5;
-    border-radius: 6px;
+    border-radius: 5px;
     cursor: pointer;
     transition: background 0.3s;
 }
@@ -148,15 +101,17 @@ button:hover {
 
 .search-bar {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 16px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }
 
 .btn-filter-toggle {
-    margin-top: 15px;
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    background-color: #1e3c72;
 }
 
 .btn-filter-toggle:disabled {
@@ -164,69 +119,97 @@ button:hover {
     cursor: not-allowed;
 }
 
-#reportContainer.complete {
+.error-message {
+    color: #ff0000;
+    margin-top: 10px;
+    display: none;
+}
+
+.report-container {
+    background: linear-gradient(135deg, #2a5298, #1e3c72);
+    color: #fff;
+    padding: 20px;
+    border-radius: 10px;
     margin-top: 20px;
-    padding: 15px;
-    background: #f9f9f9;
-    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.report-header {
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 .report-header h2 {
-    font-size: 22px;
-    margin: 0 0 10px;
+    color: #fff;
+    margin: 0;
+    font-size: 24px;
 }
 
 .report-header p {
-    font-size: 16px;
-    color: #666;
     margin: 5px 0;
+    font-size: 16px;
+    color: #ddd;
 }
 
 .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px; /* Espaçamento entre as métricas */
 }
 
 .metric-card {
     background: #fff;
+    color: #333;
     padding: 15px;
     border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
-.metric-card.reach {
-    background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+.metric-card .metric-label {
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
 }
 
-.metric-card.messages {
-    background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+.metric-card .metric-label::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    background-size: cover;
 }
 
-.metric-card.cost {
-    background: linear-gradient(135deg, #fffde7, #fff9c4);
+.metric-card.reach .metric-label::before {
+    content: '📢';
 }
 
-.metric-card.investment {
-    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+.metric-card.messages .metric-label::before {
+    content: '💬';
 }
 
-.metric-label {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 5px;
+.metric-card.cost .metric-label::before {
+    content: '💵';
+}
+
+.metric-card.investment .metric-label::before {
+    content: '💰';
 }
 
 .metric-value {
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
+    font-size: 16px;
+    font-weight: 400;
 }
 
 .metric-comparison {
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
     margin-top: 5px;
 }
 
@@ -240,104 +223,22 @@ button:hover {
 
 #shareWhatsAppBtn {
     display: none;
-    background: #25D366;
+    margin-top: 20px;
+    width: 100%;
 }
 
-#shareWhatsAppBtn:hover {
-    background: #20c058;
-}
-
+/* Estilos responsivos */
 @media (max-width: 600px) {
     .container {
-        padding: 15px;
-        margin: 10px auto;
+        padding: 15px; /* Reduzir o preenchimento em telas menores */
     }
 
-    h1 {
-        font-size: 20px;
-    }
-
-    h2 {
-        font-size: 18px;
-    }
-
-    button, select, input {
-        font-size: 14px;
-        padding: 10px;
+    button {
+        padding: 10px; /* Ajustar o preenchimento dos botões */
+        font-size: 14px; /* Reduzir o tamanho da fonte dos botões */
     }
 
     .form-group {
-        margin-bottom: 15px;
-    }
-
-    .btn-filter {
-        width: 100%;
-        margin: 5px 0;
-    }
-
-    .metrics-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .metric-card {
-        padding: 12px;
-    }
-}
-
-.top-ads-section {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f9f9f9;
-    border-radius: 6px;
-}
-
-.top-ads-section h2 {
-    color: #1e3c72;
-    font-size: 20px;
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-.top-ad-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: #e0f7fa;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.ad-image {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 4px;
-    margin-right: 15px;
-}
-
-.ad-details {
-    flex-grow: 1;
-}
-
-.ad-details p {
-    margin: 5px 0;
-    font-size: 14px;
-}
-
-.ad-details strong {
-    color: #1e3c72;
-}
-
-@media (max-width: 600px) {
-    .top-ad-item {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .ad-image {
-        margin-right: 0;
-        margin-bottom: 10px;
+        margin-bottom: 15px; /* Ajustar o espaçamento entre grupos de formulário */
     }
 }

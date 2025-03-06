@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório de Anúncios do Facebook</title>
-    <style>
+   <style>
     body {
         font-family: Arial, sans-serif;
         margin: 0;
@@ -19,7 +19,7 @@
 
     .container {
         max-width: 600px;
-        width: 90%;
+        width: 90%; /* Melhor adaptação em mobile */
         margin: 20px auto;
         padding: 20px;
         background: #fff;
@@ -41,7 +41,7 @@
     }
 
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 20px; /* Espaçamento consistente */
     }
 
     label {
@@ -100,7 +100,7 @@
 
     #simpleReportBtn, #completeReportBtn {
         background: linear-gradient(135deg, #1e3c72, #355e9c);
-        margin-bottom: 15px;
+        margin-bottom: 15px; /* Espaço entre botões na tela de seleção */
     }
 
     .modal {
@@ -181,6 +181,7 @@
         background: #20c058;
     }
 
+    /* Ajustes para mobile */
     @media (max-width: 600px) {
         .container {
             padding: 15px;
@@ -205,7 +206,7 @@
         }
 
         #simpleReportBtn, #completeReportBtn {
-            margin-bottom: 10px;
+            margin-bottom: 10px; /* Evita sobreposição */
         }
 
         #reportContainer {
@@ -269,6 +270,7 @@
         <div id="reportContainer"></div>
         <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
         <button id="backToReportSelectionBtn">Voltar</button>
+
     </div>
 
     <div id="campaignsModal" class="modal" style="display: none;">
@@ -291,7 +293,9 @@
 
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <script>
+        // Inicializar o SDK do Facebook
         window.fbAsyncInit = function() {
+            console.log("Iniciando inicialização do Facebook SDK...");
             FB.init({
                 appId: '618519427538646',
                 cookie: true,
@@ -299,15 +303,22 @@
                 version: 'v20.0'
             });
             FB.AppEvents.logPageView();
+            console.log("Facebook SDK inicializado com sucesso!");
         };
 
+        // Função para carregar o SDK do Facebook
         (function(d, s, id) {
+            console.log("Carregando SDK do Facebook...");
             var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) return;
+            if (d.getElementById(id)) {
+                console.log("SDK já carregado, ignorando...");
+                return;
+            }
             js = d.createElement(s);
             js.id = id;
             js.src = "https://connect.facebook.net/en_US/sdk.js";
             fjs.parentNode.insertBefore(js, fjs);
+            console.log("Script do SDK do Facebook adicionado ao DOM.");
         })(document, 'script', 'facebook-jssdk');
     </script>
     <script src="app.js"></script>
