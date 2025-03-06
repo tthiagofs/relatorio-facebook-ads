@@ -306,15 +306,14 @@ loginBtn.addEventListener('click', (event) => {
         return;
     }
 
-    // Verificar se o SDK está inicializado antes de chamar FB.login
     if (!FB.getAccessToken()) {
         console.log('Inicializando login com Facebook...');
         FB.login(function(response) {
-            handleFacebookLoginResponse(response);
+            handleSimpleReportLoginResponse(response);
         }, {scope: 'ads_read,ads_management,business_management'});
     } else {
         console.log('Token de acesso já existe, prosseguindo...');
-        handleFacebookLoginResponse({ authResponse: { accessToken: FB.getAccessToken() } });
+        handleSimpleReportLoginResponse({ authResponse: { accessToken: FB.getAccessToken() } });
     }
 });
 
