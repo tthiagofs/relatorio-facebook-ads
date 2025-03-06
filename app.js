@@ -278,19 +278,14 @@ simpleReportBtn.addEventListener('click', () => {
     simpleReportBtn.classList.add('active');
 });
 
-// Seleção de relatório completo
 completeReportBtn.addEventListener('click', () => {
     console.log('Botão Relatório Completo clicado - Versão Atualizada (03/03/2025)');
-    
-    // Verificar se o token de acesso está disponível
     if (!currentAccessToken) {
         console.log('Token de acesso não encontrado. Iniciando login com Facebook...');
-        // Iniciar o login com Facebook
         FB.login(function(response) {
-            handleFacebookLoginResponse(response);
+            handleCompleteReportLoginResponse(response);
         }, {scope: 'ads_read,ads_management,business_management'});
     } else {
-        // Se o token já estiver disponível, redirecionar para o relatório completo
         window.location.href = 'RelatorioCompleto.html';
     }
 });
@@ -324,7 +319,7 @@ loginBtn.addEventListener('click', (event) => {
 });
 
 // Função para lidar com a resposta do login do Facebook
-function handleFacebookLoginResponse(response) {
+function handleSimpleReportLoginResponse (response) {
     if (response.authResponse) {
         console.log('Login com Facebook bem-sucedido (Relatório Simplificado) - Versão Atualizada (03/03/2025):', response.authResponse);
         showScreen(mainContent);
@@ -480,6 +475,44 @@ function handleFacebookLoginResponse(response) {
         document.getElementById('loginError').style.display = 'block';
     }
 }
+
+function handleCompleteReportLoginResponse(response) {
+    if (response.authResponse) {
+        console.log('Login com Facebook bem-sucedido (Relatório Completo) - Versão Atualizada (03/03/2025):', response.authResponse);
+        currentAccessToken = response.authResponse.accessToken;
+        console.log('Access Token:', currentAccessToken);
+        
+        // Salvar o token no localStorage
+        localStorage.setItem('fbAccessToken', currentAccessToken);
+        
+        // Carregar contas para garantir que adAccountsMap esteja preenchido
+        FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
+            if (accountResponse && !accountResponse.error) {
+                console.log('Resposta da API /me/adaccounts (Relatório Completo) - Versão Atualizada (03/03/2025):', accountResponse);
+                let accounts = accountResponse.data || [];
+                accounts.forEach(account => {
+                    adAccountsMap[account.id] = account.name;
+                });
+
+                // Salvar adAccountsMap no localStorage
+                localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
+                console.log('adAccountsMap salvo no localStorage:', adAccountsMap);
+
+                // Redirecionar para RelatorioCompleto.html
+                window.location.href = 'RelatorioCompleto.html';
+            } else {
+                console.error('Erro ao carregar contas:', accountResponse.error);
+                document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios: ' + (accountResponse.error.message || 'Erro desconhecido');
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
+    } else {
+        console.error('Falha no login com Facebook:', response);
+        document.getElementById('loginError').textContent = 'Login cancelado ou falhou. Por favor, tente novamente. Detalhes: ' + (response.error ? response.error.message : 'Erro desconhecido');
+        document.getElementById('loginError').style.display = 'block';
+    }
+}
+
 
 // Carrega os ad sets e campanhas quando o formulário é preenchido
 form.addEventListener('input', async function(e) {
