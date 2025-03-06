@@ -175,15 +175,6 @@ button:hover {
     align-items: center;
 }
 
-.metric-card .metric-label::before {
-    content: '';
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    margin-right: 10px;
-    background-size: cover;
-}
-
 .metric-card.reach .metric-label::before {
     content: '📢';
 }
@@ -219,6 +210,33 @@ button:hover {
 
 .metric-comparison.decrease {
     color: #dc3545;
+}
+
+.top-ads {
+    margin-top: 20px;
+}
+
+.ads-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px; /* Espaçamento entre os anúncios */
+}
+
+.ad-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.ad-card img {
+    max-width: 100%;
+    border-radius: 5px;
+}
+
+.ad-info {
+    margin-top: 10px;
 }
 
 #shareWhatsAppBtn {
