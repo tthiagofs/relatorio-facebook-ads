@@ -30,34 +30,109 @@ let comparisonData = null;
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
 
 backToReportSelectionBtn.addEventListener('click', () => {
-    window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
+    window.location.href = 'index.html?screen=reportSelection';
 });
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
-    console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
     alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
     setTimeout(() => {
         window.location.replace('index.html');
     }, 100);
-    throw new Error('Token de acesso não encontrado. Redirecionamento iniciado.');
+    throw new Error('Token de acesso não encontrado.');
 }
 
-// Preencher o dropdown de unidades com os dados do localStorage
+// Preencher o dropdown de unidades
 const unitSelect = document.getElementById('unitId');
 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-const sortedAccounts = Object.keys(adAccountsMap)
-    .map(accountId => ({
-        id: accountId,
-        name: adAccountsMap[accountId]
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-sortedAccounts.forEach(account => {
-    const option = document.createElement('option');
-    option.value = account.id;
-    option.textContent = account.name;
-    unitSelect.appendChild(option);
-});
+if (Object.keys(adAccountsMap).length === 0) {
+    FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
+        if (accountResponse && !accountResponse.error) {
+            let accounts = accountResponse.data || [];
+            accounts.forEach(account => {
+                adAccountsMap[account.id] = account.name;
+            });
+
+            FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
+                if (businessResponse && !businessResponse.error) {
+                    const businesses = businessResponse.data || [];
+                    let businessAccountsPromises = [];
+
+                    businesses.forEach(business => {
+                        businessAccountsPromises.push(new Promise((resolve) => {
+                            FB.api(
+                                `/${business.id}/owned_ad_accounts`,
+                                { fields: 'id,name', access_token: currentAccessToken },
+                                function(ownedAccountResponse) {
+                                    if (ownedAccountResponse && !ownedAccountResponse.error) {
+                                        const ownedAccounts = ownedAccountResponse.data || [];
+                                        resolve(ownedAccounts);
+                                    } else {
+                                        resolve([]);
+                                    }
+                                }
+                            );
+                        }));
+
+                        businessAccountsPromises.push(new Promise((resolve) => {
+                            FB.api(
+                                `/${business.id}/client_ad_accounts`,
+                                { fields: 'id,name', access_token: currentAccessToken },
+                                function(clientAccountResponse) {
+                                    if (clientAccountResponse && !clientAccountResponse.error) {
+                                        const clientAccounts = clientAccountResponse.data || [];
+                                        resolve(clientAccounts);
+                                    } else {
+                                        resolve([]);
+                                    }
+                                }
+                            );
+                        }));
+                    });
+
+                    Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
+                        let allBusinessAccounts = [].concat(...businessAccountsArrays);
+                        allBusinessAccounts.forEach(account => {
+                            if (!adAccountsMap[account.id]) {
+                                adAccountsMap[account.id] = account.name;
+                            }
+                        });
+
+                        const sortedAccounts = Object.keys(adAccountsMap)
+                            .map(accountId => ({
+                                id: accountId,
+                                name: adAccountsMap[accountId]
+                            }))
+                            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+                        unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+                        sortedAccounts.forEach(account => {
+                            const option = document.createElement('option');
+                            option.value = account.id;
+                            option.textContent = account.name;
+                            unitSelect.appendChild(option);
+                        });
+
+                        localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
+                    });
+                }
+            });
+        }
+    });
+} else {
+    const sortedAccounts = Object.keys(adAccountsMap)
+        .map(accountId => ({
+            id: accountId,
+            name: adAccountsMap[accountId]
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    sortedAccounts.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account.id;
+        option.textContent = account.name;
+        unitSelect.appendChild(option);
+    });
+}
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
@@ -72,13 +147,14 @@ function toggleModal(modal, show, isCampaign) {
             isAdSetFilterActive = false;
             filterAdSetsBtn.disabled = isFilterActivated;
             filterAdSetsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
+        } else if (modal === comparisonModal) {
+            // Lógica para o modal de comparação (se necessário)
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
             filterCampaignsBtn.disabled = isFilterActivated;
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
-        // Ao abrir o modal de comparação, restaurar a seleção anterior, se houver
         if (modal === comparisonModal && comparisonData) {
             if (comparisonData.startDate && comparisonData.endDate) {
                 document.querySelector('input[name="comparisonOption"][value="custom"]').checked = true;
@@ -105,7 +181,7 @@ function toggleModal(modal, show, isCampaign) {
             const campaignSearchInput = document.getElementById('campaignSearch');
             if (campaignSearchInput) campaignSearchInput.value = '';
         } else if (modal === comparisonModal) {
-            // Não limpar os campos ou comparisonData aqui, apenas fechar o modal
+            // Nada a fazer ao fechar o modal de comparação
         } else {
             isAdSetFilterActive = false;
             if (isFilterActivated && selectedAdSets.size === 0) {
@@ -143,12 +219,11 @@ function updateFilterButton() {
     filterAdSetsBtn.style.cursor = filterAdSetsBtn.disabled ? 'not-allowed' : 'pointer';
 }
 
-// Função para criar e gerenciar opções clicáveis nos modals com valor gasto e pesquisa
+// Função para criar e gerenciar opções clicáveis nos modals
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
     const searchInput = document.getElementById(isCampaign ? 'campaignSearch' : 'adSetSearch');
     container.innerHTML = options.length === 0 ? '<p>Carregando dados, por favor aguarde...</p>' : '';
-    console.log(`Renderizando opções para ${isCampaign ? 'campanhas' : 'conjuntos'} - Total de opções: ${options.length}`);
     if (options.length > 0) {
         function filterOptions(searchText) {
             const filteredOptions = options.filter(option => 
@@ -255,12 +330,11 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
             newSearchInput.value = currentSearchText;
         }
     } else {
-        console.warn(`Nenhuma opção disponível para renderizar em ${containerId}`);
         container.innerHTML = '<p>Nenhum dado encontrado para o período selecionado. Tente novamente ou faça login novamente.</p>';
     }
 }
 
-// Carrega os ad sets e campanhas quando o formulário é preenchido
+// Carregar campanhas e ad sets quando o formulário é preenchido
 form.addEventListener('input', async function(e) {
     const unitId = document.getElementById('unitId').value;
     const startDate = document.getElementById('startDate').value;
@@ -268,7 +342,6 @@ form.addEventListener('input', async function(e) {
 
     if (unitId && startDate && endDate) {
         if (isCampaignFilterActive && campaignSearchText) {
-            console.log('Modal de campanhas aberto com filtro ativo, evitando re-renderização.');
             return;
         }
 
@@ -292,14 +365,15 @@ form.addEventListener('input', async function(e) {
 
 // Função para carregar campanhas
 async function loadCampaigns(unitId, startDate, endDate) {
-    const startTime = performance.now();
-    console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
+    if (typeof FB === 'undefined') {
+        console.error('Facebook SDK não está inicializado.');
+        return;
+    }
     FB.api(
         `/${unitId}/campaigns`,
         { fields: 'id,name', access_token: currentAccessToken },
         async function(campaignResponse) {
             if (campaignResponse && !campaignResponse.error) {
-                console.log(`Resposta da API para campanhas:`, campaignResponse);
                 campaignsMap[unitId] = {};
                 const campaignIds = campaignResponse.data.map(camp => camp.id);
                 const insightPromises = campaignIds.map(campaignId => getCampaignInsights(campaignId, startDate, endDate));
@@ -321,13 +395,8 @@ async function loadCampaigns(unitId, startDate, endDate) {
                     }));
                     renderOptions('campaignsList', campaignOptions, selectedCampaigns, true);
                 }
-
-                const endTime = performance.now();
-                console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
             } else {
                 console.error('Erro ao carregar campanhas:', campaignResponse.error);
-                const endTime = performance.now();
-                console.log(`Carregamento de campanhas falhou após ${(endTime - startTime) / 1000} segundos`);
             }
         }
     );
@@ -335,11 +404,11 @@ async function loadCampaigns(unitId, startDate, endDate) {
 
 // Função para carregar ad sets
 async function loadAdSets(unitId, startDate, endDate) {
-    const startTime = performance.now();
-    console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
-    
+    if (typeof FB === 'undefined') {
+        console.error('Facebook SDK não está inicializado.');
+        return;
+    }
     if (adSetsMap[unitId] && Object.keys(adSetsMap[unitId]).length > 0) {
-        console.log(`Ad sets já carregados para unitId: ${unitId}, reutilizando dados existentes.`);
         if (!isCampaignFilterActive) {
             const adSetOptions = Object.keys(adSetsMap[unitId])
                 .filter(id => adSetsMap[unitId][id].insights.spend > 0)
@@ -358,7 +427,6 @@ async function loadAdSets(unitId, startDate, endDate) {
         { fields: 'id,name', limit: 50, access_token: currentAccessToken },
         async function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
-                console.log(`Resposta da API para ad sets:`, adSetResponse);
                 adSetsMap[unitId] = {};
                 const adSetIds = adSetResponse.data.map(set => set.id);
 
@@ -370,11 +438,9 @@ async function loadAdSets(unitId, startDate, endDate) {
                     if (insights[index].spend !== undefined && insights[index].spend !== null) {
                         spend = parseFloat(insights[index].spend) || 0;
                         if (isNaN(spend)) {
-                            console.warn(`Valor inválido de spend para ad set ${adSetId}: ${insights[index].spend}`);
                             spend = 0;
                         }
                     }
-                    console.log(`Spend para ad set ${adSetId}: ${spend}`);
                     if (spend > 0) {
                         const adSet = adSetResponse.data.find(set => set.id === adSetId);
                         adSetsMap[unitId][adSetId] = {
@@ -383,8 +449,6 @@ async function loadAdSets(unitId, startDate, endDate) {
                         };
                     }
                 });
-
-                console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]);
 
                 if (!isCampaignFilterActive) {
                     const adSetOptions = Object.keys(adSetsMap[unitId])
@@ -396,13 +460,8 @@ async function loadAdSets(unitId, startDate, endDate) {
                         }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
-
-                const endTime = performance.now();
-                console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`);
             } else {
-                console.error('Erro ao carregar ad sets. Detalhes:', adSetResponse.error);
-                const endTime = performance.now();
-                console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
+                console.error('Erro ao carregar ad sets:', adSetResponse.error);
                 const adSetsList = document.getElementById('adSetsList');
                 if (adSetsList) {
                     adSetsList.innerHTML = '<p>Erro ao carregar os conjuntos de anúncios. Tente novamente ou faça login novamente.</p>';
@@ -412,29 +471,7 @@ async function loadAdSets(unitId, startDate, endDate) {
     );
 }
 
-// Função para atualizar as opções de ad sets
-function updateAdSets(selectedCampaigns) {
-    const unitId = document.getElementById('unitId').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-
-    if (unitId && startDate && endDate && !isAdSetFilterActive) {
-        let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
-        validAdSetIds = validAdSetIds.filter(id => {
-            const adSetData = adSetsMap[unitId][id];
-            return adSetData && adSetData.insights.spend > 0;
-        });
-
-        const adSetOptions = validAdSetIds.map(id => ({
-            value: id,
-            label: adSetsMap[unitId][id].name,
-            spend: adSetsMap[unitId][id].insights.spend
-        }));
-        renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
-    }
-}
-
-// Funções para obter insights
+// Função para obter insights das campanhas
 async function getCampaignInsights(campaignId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
@@ -444,7 +481,6 @@ async function getCampaignInsights(campaignId, startDate, endDate) {
                 if (response && !response.error) {
                     resolve(response.data[0] || {});
                 } else {
-                    console.error(`Erro ao carregar insights para campanha ${campaignId}:`, response.error);
                     resolve({});
                 }
             }
@@ -452,6 +488,7 @@ async function getCampaignInsights(campaignId, startDate, endDate) {
     });
 }
 
+// Função para obter insights dos ad sets
 async function getAdSetInsights(adSetId, startDate, endDate) {
     return new Promise((resolve, reject) => {
         FB.api(
@@ -459,10 +496,8 @@ async function getAdSetInsights(adSetId, startDate, endDate) {
             { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error && response.data && response.data.length > 0) {
-                    console.log(`Insights para ad set ${adSetId}:`, response.data[0]);
                     resolve(response.data[0]);
                 } else {
-                    console.warn(`Nenhum insight válido retornado para ad set ${adSetId}:`, response.error || 'Dados ausentes');
                     resolve({ spend: '0', actions: [], reach: '0' });
                 }
             }
@@ -483,6 +518,10 @@ filterAdSetsBtn.addEventListener('click', () => {
     toggleModal(adSetsModal, true, false);
 });
 
+comparePeriodsBtn.addEventListener('click', () => {
+    toggleModal(comparisonModal, true, false);
+});
+
 closeCampaignsModalBtn.addEventListener('click', () => {
     isCampaignFilterActive = false;
     toggleModal(campaignsModal, false, true);
@@ -495,75 +534,31 @@ closeAdSetsModalBtn.addEventListener('click', () => {
     updateFilterButton();
 });
 
-// Função para calcular o período anterior automaticamente
-function calculatePreviousPeriod(startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffDays = (end - start) / (1000 * 60 * 60 * 24); // Diferença em dias
-
-    const previousEnd = new Date(start);
-    previousEnd.setDate(previousEnd.getDate() - 1); // Um dia antes do startDate
-
-    const previousStart = new Date(previousEnd);
-    previousStart.setDate(previousStart.getDate() - diffDays); // Mesmo número de dias antes
-
-    return {
-        start: previousStart.toISOString().split('T')[0],
-        end: previousEnd.toISOString().split('T')[0]
-    };
-}
-
-// Configurar evento para o botão "Período de Comparação"
-comparePeriodsBtn.addEventListener('click', () => {
-    toggleModal(comparisonModal, true, false);
+cancelComparisonBtn.addEventListener('click', () => {
+    toggleModal(comparisonModal, false, false);
 });
 
-// Configurar eventos para o modal de comparação
-confirmComparisonBtn.addEventListener('click', async () => {
-    const option = document.querySelector('input[name="comparisonOption"]:checked').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-
-    if (option === 'custom') {
+confirmComparisonBtn.addEventListener('click', () => {
+    const comparisonOption = document.querySelector('input[name="comparisonOption"]:checked').value;
+    if (comparisonOption === 'custom') {
         const compareStartDate = document.getElementById('compareStartDate').value;
         const compareEndDate = document.getElementById('compareEndDate').value;
-        if (!compareStartDate || !compareEndDate) {
-            alert('Por favor, preencha as datas do período de comparação.');
-            return;
+        if (compareStartDate && compareEndDate) {
+            comparisonData = { startDate: compareStartDate, endDate: compareEndDate };
+        } else {
+            comparisonData = null;
         }
-        comparisonData = { startDate: compareStartDate, endDate: compareEndDate, isPrevious: false };
-    } else if (option === 'previous') {
-        const previousPeriod = calculatePreviousPeriod(startDate, endDate);
-        comparisonData = { startDate: previousPeriod.start, endDate: previousPeriod.end, isPrevious: true };
+    } else if (comparisonOption === 'previous') {
+        comparisonData = { isPrevious: true };
     } else {
         comparisonData = null;
     }
-
-    console.log('Dados de comparação salvos:', comparisonData); // Depuração
     toggleModal(comparisonModal, false, false);
 });
 
-cancelComparisonBtn.addEventListener('click', () => {
-    comparisonData = null; // Limpar dados de comparação ao cancelar
-    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData); // Depuração
-    toggleModal(comparisonModal, false, false);
-});
-
-// Função para calcular a variação percentual e determinar o ícone
-function calculateVariation(currentValue, previousValue) {
-    if (!previousValue || previousValue === 0) return { percentage: 0, icon: '' };
-    const percentage = ((currentValue - previousValue) / previousValue) * 100;
-    const icon = percentage >= 0 ? '⬆️' : '⬇️';
-    return { percentage: Math.abs(percentage).toFixed(2), icon };
-}
-
-// Geração do relatório com soma consolidada dos itens filtrados ativados
+// Geração do relatório
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    await generateReport();
-});
-
-async function generateReport() {
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
     const startDate = document.getElementById('startDate').value;
@@ -577,9 +572,10 @@ async function generateReport() {
     let totalSpend = 0;
     let totalConversations = 0;
     let totalReach = 0;
-    let comparisonMetrics = null;
+    let comparisonSpend = 0;
+    let comparisonConversations = 0;
+    let comparisonReach = 0;
 
-    // Calcular métricas para o período principal
     if (isFilterActivated) {
         if (selectedCampaigns.size > 0) {
             for (const campaignId of selectedCampaigns) {
@@ -600,7 +596,6 @@ async function generateReport() {
             for (const adSetId of selectedAdSets) {
                 const insights = await getAdSetInsights(adSetId, startDate, endDate);
                 if (insights && insights.spend) {
-                    console.log(`Spend para ad set ${adSetId}: ${insights.spend}`);
                     totalSpend += parseFloat(insights.spend) || 0;
                 }
                 if (insights && insights.reach) {
@@ -614,165 +609,125 @@ async function generateReport() {
             }
         }
     } else {
-        const response = await new Promise(resolve => {
-            FB.api(
-                `/${unitId}/insights`,
-                { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'account', access_token: currentAccessToken },
-                resolve
-            );
-        });
-
-        if (response && !response.error && response.data.length > 0) {
-            response.data.forEach(data => {
-                if (data.spend) {
-                    totalSpend += parseFloat(data.spend) || 0;
-                }
-                if (data.reach) {
-                    totalReach += parseInt(data.reach) || 0;
-                }
-                (data.actions || []).forEach(action => {
-                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                        totalConversations += parseInt(action.value) || 0;
-                    }
-                });
-            });
-        } else {
-            reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
-            if (response.error) console.error('Erro da API:', response.error);
-            shareWhatsAppBtn.style.display = 'none';
-            return;
-        }
-    }
-
-    // Calcular métricas para o período de comparação, se aplicável
-    if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
-        let compareSpend = 0;
-        let compareConversations = 0;
-        let compareReach = 0;
-
-        if (isFilterActivated) {
-            if (selectedCampaigns.size > 0) {
-                for (const campaignId of selectedCampaigns) {
-                    const insights = await getCampaignInsights(campaignId, comparisonData.startDate, comparisonData.endDate);
-                    if (insights && insights.spend) {
-                        compareSpend += parseFloat(insights.spend) || 0;
-                    }
-                    if (insights && insights.reach) {
-                        compareReach += parseInt(insights.reach) || 0;
-                    }
-                    (insights.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
+        FB.api(
+            `/${unitId}/insights`,
+            { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'account', access_token: currentAccessToken },
+            function(response) {
+                if (response && !response.error && response.data.length > 0) {
+                    response.data.forEach(data => {
+                        if (data.spend) {
+                            totalSpend += parseFloat(data.spend) || 0;
                         }
-                    });
-                }
-            } else if (selectedAdSets.size > 0) {
-                for (const adSetId of selectedAdSets) {
-                    const insights = await getAdSetInsights(adSetId, comparisonData.startDate, comparisonData.endDate);
-                    if (insights && insights.spend) {
-                        compareSpend += parseFloat(insights.spend) || 0;
-                    }
-                    if (insights && insights.reach) {
-                        compareReach += parseInt(insights.reach) || 0;
-                    }
-                    (insights.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
+                        if (data.reach) {
+                            totalReach += parseInt(data.reach) || 0;
                         }
+                        (data.actions || []).forEach(action => {
+                            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                                totalConversations += parseInt(action.value) || 0;
+                            }
+                        });
                     });
+
+                    if (comparisonData) {
+                        let compareStartDate = startDate;
+                        let compareEndDate = endDate;
+                        if (comparisonData.startDate && comparisonData.endDate) {
+                            compareStartDate = comparisonData.startDate;
+                            compareEndDate = comparisonData.endDate;
+                        } else if (comparisonData.isPrevious) {
+                            const start = new Date(startDate);
+                            const end = new Date(endDate);
+                            start.setFullYear(start.getFullYear() - 1);
+                            end.setFullYear(end.getFullYear() - 1);
+                            compareStartDate = start.toISOString().split('T')[0];
+                            compareEndDate = end.toISOString().split('T')[0];
+                        }
+
+                        FB.api(
+                            `/${unitId}/insights`,
+                            { fields: ['spend', 'actions', 'reach'], time_range: { since: compareStartDate, until: compareEndDate }, level: 'account', access_token: currentAccessToken },
+                            function(comparisonResponse) {
+                                if (comparisonResponse && !comparisonResponse.error && comparisonResponse.data.length > 0) {
+                                    comparisonResponse.data.forEach(data => {
+                                        if (data.spend) {
+                                            comparisonSpend += parseFloat(data.spend) || 0;
+                                        }
+                                        if (data.reach) {
+                                            comparisonReach += parseInt(data.reach) || 0;
+                                        }
+                                        (data.actions || []).forEach(action => {
+                                            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                                                comparisonConversations += parseInt(action.value) || 0;
+                                            }
+                                        });
+                                    });
+                                }
+
+                                renderCompleteReport(unitName, startDate, endDate, totalSpend, totalConversations, totalReach, comparisonSpend, comparisonConversations, comparisonReach, compareStartDate, compareEndDate);
+                            }
+                        );
+                    } else {
+                        renderCompleteReport(unitName, startDate, endDate, totalSpend, totalConversations, totalReach);
+                    }
+                } else {
+                    reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
+                    shareWhatsAppBtn.style.display = 'none';
                 }
             }
-        } else {
-            const response = await new Promise(resolve => {
-                FB.api(
-                    `/${unitId}/insights`,
-                    { fields: ['spend', 'actions', 'reach'], time_range: { since: comparisonData.startDate, until: comparisonData.endDate }, level: 'account', access_token: currentAccessToken },
-                    resolve
-                );
-            });
-
-            if (response && !response.error && response.data.length > 0) {
-                response.data.forEach(data => {
-                    if (data.spend) {
-                        compareSpend += parseFloat(data.spend) || 0;
-                    }
-                    if (data.reach) {
-                        compareReach += parseInt(data.reach) || 0;
-                    }
-                    (data.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
-                        }
-                    });
-                });
-            }
-        }
-
-        const compareCostPerConversation = compareConversations > 0 ? (compareSpend / compareConversations).toFixed(2) : '0';
-        comparisonMetrics = {
-            reach: compareReach,
-            conversations: compareConversations,
-            costPerConversation: parseFloat(compareCostPerConversation)
-        };
-        console.log('Métricas de comparação calculadas:', comparisonMetrics); // Depuração
-    } else {
-        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData); // Depuração
+        );
+        return;
     }
 
+    renderCompleteReport(unitName, startDate, endDate, totalSpend, totalConversations, totalReach);
+});
+
+// Função para renderizar o relatório completo
+function renderCompleteReport(unitName, startDate, endDate, totalSpend, totalConversations, totalReach, comparisonSpend = 0, comparisonConversations = 0, comparisonReach = 0, compareStartDate = '', compareEndDate = '') {
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
+    let comparisonCostPerConversation = comparisonConversations > 0 ? (comparisonSpend / comparisonConversations).toFixed(2) : '0';
+    if (comparisonCostPerConversation === '0' && comparisonConversations === 0) comparisonCostPerConversation = '-';
 
-    // Construir o relatório com design bonito
-    let reportHTML = `
+    const spendChange = comparisonSpend > 0 ? ((totalSpend - comparisonSpend) / comparisonSpend * 100).toFixed(2) : 0;
+    const conversationChange = comparisonConversations > 0 ? ((totalConversations - comparisonConversations) / comparisonConversations * 100).toFixed(2) : 0;
+    const reachChange = comparisonReach > 0 ? ((totalReach - comparisonReach) / comparisonReach * 100).toFixed(2) : 0;
+
+    let reportHtml = `
         <div class="report-header">
-            <h2>Relatório Completo - CA - ${unitName}</h2>
-            <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
-            ${comparisonData && comparisonData.startDate && comparisonData.endDate ? `<p>📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}</p>` : ''}
+            <h2>📊 RELATÓRIO COMPLETO - CA - ${unitName}</h2>
+            <p>📅 Período Principal: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
+    `;
+
+    if (compareStartDate && compareEndDate) {
+        reportHtml += `<p>📅 Período de Comparação: ${compareStartDate.split('-').reverse().join('/')} a ${compareEndDate.split('-').reverse().join('/')}</p>`;
+    }
+
+    reportHtml += `
         </div>
         <div class="metrics-grid">
-            <div class="metric-card reach">
-                <div>
-                    <div class="metric-label">Alcance Total</div>
-                    <div class="metric-value">${totalReach.toLocaleString('pt-BR')} pessoas</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.reach <= totalReach ? 'increase' : 'decrease'}">
-                            ${calculateVariation(totalReach, comparisonMetrics.reach).percentage}% ${calculateVariation(totalReach, comparisonMetrics.reach).icon}
-                        </div>
-                    ` : ''}
-                </div>
+            <div class="metric-card investment">
+                <div class="metric-label">Investimento Total</div>
+                <div class="metric-value">R$ ${totalSpend.toFixed(2).replace('.', ',')}</div>
+                ${comparisonSpend > 0 ? `<div class="metric-comparison ${spendChange >= 0 ? 'increase' : 'decrease'}">${spendChange}% ${spendChange >= 0 ? '↑' : '↓'}</div>` : ''}
             </div>
             <div class="metric-card messages">
-                <div>
-                    <div class="metric-label">Mensagens Iniciadas</div>
-                    <div class="metric-value">${totalConversations}</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.conversations <= totalConversations ? 'increase' : 'decrease'}">
-                            ${calculateVariation(totalConversations, comparisonMetrics.conversations).percentage}% ${calculateVariation(totalConversations, comparisonMetrics.conversations).icon}
-                        </div>
-                    ` : ''}
-                </div>
+                <div class="metric-label">Mensagens Iniciadas</div>
+                <div class="metric-value">${totalConversations.toLocaleString('pt-BR')}</div>
+                ${comparisonConversations > 0 ? `<div class="metric-comparison ${conversationChange >= 0 ? 'increase' : 'decrease'}">${conversationChange}% ${conversationChange >= 0 ? '↑' : '↓'}</div>` : ''}
             </div>
             <div class="metric-card cost">
-                <div>
-                    <div class="metric-label">Custo por Mensagem</div>
-                    <div class="metric-value">R$ ${costPerConversation.replace('.', ',')}</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.costPerConversation >= parseFloat(costPerConversation) ? 'increase' : 'decrease'}">
-                            ${calculateVariation(parseFloat(costPerConversation), comparisonMetrics.costPerConversation).percentage}% ${calculateVariation(parseFloat(costPerConversation), comparisonMetrics.costPerConversation).icon}
-                        </div>
-                    ` : ''}
-                </div>
+                <div class="metric-label">Custo por Mensagem</div>
+                <div class="metric-value">R$ ${costPerConversation.replace('.', ',')}</div>
+                ${comparisonCostPerConversation !== '-' ? `<div class="metric-comparison ${(costPerConversation - comparisonCostPerConversation) >= 0 ? 'decrease' : 'increase'}">${((costPerConversation - comparisonCostPerConversation) / comparisonCostPerConversation * 100).toFixed(2)}% ${(costPerConversation - comparisonCostPerConversation) >= 0 ? '↑' : '↓'}</div>` : ''}
             </div>
-            <div class="metric-card investment">
-                <div>
-                    <div class="metric-label">Investimento Total</div>
-                    <div class="metric-value">R$ ${totalSpend.toFixed(2).replace('.', ',')}</div>
-                </div>
+            <div class="metric-card reach">
+                <div class="metric-label">Alcance Total</div>
+                <div class="metric-value">${totalReach.toLocaleString('pt-BR')} pessoas</div>
+                ${comparisonReach > 0 ? `<div class="metric-comparison ${reachChange >= 0 ? 'increase' : 'decrease'}">${reachChange}% ${reachChange >= 0 ? '↑' : '↓'}</div>` : ''}
             </div>
         </div>
     `;
 
-    reportContainer.classList.add('complete');
-    reportContainer.innerHTML = reportHTML;
+    reportContainer.innerHTML = reportHtml;
     shareWhatsAppBtn.style.display = 'block';
 }
 
