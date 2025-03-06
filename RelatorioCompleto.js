@@ -147,8 +147,6 @@ function toggleModal(modal, show, isCampaign) {
             isAdSetFilterActive = false;
             filterAdSetsBtn.disabled = isFilterActivated;
             filterAdSetsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
-        } else if (modal === comparisonModal) {
-            // Lógica para o modal de comparação
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
@@ -181,7 +179,6 @@ function toggleModal(modal, show, isCampaign) {
             const campaignSearchInput = document.getElementById('campaignSearch');
             if (campaignSearchInput) campaignSearchInput.value = '';
         } else if (modal === comparisonModal) {
-            // Nada a fazer ao fechar o modal de comparação
         } else {
             isAdSetFilterActive = false;
             if (isFilterActivated && selectedAdSets.size === 0) {
@@ -365,10 +362,6 @@ form.addEventListener('input', async function(e) {
 
 // Função para carregar campanhas
 async function loadCampaigns(unitId, startDate, endDate) {
-    if (typeof FB === 'undefined') {
-        console.error('Facebook SDK não está inicializado.');
-        return;
-    }
     FB.api(
         `/${unitId}/campaigns`,
         { fields: 'id,name', access_token: currentAccessToken },
@@ -404,10 +397,6 @@ async function loadCampaigns(unitId, startDate, endDate) {
 
 // Função para carregar ad sets
 async function loadAdSets(unitId, startDate, endDate) {
-    if (typeof FB === 'undefined') {
-        console.error('Facebook SDK não está inicializado.');
-        return;
-    }
     if (adSetsMap[unitId] && Object.keys(adSetsMap[unitId]).length > 0) {
         if (!isCampaignFilterActive) {
             const adSetOptions = Object.keys(adSetsMap[unitId])
@@ -618,9 +607,13 @@ form.addEventListener('submit', async (e) => {
                     response.data.forEach(data => {
                         if (data.spend) {
                             totalSpend += parseFloat(data.spend) || 0;
+                        } else {
+                            totalSpend += 0; // Garantir que spend seja tratado como 0 se ausente
                         }
                         if (data.reach) {
                             totalReach += parseInt(data.reach) || 0;
+                        } else {
+                            totalReach += 0; // Garantir que reach seja tratado como 0 se ausente
                         }
                         (data.actions || []).forEach(action => {
                             if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
@@ -651,24 +644,21 @@ form.addEventListener('submit', async (e) => {
                             { fields: ['spend', 'actions', 'reach'], time_range: { since: compareStartDate, until: compareEndDate }, level: 'account', access_token: currentAccessToken },
                             function(comparisonResponse) {
                                 console.log('Resposta da API para o período de comparação:', comparisonResponse);
-                                if (comparisonResponse && !comparisonResponse.error && comparisonResponse.data && comparisonResponse.data.length > 0) {
+                                if (comparisonResponse && !comparisonResponse.error && comparisonResponse.data) {
                                     comparisonResponse.data.forEach(data => {
-                                        if (data.spend) {
-                                            comparisonSpend += parseFloat(data.spend) || 0;
+                                        // Garantir que valores ausentes sejam tratados como 0
+                                        comparisonSpend += parseFloat(data.spend || 0);
+                                        comparisonReach += parseInt(data.reach || 0);
+                                        if (data.actions) {
+                                            data.actions.forEach(action => {
+                                                if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                                                    comparisonConversations += parseInt(action.value || 0);
+                                                }
+                                            });
                                         }
-                                        if (data.reach) {
-                                            comparisonReach += parseInt(data.reach) || 0;
-                                        }
-                                        (data.actions || []).forEach(action => {
-                                            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                                                comparisonConversations += parseInt(action.value) || 0;
-                                            }
-                                        });
                                     });
-                                    console.log(`Dados do período de comparação - Spend: ${comparisonSpend}, Conversas: ${comparisonConversations}, Alcance: ${comparisonReach}`);
-                                } else {
-                                    console.log('Nenhum dado encontrado para o período de comparação ou erro na requisição:', comparisonResponse.error || 'Dados vazios');
                                 }
+                                console.log(`Dados do período de comparação - Spend: ${comparisonSpend}, Conversas: ${comparisonConversations}, Alcance: ${comparisonReach}`);
 
                                 renderCompleteReport(unitName, startDate, endDate, totalSpend, totalConversations, totalReach, comparisonSpend, comparisonConversations, comparisonReach, compareStartDate, compareEndDate);
                             }
@@ -682,7 +672,10 @@ form.addEventListener('submit', async (e) => {
                 }
             }
         );
+        return;
     }
+
+    renderCompleteReport(unitName, startDate, endDate, totalSpend, totalConversations, totalReach);
 });
 
 // Função para renderizar o relatório completo
@@ -691,9 +684,9 @@ function renderCompleteReport(unitName, startDate, endDate, totalSpend, totalCon
     let comparisonCostPerConversation = comparisonConversations > 0 ? (comparisonSpend / comparisonConversations).toFixed(2) : '0';
     if (comparisonCostPerConversation === '0' && comparisonConversations === 0) comparisonCostPerConversation = '-';
 
-    const spendChange = comparisonSpend > 0 ? ((totalSpend - comparisonSpend) / comparisonSpend * 100).toFixed(2) : null;
-    const conversationChange = comparisonConversations > 0 ? ((totalConversations - comparisonConversations) / comparisonConversations * 100).toFixed(2) : null;
-    const reachChange = comparisonReach > 0 ? ((totalReach - comparisonReach) / comparisonReach * 100).toFixed(2) : null;
+    const spendChange = comparisonSpend > 0 ? ((totalSpend - comparisonSpend) / comparisonSpend * 100).toFixed(2) : comparisonSpend === 0 && compareStartDate ? '0' : null;
+    const conversationChange = comparisonConversations > 0 ? ((totalConversations - comparisonConversations) / comparisonConversations * 100).toFixed(2) : comparisonConversations === 0 && compareStartDate ? '0' : null;
+    const reachChange = comparisonReach > 0 ? ((totalReach - comparisonReach) / comparisonReach * 100).toFixed(2) : comparisonReach === 0 && compareStartDate ? '0' : null;
     const costChange = comparisonCostPerConversation !== '-' ? ((costPerConversation - comparisonCostPerConversation) / comparisonCostPerConversation * 100).toFixed(2) : null;
 
     let reportHtml = `
@@ -704,9 +697,6 @@ function renderCompleteReport(unitName, startDate, endDate, totalSpend, totalCon
 
     if (compareStartDate && compareEndDate) {
         reportHtml += `<p>📅 Período de Comparação: ${compareStartDate.split('-').reverse().join('/')} a ${compareEndDate.split('-').reverse().join('/')}</p>`;
-        if (comparisonSpend === 0 && comparisonConversations === 0 && comparisonReach === 0) {
-            reportHtml += `<p style="color: #ff3333;">⚠️ Nenhum dado encontrado para o período de comparação.</p>`;
-        }
     }
 
     reportHtml += `
@@ -715,22 +705,22 @@ function renderCompleteReport(unitName, startDate, endDate, totalSpend, totalCon
             <div class="metric-card investment">
                 <div class="metric-label">Investimento Total</div>
                 <div class="metric-value">R$ ${totalSpend.toFixed(2).replace('.', ',')}</div>
-                ${spendChange !== null ? `<div class="metric-comparison ${spendChange >= 0 ? 'increase' : 'decrease'}">${spendChange}% ${spendChange >= 0 ? '↑' : '↓'}</div>` : '<div class="metric-comparison">N/A</div>'}
+                ${spendChange !== null ? `<div class="metric-comparison ${spendChange >= 0 ? 'increase' : 'decrease'}">${spendChange}% ${spendChange >= 0 ? '↑' : '↓'}</div>` : ''}
             </div>
             <div class="metric-card messages">
                 <div class="metric-label">Mensagens Iniciadas</div>
                 <div class="metric-value">${totalConversations.toLocaleString('pt-BR')}</div>
-                ${conversationChange !== null ? `<div class="metric-comparison ${conversationChange >= 0 ? 'increase' : 'decrease'}">${conversationChange}% ${conversationChange >= 0 ? '↑' : '↓'}</div>` : '<div class="metric-comparison">N/A</div>'}
+                ${conversationChange !== null ? `<div class="metric-comparison ${conversationChange >= 0 ? 'increase' : 'decrease'}">${conversationChange}% ${conversationChange >= 0 ? '↑' : '↓'}</div>` : ''}
             </div>
             <div class="metric-card cost">
                 <div class="metric-label">Custo por Mensagem</div>
                 <div class="metric-value">R$ ${costPerConversation.replace('.', ',')}</div>
-                ${costChange !== null ? `<div class="metric-comparison ${costChange >= 0 ? 'decrease' : 'increase'}">${costChange}% ${costChange >= 0 ? '↑' : '↓'}</div>` : '<div class="metric-comparison">N/A</div>'}
+                ${costChange !== null ? `<div class="metric-comparison ${costChange >= 0 ? 'decrease' : 'increase'}">${costChange}% ${costChange >= 0 ? '↑' : '↓'}</div>` : ''}
             </div>
             <div class="metric-card reach">
                 <div class="metric-label">Alcance Total</div>
                 <div class="metric-value">${totalReach.toLocaleString('pt-BR')} pessoas</div>
-                ${reachChange !== null ? `<div class="metric-comparison ${reachChange >= 0 ? 'increase' : 'decrease'}">${reachChange}% ${reachChange >= 0 ? '↑' : '↓'}</div>` : '<div class="metric-comparison">N/A</div>'}
+                ${reachChange !== null ? `<div class="metric-comparison ${reachChange >= 0 ? 'increase' : 'decrease'}">${reachChange}% ${reachChange >= 0 ? '↑' : '↓'}</div>` : ''}
             </div>
         </div>
     `;
