@@ -3,11 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>Relatório Completo de Anúncios do Facebook</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+=======
+    <title>Relatório de Anúncios do Facebook</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
             margin: 0;
             padding: 0;
             background: linear-gradient(135deg, #1e3c72, #2a5298);
@@ -19,7 +26,11 @@
         }
 
         .container {
+<<<<<<< HEAD
             max-width: 800px;
+=======
+            max-width: 600px;
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
             margin: 20px;
             padding: 20px;
             background: #fff;
@@ -27,6 +38,7 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
+<<<<<<< HEAD
         h1 {
             color: #1e3c72;
             text-align: center;
@@ -38,6 +50,11 @@
             color: #1e3c72;
             font-weight: 600;
             margin-bottom: 15px;
+=======
+        h1, h2 {
+            color: #1e3c72;
+            text-align: center;
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
         }
 
         .form-group {
@@ -47,17 +64,27 @@
         label {
             display: block;
             margin-bottom: 5px;
+<<<<<<< HEAD
             font-weight: 500;
         }
 
         select,
         input[type="date"] {
+=======
+            font-weight: bold;
+        }
+
+        select, input[type="date"], input[type="text"], input[type="password"] {
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
             width: 100%;
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box;
+<<<<<<< HEAD
             font-family: 'Poppins', sans-serif;
+=======
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
         }
 
         button {
@@ -69,7 +96,10 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
+<<<<<<< HEAD
             font-family: 'Poppins', sans-serif;
+=======
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
         }
 
         button:hover {
@@ -84,6 +114,7 @@
             background-color: #2a5298;
         }
 
+<<<<<<< HEAD
         .btn-generate {
             background-color: #28a745; /* Verde para o botão Gerar Relatório */
             padding: 12px 24px;
@@ -112,6 +143,8 @@
             font-weight: bold;
         }
 
+=======
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
         .modal {
             position: fixed;
             top: 0;
@@ -172,6 +205,7 @@
             cursor: not-allowed;
         }
 
+<<<<<<< HEAD
         #reportContainer.complete {
             margin-top: 20px;
         }
@@ -243,21 +277,69 @@
             color: #dc3545;
         }
 
+=======
+        .error-message {
+            color: #ff0000;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #reportContainer {
+            margin-top: 20px;
+        }
+
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
         #shareWhatsAppBtn {
             display: none;
             margin-top: 20px;
             width: 100%;
+<<<<<<< HEAD
             background-color: #25D366;
         }
 
         #shareWhatsAppBtn:hover {
             background-color: #20c058;
+=======
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
         }
     </style>
 </head>
 <body>
+<<<<<<< HEAD
     <div class="container" id="mainContent">
         <h1>Relatório Completo</h1>
+=======
+    <div class="container" id="appLoginScreen">
+        <h1>Login</h1>
+        <form id="appLoginForm">
+            <div class="form-group">
+                <label for="username">Usuário:</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Senha:</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit">Entrar</button>
+            <div id="appLoginError" class="error-message"></div>
+        </form>
+    </div>
+
+    <div class="container" id="reportSelectionScreen" style="display: none;">
+        <h1>Selecione o Tipo de Relatório</h1>
+        <button id="simpleReportBtn">Relatório Simplificado</button>
+        <button id="completeReportBtn">Relatório Completo</button>
+    </div>
+
+    <div class="container" id="loginScreen" style="display: none;">
+        <h1>Login com Facebook</h1>
+        <button id="loginBtn">Login com Facebook</button>
+        <div id="loginError" class="error-message"></div>
+    </div>
+
+    <div class="container" id="mainContent" style="display: none;">
+        <h1>Relatório Simplificado</h1>
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
         <form id="form">
             <div class="form-group">
                 <label for="unitId">Unidade:</label>
@@ -274,6 +356,7 @@
                 <input type="date" id="endDate" required>
             </div>
             <div class="form-group">
+<<<<<<< HEAD
                 <div class="filter-label">Deseja filtrar?</div>
                 <button type="button" id="filterCampaigns" class="btn-filter">Campanhas</button>
                 <button type="button" id="filterAdSets" class="btn-filter">Conjuntos</button>
@@ -282,6 +365,14 @@
             <button type="submit" class="btn-generate">Gerar Relatório</button>
         </form>
         <div id="reportContainer" class="report-container"></div>
+=======
+                <button type="button" id="filterCampaigns" class="btn-primary">Campanhas</button>
+                <button type="button" id="filterAdSets" class="btn-primary">Conjuntos</button>
+            </div>
+            <button type="submit">Gerar Relatório</button>
+        </form>
+        <div id="reportContainer"></div>
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
         <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
         <button id="backToReportSelectionBtn">Voltar</button>
 
@@ -305,6 +396,7 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     <div id="comparisonModal" class="modal" style="display: none;">
         <div class="modal-content">
             <h2>Comparação de Períodos</h2>
@@ -329,12 +421,20 @@
         </div>
     </div>
 
+=======
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <script>
         // Inicializar o SDK do Facebook
         window.fbAsyncInit = function() {
+<<<<<<< HEAD
             FB.init({
                 appId: '618519427538646', // Seu App ID
+=======
+            console.log("Iniciando inicialização do Facebook SDK...");
+            FB.init({
+                appId: '618519427538646',
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
                 cookie: true,
                 xfbml: true,
                 version: 'v20.0'
@@ -342,7 +442,27 @@
             FB.AppEvents.logPageView();
             console.log("Facebook SDK inicializado com sucesso!");
         };
+<<<<<<< HEAD
     </script>
     <script src="RelatorioCompleto.js"></script>
+=======
+
+        // Função para carregar o SDK do Facebook
+        (function(d, s, id) {
+            console.log("Carregando SDK do Facebook...");
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) {
+                console.log("SDK já carregado, ignorando...");
+                return;
+            }
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+            console.log("Script do SDK do Facebook adicionado ao DOM.");
+        })(document, 'script', 'facebook-jssdk');
+    </script>
+    <script src="app.js"></script>
+>>>>>>> a983c19d1aee31e7136b860ecc3a105747fa7e89
 </body>
 </html>
