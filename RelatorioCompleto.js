@@ -46,18 +46,97 @@ if (!currentAccessToken) {
 // Preencher o dropdown de unidades com os dados do localStorage
 const unitSelect = document.getElementById('unitId');
 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-const sortedAccounts = Object.keys(adAccountsMap)
-    .map(accountId => ({
-        id: accountId,
-        name: adAccountsMap[accountId]
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-sortedAccounts.forEach(account => {
-    const option = document.createElement('option');
-    option.value = account.id;
-    option.textContent = account.name;
-    unitSelect.appendChild(option);
-});
+console.log('Contas carregadas do localStorage (RelatorioCompleto.js):', adAccountsMap);
+if (Object.keys(adAccountsMap).length === 0) {
+    console.warn('adAccountsMap está vazio. Tentando recarregar contas...');
+    FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
+        if (accountResponse && !accountResponse.error) {
+            let accounts = accountResponse.data || [];
+            accounts.forEach(account => {
+                adAccountsMap[account.id] = account.name;
+            });
+
+            FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
+                if (businessResponse && !businessResponse.error) {
+                    const businesses = businessResponse.data || [];
+                    let businessAccountsPromises = [];
+
+                    businesses.forEach(business => {
+                        businessAccountsPromises.push(new Promise((resolve) => {
+                            FB.api(
+                                `/${business.id}/owned_ad_accounts`,
+                                { fields: 'id,name', access_token: currentAccessToken },
+                                function(ownedAccountResponse) {
+                                    if (ownedAccountResponse && !ownedAccountResponse.error) {
+                                        const ownedAccounts = ownedAccountResponse.data || [];
+                                        resolve(ownedAccounts);
+                                    } else {
+                                        resolve([]);
+                                    }
+                                }
+                            );
+                        }));
+
+                        businessAccountsPromises.push(new Promise((resolve) => {
+                            FB.api(
+                                `/${business.id}/client_ad_accounts`,
+                                { fields: 'id,name', access_token: currentAccessToken },
+                                function(clientAccountResponse) {
+                                    if (clientAccountResponse && !clientAccountResponse.error) {
+                                        const clientAccounts = clientAccountResponse.data || [];
+                                        resolve(clientAccounts);
+                                    } else {
+                                        resolve([]);
+                                    }
+                                }
+                            );
+                        }));
+                    });
+
+                    Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
+                        let allBusinessAccounts = [].concat(...businessAccountsArrays);
+                        allBusinessAccounts.forEach(account => {
+                            if (!adAccountsMap[account.id]) {
+                                adAccountsMap[account.id] = account.name;
+                            }
+                        });
+
+                        const sortedAccounts = Object.keys(adAccountsMap)
+                            .map(accountId => ({
+                                id: accountId,
+                                name: adAccountsMap[accountId]
+                            }))
+                            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+                        unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
+                        sortedAccounts.forEach(account => {
+                            const option = document.createElement('option');
+                            option.value = account.id;
+                            option.textContent = account.name;
+                            unitSelect.appendChild(option);
+                        });
+
+                        localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
+                        console.log('Contas recarregadas e salvas no localStorage (RelatorioCompleto.js):', adAccountsMap);
+                    });
+                }
+            });
+        }
+    });
+} else {
+    const sortedAccounts = Object.keys(adAccountsMap)
+        .map(accountId => ({
+            id: accountId,
+            name: adAccountsMap[accountId]
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    sortedAccounts.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account.id;
+        option.textContent = account.name;
+        unitSelect.appendChild(option);
+    });
+}
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {

@@ -408,7 +408,7 @@ function handleSimpleReportLoginResponse(response) {
 
                             localStorage.setItem('fbAccessToken', currentAccessToken);
                             localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
-                            console.log('Token e contas salvos no localStorage');
+                            console.log('Contas salvas no localStorage (app.js):', adAccountsMap);
                         });
                     } else {
                         console.error('Erro ao carregar Business Managers:', businessResponse.error);
