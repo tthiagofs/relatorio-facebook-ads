@@ -721,6 +721,261 @@ async function generateReport() {
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
+    // Buscar os 3 melhores anúncios
+    let topAds = await getTopAds(unitId, startDate, endDate, isFilterActivated, selectedCampaigns, selectedAdSets);
+
+    // Construir o relatório com design bonito
+    let reportHTML = `
+        <div class="report-header">
+            <h2>Relatório Completo - CA - ${unitName}</h2>
+            <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
+            ${comparisonData && comparisonData.startDate && comparisonData.endDate ? `<p>📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}</p>` : ''}
+        </div>
+        <div class="metrics-grid">
+            <div class="metric-card reach">
+                <div>
+                    <div class="metric-label">Alcance Total</div>
+                    <div class="metric-value">${totalReach.toLocaleString('pt-BR')} pessoas</div>
+                    ${comparisonMetrics ? `
+                        <div class="metric-comparison ${comparisonMetrics.reach <= totalReach ? 'increase' : 'decrease'}">
+                            ${calculateVariation(totalReach, comparisonMetrics.reach).percentage}% ${calculateVariation(totalReach, comparisonMetrics.reach).icon}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="metric-card messages">
+                <div>
+                    <div class="metric-label">Mensagens Iniciadas</div>
+                    <div class="metric-value">${totalConversations}</div>
+                    ${comparisonMetrics ? `
+                        <div class="metric-comparison ${comparisonMetrics.conversations <= totalConversations ? 'increase' : 'decrease'}">
+                            ${calculateVariation(totalConversations, comparisonMetrics.conversations).percentage}% ${calculateVariation(totalConversations, comparisonMetrics.conversations).icon}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="metric-card cost">
+                <div>
+                    <div class="metric-label">Custo por Mensagem</div>
+                    <div class="metric-value">R$ ${costPerConversation.replace('.', ',')}</div>
+                    ${comparisonMetrics ? `
+                        <div class="metric-comparison ${comparisonMetrics.costPerConversation >= parseFloat(costPerConversation) ? 'increase' : 'decrease'}">
+                            ${calculateVariation(parseFloat(costPerConversation), comparisonMetrics.costPerConversation).percentage}% ${calculateVariation(parseFloat(costPerConversation), comparisonMetrics.costPerConversation).icon}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="metric-card investment">
+                <div>
+                    <div class="metric-label">Investimento Total</div>
+                    <div class="metric-value">R$ ${totalSpend.toFixed(2).replace('.', ',')}</div>
+                </div>
+            </div>
+        </div>
+        <div class="top-ads-section">
+            <h2>Principais anúncios</h2>
+            ${topAds.length > 0 ? topAds.map(ad => `
+                <div class="top-ad-item">
+                    <img src="${ad.image_url || 'https://via.placeholder.com/50'}" alt="${ad.name}" class="ad-image">
+                    <div class="ad-details">
+                        <p><strong>${ad.name}</strong></p>
+                        <p>Conversas: ${ad.conversations}</p>
+                        <p>Custo por mensagem: R$ ${ad.costPerConversation.replace('.', ',')}</p>
+                    </div>
+                </div>
+            `).join('') : '<p>Nenhum dado de anúncios disponível.</p>'}
+        </div>
+    `;
+
+    reportContainer.classList.add('complete');
+    reportContainer.innerHTML = reportHTML;
+    shareWhatsAppBtn.style.display = 'block';
+}
+
+// Nova função para buscar os 3 melhores anúncios
+async function getTopAds(unitId, startDate, endDate, isFilterActivated, selectedCampaigns, selectedAdSets) {
+    let adInsights = [];
+
+    if (isFilterActivated) {
+        let adIds = [];
+        if (selectedCampaigns.size > 0) {
+            for (const campaignId of selectedCampaigns) {
+                const adsResponse = await new Promise(resolve => {
+                    FB.api(
+                        `/${campaignId}/ads`,
+                        { fields: 'id,name', access_token: currentAccessToken },
+                        resolve
+                    );
+                });
+                if (adsResponse && !adsResponse.error) {
+                    adIds = adIds.concat(adsResponse.data.map(ad => ad.id));
+                }
+            }
+        } else if (selectedAdSets.size > 0) {
+            for (const adSetId of selectedAdSets) {
+                const adsResponse = await new Promise(resolve => {
+                    FB.api(
+                        `/${adSetId}/ads`,
+                        { fields: 'id,name', access_token: currentAccessToken },
+                        resolve
+                    );
+                });
+                if (adsResponse && !adsResponse.error) {
+                    adIds = adIds.concat(adsResponse.data.map(ad => ad.id));
+                }
+            }
+        }
+
+        for (const adId of adIds) {
+            const insights = await getAdInsights(adId, startDate, endDate);
+            if (insights && insights.length > 0) {
+                const conversations = insights[0].actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
+                const spend = parseFloat(insights[0].spend) || 0;
+                const costPerConversation = conversations > 0 ? (spend / conversations).toFixed(2) : '0.00';
+                adInsights.push({
+                    id: adId,
+                    name: insights[0].name || `Anúncio ${adId}`,
+                    conversations: parseInt(conversations) || 0,
+                    costPerConversation,
+                    image_url: insights[0].creative?.thumbnail_url || null
+                });
+            }
+        }
+    } else {
+        const adsResponse = await new Promise(resolve => {
+            FB.api(
+                `/${unitId}/ads`,
+                { fields: 'id,name', access_token: currentAccessToken },
+                resolve
+            );
+        });
+        if (adsResponse && !adsResponse.error) {
+            const adIds = adsResponse.data.map(ad => ad.id);
+            for (const adId of adIds) {
+                const insights = await getAdInsights(adId, startDate, endDate);
+                if (insights && insights.length > 0) {
+                    const conversations = insights[0].actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
+                    const spend = parseFloat(insights[0].spend) || 0;
+                    const costPerConversation = conversations > 0 ? (spend / conversations).toFixed(2) : '0.00';
+                    adInsights.push({
+                        id: adId,
+                        name: insights[0].name || `Anúncio ${adId}`,
+                        conversations: parseInt(conversations) || 0,
+                        costPerConversation,
+                        image_url: insights[0].creative?.thumbnail_url || null
+                    });
+                }
+            }
+        }
+    }
+
+    // Ordenar por conversas iniciadas (decrescente) e pegar os 3 primeiros
+    adInsights.sort((a, b) => b.conversations - a.conversations);
+    return adInsights.slice(0, 3);
+}
+
+// Nova função para obter insights de anúncios
+async function getAdInsights(adId, startDate, endDate) {
+    return new Promise((resolve, reject) => {
+        FB.api(
+            `/${adId}/insights`,
+            { 
+                fields: ['spend', 'actions', 'reach', 'name', 'creative.thumbnail_url'],
+                time_range: { since: startDate, until: endDate },
+                access_token: currentAccessToken
+            },
+            function(response) {
+                if (response && !response.error && response.data && response.data.length > 0) {
+                    resolve(response.data);
+                } else {
+                    console.warn(`Nenhum insight válido para anúncio ${adId}:`, response.error || 'Dados ausentes');
+                    resolve([]);
+                }
+            }
+        );
+    });
+}
+
+
+
+
+    // Calcular métricas para o período de comparação, se aplicável
+    if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
+        let compareSpend = 0;
+        let compareConversations = 0;
+        let compareReach = 0;
+
+        if (isFilterActivated) {
+            if (selectedCampaigns.size > 0) {
+                for (const campaignId of selectedCampaigns) {
+                    const insights = await getCampaignInsights(campaignId, comparisonData.startDate, comparisonData.endDate);
+                    if (insights && insights.spend) {
+                        compareSpend += parseFloat(insights.spend) || 0;
+                    }
+                    if (insights && insights.reach) {
+                        compareReach += parseInt(insights.reach) || 0;
+                    }
+                    (insights.actions || []).forEach(action => {
+                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                            compareConversations += parseInt(action.value) || 0;
+                        }
+                    });
+                }
+            } else if (selectedAdSets.size > 0) {
+                for (const adSetId of selectedAdSets) {
+                    const insights = await getAdSetInsights(adSetId, comparisonData.startDate, comparisonData.endDate);
+                    if (insights && insights.spend) {
+                        compareSpend += parseFloat(insights.spend) || 0;
+                    }
+                    if (insights && insights.reach) {
+                        compareReach += parseInt(insights.reach) || 0;
+                    }
+                    (insights.actions || []).forEach(action => {
+                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                            compareConversations += parseInt(action.value) || 0;
+                        }
+                    });
+                }
+            }
+        } else {
+            const response = await new Promise(resolve => {
+                FB.api(
+                    `/${unitId}/insights`,
+                    { fields: ['spend', 'actions', 'reach'], time_range: { since: comparisonData.startDate, until: comparisonData.endDate }, level: 'account', access_token: currentAccessToken },
+                    resolve
+                );
+            });
+
+            if (response && !response.error && response.data.length > 0) {
+                response.data.forEach(data => {
+                    if (data.spend) {
+                        compareSpend += parseFloat(data.spend) || 0;
+                    }
+                    if (data.reach) {
+                        compareReach += parseInt(data.reach) || 0;
+                    }
+                    (data.actions || []).forEach(action => {
+                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                            compareConversations += parseInt(action.value) || 0;
+                        }
+                    });
+                });
+            }
+        }
+
+        const compareCostPerConversation = compareConversations > 0 ? (compareSpend / compareConversations).toFixed(2) : '0';
+        comparisonMetrics = {
+            reach: compareReach,
+            conversations: compareConversations,
+            costPerConversation: parseFloat(compareCostPerConversation)
+        };
+        console.log('Métricas de comparação calculadas:', comparisonMetrics); // Depuração
+    } else {
+        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData); // Depuração
+    }
+
+    const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
+
     // Construir o relatório com design bonito
     let reportHTML = `
         <div class="report-header">
