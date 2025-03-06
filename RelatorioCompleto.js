@@ -30,7 +30,7 @@ let comparisonData = null;
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
 
 backToReportSelectionBtn.addEventListener('click', () => {
-    window.location.href = 'index.html?screen=reportSelection';
+    window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
 });
 
 // Verificar se o token de acesso está disponível
@@ -46,97 +46,18 @@ if (!currentAccessToken) {
 // Preencher o dropdown de unidades com os dados do localStorage
 const unitSelect = document.getElementById('unitId');
 unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-console.log('Contas carregadas do localStorage (RelatorioCompleto.js):', adAccountsMap);
-if (Object.keys(adAccountsMap).length === 0) {
-    console.warn('adAccountsMap está vazio. Tentando recarregar contas...');
-    FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
-        if (accountResponse && !accountResponse.error) {
-            let accounts = accountResponse.data || [];
-            accounts.forEach(account => {
-                adAccountsMap[account.id] = account.name;
-            });
-
-            FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
-                if (businessResponse && !businessResponse.error) {
-                    const businesses = businessResponse.data || [];
-                    let businessAccountsPromises = [];
-
-                    businesses.forEach(business => {
-                        businessAccountsPromises.push(new Promise((resolve) => {
-                            FB.api(
-                                `/${business.id}/owned_ad_accounts`,
-                                { fields: 'id,name', access_token: currentAccessToken },
-                                function(ownedAccountResponse) {
-                                    if (ownedAccountResponse && !ownedAccountResponse.error) {
-                                        const ownedAccounts = ownedAccountResponse.data || [];
-                                        resolve(ownedAccounts);
-                                    } else {
-                                        resolve([]);
-                                    }
-                                }
-                            );
-                        }));
-
-                        businessAccountsPromises.push(new Promise((resolve) => {
-                            FB.api(
-                                `/${business.id}/client_ad_accounts`,
-                                { fields: 'id,name', access_token: currentAccessToken },
-                                function(clientAccountResponse) {
-                                    if (clientAccountResponse && !clientAccountResponse.error) {
-                                        const clientAccounts = clientAccountResponse.data || [];
-                                        resolve(clientAccounts);
-                                    } else {
-                                        resolve([]);
-                                    }
-                                }
-                            );
-                        }));
-                    });
-
-                    Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
-                        let allBusinessAccounts = [].concat(...businessAccountsArrays);
-                        allBusinessAccounts.forEach(account => {
-                            if (!adAccountsMap[account.id]) {
-                                adAccountsMap[account.id] = account.name;
-                            }
-                        });
-
-                        const sortedAccounts = Object.keys(adAccountsMap)
-                            .map(accountId => ({
-                                id: accountId,
-                                name: adAccountsMap[accountId]
-                            }))
-                            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-
-                        unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-                        sortedAccounts.forEach(account => {
-                            const option = document.createElement('option');
-                            option.value = account.id;
-                            option.textContent = account.name;
-                            unitSelect.appendChild(option);
-                        });
-
-                        localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
-                        console.log('Contas recarregadas e salvas no localStorage (RelatorioCompleto.js):', adAccountsMap);
-                    });
-                }
-            });
-        }
-    });
-} else {
-    const sortedAccounts = Object.keys(adAccountsMap)
-        .map(accountId => ({
-            id: accountId,
-            name: adAccountsMap[accountId]
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-    sortedAccounts.forEach(account => {
-        const option = document.createElement('option');
-        option.value = account.id;
-        option.textContent = account.name;
-        unitSelect.appendChild(option);
-    });
-}
+const sortedAccounts = Object.keys(adAccountsMap)
+    .map(accountId => ({
+        id: accountId,
+        name: adAccountsMap[accountId]
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+sortedAccounts.forEach(account => {
+    const option = document.createElement('option');
+    option.value = account.id;
+    option.textContent = account.name;
+    unitSelect.appendChild(option);
+});
 
 // Função para mostrar/esconder modais e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
@@ -157,6 +78,7 @@ function toggleModal(modal, show, isCampaign) {
             filterCampaignsBtn.disabled = isFilterActivated;
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
+        // Ao abrir o modal de comparação, restaurar a seleção anterior, se houver
         if (modal === comparisonModal && comparisonData) {
             if (comparisonData.startDate && comparisonData.endDate) {
                 document.querySelector('input[name="comparisonOption"][value="custom"]').checked = true;
@@ -183,6 +105,7 @@ function toggleModal(modal, show, isCampaign) {
             const campaignSearchInput = document.getElementById('campaignSearch');
             if (campaignSearchInput) campaignSearchInput.value = '';
         } else if (modal === comparisonModal) {
+            // Não limpar os campos ou comparisonData aqui, apenas fechar o modal
         } else {
             isAdSetFilterActive = false;
             if (isFilterActivated && selectedAdSets.size === 0) {
@@ -369,10 +292,6 @@ form.addEventListener('input', async function(e) {
 
 // Função para carregar campanhas
 async function loadCampaigns(unitId, startDate, endDate) {
-    if (typeof FB === 'undefined') {
-        console.error('Facebook SDK não está inicializado.');
-        return;
-    }
     const startTime = performance.now();
     console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     FB.api(
@@ -416,10 +335,6 @@ async function loadCampaigns(unitId, startDate, endDate) {
 
 // Função para carregar ad sets
 async function loadAdSets(unitId, startDate, endDate) {
-    if (typeof FB === 'undefined') {
-        console.error('Facebook SDK não está inicializado.');
-        return;
-    }
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     
@@ -584,13 +499,13 @@ closeAdSetsModalBtn.addEventListener('click', () => {
 function calculatePreviousPeriod(startDate, endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+    const diffDays = (end - start) / (1000 * 60 * 60 * 24); // Diferença em dias
 
     const previousEnd = new Date(start);
-    previousEnd.setDate(previousEnd.getDate() - 1);
+    previousEnd.setDate(previousEnd.getDate() - 1); // Um dia antes do startDate
 
     const previousStart = new Date(previousEnd);
-    previousStart.setDate(previousStart.getDate() - diffDays);
+    previousStart.setDate(previousStart.getDate() - diffDays); // Mesmo número de dias antes
 
     return {
         start: previousStart.toISOString().split('T')[0],
@@ -624,13 +539,13 @@ confirmComparisonBtn.addEventListener('click', async () => {
         comparisonData = null;
     }
 
-    console.log('Dados de comparação salvos:', comparisonData);
+    console.log('Dados de comparação salvos:', comparisonData); // Depuração
     toggleModal(comparisonModal, false, false);
 });
 
 cancelComparisonBtn.addEventListener('click', () => {
-    comparisonData = null;
-    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData);
+    comparisonData = null; // Limpar dados de comparação ao cancelar
+    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData); // Depuração
     toggleModal(comparisonModal, false, false);
 });
 
@@ -644,8 +559,8 @@ function calculateVariation(currentValue, previousValue) {
 
 // Geração do relatório com soma consolidada dos itens filtrados ativados
 form.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Impede o recarregamento da página
-    await generateReport(); // Executa a geração do relatório
+    e.preventDefault();
+    await generateReport();
 });
 
 async function generateReport() {
@@ -799,15 +714,12 @@ async function generateReport() {
             conversations: compareConversations,
             costPerConversation: parseFloat(compareCostPerConversation)
         };
-        console.log('Métricas de comparação calculadas:', comparisonMetrics);
+        console.log('Métricas de comparação calculadas:', comparisonMetrics); // Depuração
     } else {
-        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData);
+        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData); // Depuração
     }
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
-
-    // Buscar os 3 melhores anúncios
-    let topAds = await getTopAds(unitId, startDate, endDate, isFilterActivated, selectedCampaigns, selectedAdSets);
 
     // Construir o relatório com design bonito
     let reportHTML = `
@@ -857,128 +769,11 @@ async function generateReport() {
                 </div>
             </div>
         </div>
-        <div class="top-ads-section">
-            <h2>Principais anúncios</h2>
-            ${topAds.length > 0 ? topAds.map(ad => `
-                <div class="top-ad-item">
-                    <img src="${ad.image_url || 'https://via.placeholder.com/50'}" alt="${ad.name}" class="ad-image">
-                    <div class="ad-details">
-                        <p><strong>${ad.name}</strong></p>
-                        <p>Conversas: ${ad.conversations}</p>
-                        <p>Custo por mensagem: R$ ${ad.costPerConversation.replace('.', ',')}</p>
-                    </div>
-                </div>
-            `).join('') : '<p>Nenhum dado de anúncios disponível.</p>'}
-        </div>
     `;
 
     reportContainer.classList.add('complete');
     reportContainer.innerHTML = reportHTML;
     shareWhatsAppBtn.style.display = 'block';
-}
-
-// Nova função para buscar os 3 melhores anúncios
-async function getTopAds(unitId, startDate, endDate, isFilterActivated, selectedCampaigns, selectedAdSets) {
-    let adInsights = [];
-
-    if (isFilterActivated) {
-        let adIds = [];
-        if (selectedCampaigns.size > 0) {
-            for (const campaignId of selectedCampaigns) {
-                const adsResponse = await new Promise(resolve => {
-                    FB.api(
-                        `/${campaignId}/ads`,
-                        { fields: 'id,name', access_token: currentAccessToken },
-                        resolve
-                    );
-                });
-                if (adsResponse && !adsResponse.error) {
-                    adIds = adIds.concat(adsResponse.data.map(ad => ad.id));
-                }
-            }
-        } else if (selectedAdSets.size > 0) {
-            for (const adSetId of selectedAdSets) {
-                const adsResponse = await new Promise(resolve => {
-                    FB.api(
-                        `/${adSetId}/ads`,
-                        { fields: 'id,name', access_token: currentAccessToken },
-                        resolve
-                    );
-                });
-                if (adsResponse && !adsResponse.error) {
-                    adIds = adIds.concat(adsResponse.data.map(ad => ad.id));
-                }
-            }
-        }
-
-        for (const adId of adIds) {
-            const insights = await getAdInsights(adId, startDate, endDate);
-            if (insights && insights.length > 0) {
-                const conversations = insights[0].actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
-                const spend = parseFloat(insights[0].spend) || 0;
-                const costPerConversation = conversations > 0 ? (spend / conversations).toFixed(2) : '0.00';
-                adInsights.push({
-                    id: adId,
-                    name: insights[0].name || `Anúncio ${adId}`,
-                    conversations: parseInt(conversations) || 0,
-                    costPerConversation,
-                    image_url: insights[0].creative?.thumbnail_url || null
-                });
-            }
-        }
-    } else {
-        const adsResponse = await new Promise(resolve => {
-            FB.api(
-                `/${unitId}/ads`,
-                { fields: 'id,name', access_token: currentAccessToken },
-                resolve
-            );
-        });
-        if (adsResponse && !adsResponse.error) {
-            const adIds = adsResponse.data.map(ad => ad.id);
-            for (const adId of adIds) {
-                const insights = await getAdInsights(adId, startDate, endDate);
-                if (insights && insights.length > 0) {
-                    const conversations = insights[0].actions?.find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0;
-                    const spend = parseFloat(insights[0].spend) || 0;
-                    const costPerConversation = conversations > 0 ? (spend / conversations).toFixed(2) : '0.00';
-                    adInsights.push({
-                        id: adId,
-                        name: insights[0].name || `Anúncio ${adId}`,
-                        conversations: parseInt(conversations) || 0,
-                        costPerConversation,
-                        image_url: insights[0].creative?.thumbnail_url || null
-                    });
-                }
-            }
-        }
-    }
-
-    // Ordenar por conversas iniciadas (decrescente) e pegar os 3 primeiros
-    adInsights.sort((a, b) => b.conversations - a.conversations);
-    return adInsights.slice(0, 3);
-}
-
-// Nova função para obter insights de anúncios
-async function getAdInsights(adId, startDate, endDate) {
-    return new Promise((resolve, reject) => {
-        FB.api(
-            `/${adId}/insights`,
-            { 
-                fields: ['spend', 'actions', 'reach', 'name', 'creative.thumbnail_url'],
-                time_range: { since: startDate, until: endDate },
-                access_token: currentAccessToken
-            },
-            function(response) {
-                if (response && !response.error && response.data && response.data.length > 0) {
-                    resolve(response.data);
-                } else {
-                    console.warn(`Nenhum insight válido para anúncio ${adId}:`, response.error || 'Dados ausentes');
-                    resolve([]);
-                }
-            }
-        );
-    });
 }
 
 // Compartilhar no WhatsApp

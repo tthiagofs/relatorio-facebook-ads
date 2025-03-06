@@ -408,7 +408,7 @@ function handleSimpleReportLoginResponse(response) {
 
                             localStorage.setItem('fbAccessToken', currentAccessToken);
                             localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
-                            console.log('Contas salvas no localStorage (app.js):', adAccountsMap);
+                            console.log('Token e contas salvos no localStorage');
                         });
                     } else {
                         console.error('Erro ao carregar Business Managers:', businessResponse.error);
@@ -447,68 +447,12 @@ function handleCompleteReportLoginResponse(response) {
                     adAccountsMap[account.id] = account.name;
                 });
 
-                // Carregar contas de Business Managers
-                FB.api('/me/businesses', { fields: 'id,name', access_token: currentAccessToken }, function(businessResponse) {
-                    if (businessResponse && !businessResponse.error) {
-                        console.log('Business Managers carregados com sucesso (Relatório Completo)');
-                        const businesses = businessResponse.data || [];
-                        let businessAccountsPromises = [];
+                // Salvar adAccountsMap no localStorage
+                localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
+                console.log('adAccountsMap salvo no localStorage:', adAccountsMap);
 
-                        businesses.forEach(business => {
-                            businessAccountsPromises.push(new Promise((resolve) => {
-                                FB.api(
-                                    `/${business.id}/owned_ad_accounts`,
-                                    { fields: 'id,name', access_token: currentAccessToken },
-                                    function(ownedAccountResponse) {
-                                        if (ownedAccountResponse && !ownedAccountResponse.error) {
-                                            const ownedAccounts = ownedAccountResponse.data || [];
-                                            resolve(ownedAccounts);
-                                        } else {
-                                            console.warn(`Erro ao carregar contas próprias do Business ${business.id}`);
-                                            resolve([]);
-                                        }
-                                    }
-                                );
-                            }));
-
-                            businessAccountsPromises.push(new Promise((resolve) => {
-                                FB.api(
-                                    `/${business.id}/client_ad_accounts`,
-                                    { fields: 'id,name', access_token: currentAccessToken },
-                                    function(clientAccountResponse) {
-                                        if (clientAccountResponse && !clientAccountResponse.error) {
-                                            const clientAccounts = clientAccountResponse.data || [];
-                                            resolve(clientAccounts);
-                                        } else {
-                                            console.warn(`Erro ao carregar contas compartilhadas do Business ${business.id}`);
-                                            resolve([]);
-                                        }
-                                    }
-                                );
-                            }));
-                        });
-
-                        Promise.all(businessAccountsPromises).then(businessAccountsArrays => {
-                            let allBusinessAccounts = [].concat(...businessAccountsArrays);
-                            allBusinessAccounts.forEach(account => {
-                                if (!adAccountsMap[account.id]) {
-                                    adAccountsMap[account.id] = account.name;
-                                }
-                            });
-
-                            // Salvar adAccountsMap no localStorage
-                            localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
-                            console.log('adAccountsMap salvo no localStorage (Relatório Completo):', adAccountsMap);
-
-                            // Redirecionar para RelatorioCompleto.html
-                            window.location.href = 'RelatorioCompleto.html';
-                        });
-                    } else {
-                        console.error('Erro ao carregar Business Managers (Relatório Completo):', businessResponse.error);
-                        document.getElementById('loginError').textContent = 'Erro ao carregar Business Managers: ' + (businessResponse.error.message || 'Erro desconhecido');
-                        document.getElementById('loginError').style.display = 'block';
-                    }
-                });
+                // Redirecionar para RelatorioCompleto.html
+                window.location.href = 'RelatorioCompleto.html';
             } else {
                 console.error('Erro ao carregar contas:', accountResponse.error);
                 document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios: ' + (accountResponse.error.message || 'Erro desconhecido');

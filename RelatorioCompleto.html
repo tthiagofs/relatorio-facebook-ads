@@ -293,63 +293,6 @@
             padding: 12px;
         }
     }
-
-.top-ads-section {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f9f9f9;
-    border-radius: 6px;
-}
-
-.top-ads-section h2 {
-    color: #1e3c72;
-    font-size: 20px;
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-.top-ad-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: #e0f7fa;
-    border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.ad-image {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 4px;
-    margin-right: 15px;
-}
-
-.ad-details {
-    flex-grow: 1;
-}
-
-.ad-details p {
-    margin: 5px 0;
-    font-size: 14px;
-}
-
-.ad-details strong {
-    color: #1e3c72;
-}
-
-@media (max-width: 600px) {
-    .top-ad-item {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .ad-image {
-        margin-right: 0;
-        margin-bottom: 10px;
-    }
-}
 </style>
 </head>
 <body>
@@ -428,34 +371,17 @@
 
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <script>
+        // Inicializar o SDK do Facebook
         window.fbAsyncInit = function() {
-            console.log("Iniciando inicialização do Facebook SDK...");
             FB.init({
-                appId: '618519427538646',
+                appId: '618519427538646', // Seu App ID
                 cookie: true,
                 xfbml: true,
                 version: 'v20.0'
             });
             FB.AppEvents.logPageView();
             console.log("Facebook SDK inicializado com sucesso!");
-            FB.getLoginStatus(function(response) {
-                console.log('Status de login após inicialização:', response.status);
-            });
         };
-    
-        (function(d, s, id) {
-            console.log("Carregando SDK do Facebook...");
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) {
-                console.log("SDK já carregado, ignorando...");
-                return;
-            }
-            js = d.createElement(s);
-            js.id = id;
-            js.src = "https://connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
-            console.log("Script do SDK do Facebook adicionado ao DOM.");
-        })(document, 'script', 'facebook-jssdk');
     </script>
     <script src="RelatorioCompleto.js"></script>
 </body>
