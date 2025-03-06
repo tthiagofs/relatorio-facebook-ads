@@ -428,17 +428,34 @@
 
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <script>
-        // Inicializar o SDK do Facebook
         window.fbAsyncInit = function() {
+            console.log("Iniciando inicialização do Facebook SDK...");
             FB.init({
-                appId: '618519427538646', // Seu App ID
+                appId: '618519427538646',
                 cookie: true,
                 xfbml: true,
                 version: 'v20.0'
             });
             FB.AppEvents.logPageView();
             console.log("Facebook SDK inicializado com sucesso!");
+            FB.getLoginStatus(function(response) {
+                console.log('Status de login após inicialização:', response.status);
+            });
         };
+    
+        (function(d, s, id) {
+            console.log("Carregando SDK do Facebook...");
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) {
+                console.log("SDK já carregado, ignorando...");
+                return;
+            }
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+            console.log("Script do SDK do Facebook adicionado ao DOM.");
+        })(document, 'script', 'facebook-jssdk');
     </script>
     <script src="RelatorioCompleto.js"></script>
 </body>

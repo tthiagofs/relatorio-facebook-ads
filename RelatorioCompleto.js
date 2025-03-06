@@ -369,6 +369,10 @@ form.addEventListener('input', async function(e) {
 
 // Função para carregar campanhas
 async function loadCampaigns(unitId, startDate, endDate) {
+    if (typeof FB === 'undefined') {
+        console.error('Facebook SDK não está inicializado.');
+        return;
+    }
     const startTime = performance.now();
     console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     FB.api(
@@ -412,6 +416,10 @@ async function loadCampaigns(unitId, startDate, endDate) {
 
 // Função para carregar ad sets
 async function loadAdSets(unitId, startDate, endDate) {
+    if (typeof FB === 'undefined') {
+        console.error('Facebook SDK não está inicializado.');
+        return;
+    }
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     
