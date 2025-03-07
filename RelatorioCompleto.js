@@ -139,11 +139,11 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url,image_hash,images', access_token: currentAccessToken },
+            { fields: 'object_story_spec,thumbnail_url,image_hash', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response); // Log para depuração
-                    let imageUrl = 'https://via.placeholder.com/200'; // Placeholder como fallback
+                    let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder confiável
                     if (response.object_story_spec) {
                         const { link_data, photo_data, video_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
@@ -152,26 +152,35 @@ async function getCreativeData(creativeId) {
                                 (prev.width > current.width) ? prev : current, photo_data.images[0]);
                             imageUrl = largestImage.original_url || largestImage.url;
                             console.log('Imagem selecionada (photo_data):', imageUrl);
-                        } else if (video_data && video_data.image && video_data.image.length > 0) {
-                            // Busca a maior thumbnail do vídeo
-                            const largestThumbnail = video_data.image.reduce((prev, current) => 
-                                (prev.width > current.width) ? prev : current, video_data.image[0]);
-                            imageUrl = largestThumbnail.url || video_data.picture;
+                        } else if (video_data) {
+                            // Para vídeos, tenta buscar o thumbnail de alta qualidade
+                            if (video_data.image && video_data.image.length > 0) {
+                                const largestThumbnail = video_data.image.reduce((prev, current) => 
+                                    (prev.width > current.width) ? prev : current, video_data.image[0]);
+                                imageUrl = largestThumbnail.url || video_data.picture;
+                            } else if (video_data.thumbnails && video_data.thumbnails.data && video_data.thumbnails.data.length > 0) {
+                                // Tenta buscar thumbnails diretamente
+                                const largestThumbnail = video_data.thumbnails.data.reduce((prev, current) => 
+                                    (prev.width > current.width) ? prev : current, video_data.thumbnails.data[0]);
+                                imageUrl = largestThumbnail.uri;
+                            } else {
+                                imageUrl = video_data.picture || response.thumbnail_url;
+                            }
                             console.log('Thumbnail do vídeo selecionada:', imageUrl);
                         } else if (link_data && link_data.picture) {
                             imageUrl = link_data.picture;
                             console.log('Imagem de link selecionada:', imageUrl);
                         }
                     }
-                    // Tenta buscar imagem de alta qualidade via image_hash
-                    if (!imageUrl || imageUrl.includes('placeholder')) {
+                    // Tenta buscar imagem de alta qualidade via image_hash se ainda não tiver uma URL válida
+                    if (!imageUrl || imageUrl.includes('dummyimage')) {
                         if (response.image_hash) {
                             FB.api(
                                 `/adimages`,
                                 { hashes: [response.image_hash], access_token: currentAccessToken },
                                 function(imageResponse) {
                                     if (imageResponse && !imageResponse.error && imageResponse.data && imageResponse.data.length > 0) {
-                                        imageUrl = imageResponse.data[0].url;
+                                        imageUrl = imageResponse.data[0].url || imageResponse.data[0].original_url;
                                         console.log('Imagem via image_hash:', imageUrl);
                                     } else {
                                         console.warn('Nenhuma imagem encontrada via image_hash:', imageResponse);
@@ -179,18 +188,21 @@ async function getCreativeData(creativeId) {
                                     resolve({ imageUrl: imageUrl });
                                 }
                             );
+                        } else {
+                            resolve({ imageUrl: imageUrl });
                         }
                     } else {
                         resolve({ imageUrl: imageUrl });
                     }
                 } else {
                     console.error(`Erro ao carregar criativo ${creativeId}:`, response.error);
-                    resolve({ imageUrl: 'https://via.placeholder.com/200' });
+                    resolve({ imageUrl: 'https://dummyimage.com/200x200/ccc/fff' });
                 }
             }
         );
     });
 }
+
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
