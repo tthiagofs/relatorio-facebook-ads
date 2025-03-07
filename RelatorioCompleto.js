@@ -33,32 +33,11 @@ backToReportSelectionBtn.addEventListener('click', () => {
     window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
 });
 
-// Função de login com Facebook
-function fbLogin() {
-    FB.login(function(response) {
-        if (response.authResponse) {
-            let newToken = response.authResponse.accessToken;
-            localStorage.setItem('fbAccessToken', newToken);
-            currentAccessToken = newToken;
-            console.log('Novo token obtido via login:', currentAccessToken);
-            alert('Login bem-sucedido! Gere o relatório novamente.');
-            generateReport(); // Recarrega o relatório automaticamente
-        } else {
-            console.log('Usuário cancelou o login ou não autorizou.');
-            alert('Login não autorizado. Por favor, permita as permissões solicitadas.');
-        }
-    }, { scope: 'ads_read,read_insights,pages_show_list' });
-}
-
-// Associar o evento ao botão de login (já adicionado no HTML)
-document.getElementById('fbLoginButton').addEventListener('click', fbLogin);
-
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
-    console.log('Token de acesso não encontrado. Solicitando login.');
-    alert('Você precisa fazer login com o Facebook primeiro.');
-    fbLogin(); // Inicia o login automaticamente se não houver token
-    throw new Error('Token de acesso não encontrado. Login iniciado.');
+    console.log('Token de acesso não encontrado. Redirecionando para login...');
+    window.location.href = 'login.html';
+    throw new Error('Token de acesso não encontrado. Redirecionado para login.');
 }
 
 // Função para obter insights de um anúncio
@@ -268,7 +247,6 @@ async function getCreativeData(creativeId) {
         );
     });
 }
-
 
 // Preencher o dropdown de unidades com os dados do localStorage
 const unitSelect = document.getElementById('unitId');
@@ -794,7 +772,7 @@ async function generateReport() {
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
     const startDate = document.getElementById('startDate').value;
-    endDate = document.getElementById('endDate').value;
+    let endDate = document.getElementById('endDate').value;
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
