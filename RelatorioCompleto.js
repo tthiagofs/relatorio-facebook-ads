@@ -13,6 +13,9 @@ const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 const confirmComparisonBtn = document.getElementById('confirmComparison');
 const cancelComparisonBtn = document.getElementById('cancelComparison');
 
+
+
+
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = JSON.parse(localStorage.getItem('adAccountsMap')) || {};
 const adSetsMap = {};
@@ -33,12 +36,6 @@ backToReportSelectionBtn.addEventListener('click', () => {
     window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
 });
 
-// Verificar se o token de acesso está disponível
-if (!currentAccessToken) {
-    console.log('Token de acesso não encontrado. Redirecionando para login...');
-    window.location.href = 'login.html';
-    throw new Error('Token de acesso não encontrado. Redirecionado para login.');
-}
 
 // Função para obter insights de um anúncio
 async function getAdInsights(adId, startDate, endDate) {
@@ -137,72 +134,37 @@ async function loadAds(unitId, startDate, endDate, filteredCampaigns = null, fil
     return adsMap;
 }
 
-// Função para obter dados do criativo (imagens ou thumbnails de vídeos) em alta qualidade
+// Função para obter dados do criativo (imagens ou thumbnails de vídeos)
 async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_url,video_data', access_token: currentAccessToken },
+            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id', access_token: currentAccessToken },
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
-                    let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder padrão
-                    let bestImageUrl = null;
-                    let bestImageWidth = 0;
+                    let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder confiável
+                    let thumbnailFallback = response.thumbnail_url; // Salva o thumbnail original como fallback
 
-                    // 1. Verifica image_url diretamente no criativo
-                    if (response.image_url) {
-                        bestImageUrl = response.image_url;
-                        console.log('Imagem encontrada via image_url:', bestImageUrl);
-                    }
-
-                    // 2. Tenta extrair do object_story_spec
-                    if (!bestImageUrl && response.object_story_spec) {
+                    // Tenta extrair a imagem do object_story_spec
+                    if (response.object_story_spec) {
                         const { link_data, photo_data, video_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
-                            const largestImage = photo_data.images.reduce((prev, current) => {
-                                const prevWidth = parseInt(prev.width) || 0;
-                                const currentWidth = parseInt(current.width) || 0;
-                                if (currentWidth > prevWidth) {
-                                    bestImageWidth = currentWidth;
-                                    return current;
-                                }
-                                return prev;
-                            }, photo_data.images[0]);
-                            bestImageUrl = largestImage.original_url || largestImage.url || photo_data.url;
-                            console.log(`Imagem selecionada (photo_data) - URL: ${bestImageUrl}, Largura: ${bestImageWidth}`);
-                        } else if (video_data && video_data.picture) {
-                            bestImageUrl = video_data.picture;
-                            console.log('Thumbnail inicial do vídeo selecionada:', bestImageUrl);
-
-                            // Tenta buscar uma versão de maior resolução do vídeo
-                            if (video_data.id) {
-                                try {
-                                    const videoResponse = await new Promise((videoResolve) => {
-                                        FB.api(
-                                            `/${video_data.id}`,
-                                            { fields: 'picture,width', access_token: currentAccessToken },
-                                            function(videoResponse) {
-                                                videoResolve(videoResponse);
-                                            }
-                                        );
-                                    });
-                                    if (videoResponse && !videoResponse.error && videoResponse.picture) {
-                                        bestImageUrl = videoResponse.picture;
-                                        console.log('Thumbnail de vídeo de maior resolução encontrada:', bestImageUrl, 'Largura:', videoResponse.width);
-                                    }
-                                } catch (error) {
-                                    console.error('Erro ao buscar thumbnail de maior resolução do vídeo:', error);
-                                }
-                            }
+                            const largestImage = photo_data.images.reduce((prev, current) => 
+                                (prev.width > current.width) ? prev : current, photo_data.images[0]);
+                            imageUrl = largestImage.original_url || largestImage.url || photo_data.url;
+                            console.log('Imagem selecionada (photo_data):', imageUrl);
+                        } else if (video_data) {
+                            imageUrl = video_data.picture || response.thumbnail_url;
+                            console.log('Thumbnail do vídeo selecionada:', imageUrl);
                         } else if (link_data && link_data.picture) {
-                            bestImageUrl = link_data.picture;
-                            console.log('Imagem de link selecionada:', bestImageUrl);
+                            imageUrl = link_data.picture;
+                            console.log('Imagem de link selecionada:', imageUrl);
                         }
                     }
 
-                    // 3. Tenta buscar full_picture da postagem original
-                    if (!bestImageUrl && response.effective_object_story_id) {
+                    // Tenta buscar a postagem original via effective_object_story_id
+                    if (response.effective_object_story_id && (!imageUrl || imageUrl.includes('p64x64'))) {
                         try {
                             const storyResponse = await new Promise((storyResolve) => {
                                 FB.api(
@@ -214,8 +176,8 @@ async function getCreativeData(creativeId) {
                                 );
                             });
                             if (storyResponse && !storyResponse.error && storyResponse.full_picture) {
-                                bestImageUrl = storyResponse.full_picture;
-                                console.log('Imagem da postagem original (alta resolução):', bestImageUrl);
+                                imageUrl = storyResponse.full_picture;
+                                console.log('Imagem da postagem original (alta resolução):', imageUrl);
                             } else {
                                 console.warn('Nenhum full_picture encontrado para effective_object_story_id:', response.effective_object_story_id);
                             }
@@ -224,21 +186,13 @@ async function getCreativeData(creativeId) {
                         }
                     }
 
-                    // 4. Fallback para thumbnail_url se nada funcionar
-                    if (!bestImageUrl || bestImageUrl.includes('dummyimage')) {
-                        bestImageUrl = response.thumbnail_url || imageUrl;
-                        console.log('Usando thumbnail como fallback:', bestImageUrl);
+                    // Usa o thumbnail original como fallback se não encontrou uma imagem melhor
+                    if (!imageUrl || imageUrl.includes('dummyimage')) {
+                        imageUrl = thumbnailFallback;
+                        console.log('Usando thumbnail original como fallback:', imageUrl);
                     }
 
-                    // 5. Tenta forçar uma resolução maior (se aplicável)
-                    if (bestImageUrl && !bestImageUrl.includes('dummyimage')) {
-                        if (bestImageUrl.includes('facebook.com')) {
-                            bestImageUrl = bestImageUrl.replace(/width=\d+/, 'width=1200').replace(/height=\d+/, 'height=1200');
-                            console.log('Tentando URL com maior resolução:', bestImageUrl);
-                        }
-                    }
-
-                    resolve({ imageUrl: bestImageUrl });
+                    resolve({ imageUrl: imageUrl });
                 } else {
                     console.error(`Erro ao carregar criativo ${creativeId}:`, response.error);
                     resolve({ imageUrl: 'https://dummyimage.com/200x200/ccc/fff' });
@@ -246,6 +200,18 @@ async function getCreativeData(creativeId) {
             }
         );
     });
+}
+
+
+
+// Verificar se o token de acesso está disponível
+if (!currentAccessToken) {
+    console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
+    alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
+    setTimeout(() => {
+        window.location.replace('index.html');
+    }, 100);
+    throw new Error('Token de acesso não encontrado. Redirecionamento iniciado.');
 }
 
 // Preencher o dropdown de unidades com os dados do localStorage
@@ -772,7 +738,7 @@ async function generateReport() {
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
     const startDate = document.getElementById('startDate').value;
-    let endDate = document.getElementById('endDate').value;
+    const endDate = document.getElementById('endDate').value;
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
@@ -974,8 +940,7 @@ async function generateReport() {
             <h3 style="color: #1e3c72;">Anúncios em Destaque</h3>
             ${topTwoAds.length > 0 ? topTwoAds.map(ad => `
                 <div class="top-ad-card" style="display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
-                    <img src="${ad.imageUrl}" alt="Imagem do Anúncio" crossorigin="anonymous" style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
-                    <div>
+                  <img src="${ad.imageUrl}" alt="Imagem do Anúncio" crossorigin="anonymous" style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
                         <div class="metric-value">Mensagens: ${ad.messages}</div>
                         <div class="metric-value">Custo por Msg: R$ ${ad.costPerMessage.replace('.', ',')}</div>
                     </div>

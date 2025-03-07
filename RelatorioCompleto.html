@@ -5,7 +5,327 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório Completo de Anúncios do Facebook</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+   <style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .container {
+        max-width: 800px;
+        width: 90%;
+        margin: 20px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+        color: #1e3c72;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    h2 {
+        color: #1e3c72;
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    select, input[type="date"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 16px;
+        background: #f9f9f9;
+        transition: border-color 0.3s;
+    }
+
+    select:focus, input:focus {
+        border-color: #1e3c72;
+        outline: none;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background-color: #1e3c72;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 10px;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+        background-color: #2a5298;
+        transform: translateY(-2px);
+    }
+
+    .btn-generate {
+        background: linear-gradient(135deg, #28a745, #34c759);
+    }
+
+    .btn-generate:hover {
+        background: linear-gradient(135deg, #218838, #2db34a);
+    }
+
+    .btn-filter {
+        width: auto;
+        padding: 8px 16px;
+        margin: 5px;
+        background: #355e9c;
+    }
+
+    .btn-filter:hover {
+        background: #2a5298;
+    }
+
+    .filter-label {
+        font-size: 16px;
+        color: #1e3c72;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .filter-option {
+        padding: 12px;
+        margin: 8px 0;
+        background: #f5f5f5;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .filter-option:hover {
+        background: #e0e0e0;
+    }
+
+    .filter-option.selected {
+        background: #1e3c72;
+        color: #fff;
+    }
+
+    .search-bar {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 16px;
+    }
+
+    .btn-filter-toggle {
+        margin-top: 15px;
+    }
+
+    .btn-filter-toggle:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    #reportContainer.complete {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 6px;
+    }
+
+    .report-header h2 {
+        font-size: 22px;
+        margin: 0 0 10px;
+    }
+
+    .report-header p {
+        font-size: 16px;
+        color: #666;
+        margin: 5px 0;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .metric-card {
+        background: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .metric-card.reach {
+        background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+    }
+
+    .metric-card.messages {
+        background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+    }
+
+    .metric-card.cost {
+        background: linear-gradient(135deg, #fffde7, #fff9c4);
+    }
+
+    .metric-card.investment {
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    }
+
+    .metric-label {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 5px;
+    }
+
+    .metric-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .metric-comparison {
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    .metric-comparison.increase {
+        color: #28a745;
+    }
+
+    .metric-comparison.decrease {
+        color: #dc3545;
+    }
+
+    #shareWhatsAppBtn {
+        display: none;
+        background: #25D366;
+    }
+
+    #shareWhatsAppBtn:hover {
+        background: #20c058;
+    }
+
+    /* Ajustes para mobile */
+    @media (max-width: 600px) {
+        .container {
+            padding: 15px;
+            margin: 10px auto;
+        }
+
+        h1 {
+            font-size: 20px;
+        }
+
+        h2 {
+            font-size: 18px;
+        }
+
+        button, select, input {
+            font-size: 14px;
+            padding: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .btn-filter {
+            width: 100%; /* Botões de filtro empilhados */
+            margin: 5px 0;
+        }
+
+        .metrics-grid {
+            grid-template-columns: 1fr; /* Uma coluna em mobile */
+            gap: 10px;
+        }
+
+        .metric-card {
+            padding: 12px;
+        }
+    }
+
+.top-ads h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.top-ad-card {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    background: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.top-ad-card img {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 15px;
+border: 1px solid #ddd; /* Adiciona uma borda leve para melhor visual */
+}
+
+.top-ad-card .metric-value {
+    font-size: 16px;
+    color: #333;
+    margin: 5px 0;
+}
+
+</style>
 </head>
 <body>
     <div class="container" id="mainContent">
@@ -36,6 +356,7 @@
         <div id="reportContainer" class="report-container"></div>
         <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
         <button id="backToReportSelectionBtn">Voltar</button>
+
     </div>
 
     <div id="campaignsModal" class="modal" style="display: none;">
@@ -80,28 +401,18 @@
         </div>
     </div>
 
-    <!-- SDK do Facebook -->
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <script>
         // Inicializar o SDK do Facebook
         window.fbAsyncInit = function() {
             FB.init({
-                appId: '618519427538646',
+                appId: '618519427538646', // Seu App ID
                 cookie: true,
                 xfbml: true,
                 version: 'v20.0'
             });
             FB.AppEvents.logPageView();
             console.log("Facebook SDK inicializado com sucesso!");
-
-            // Verifica o status de login ao carregar a página
-            window.onload = function() {
-                const currentAccessToken = localStorage.getItem('fbAccessToken');
-                if (!currentAccessToken) {
-                    console.log("Token de acesso não encontrado. Redirecionando para login...");
-                    window.location.href = 'login.html';
-                }
-            };
         };
     </script>
     <script src="RelatorioCompleto.js"></script>
