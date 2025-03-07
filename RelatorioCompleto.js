@@ -160,8 +160,8 @@ async function getCreativeData(creativeId) {
                             // Tenta remover parâmetros de baixa resolução
                             if (imageUrl && imageUrl.includes('p64x64')) {
                                 const baseUrl = imageUrl.split('?')[0]; // Remove os parâmetros
-                                imageUrl = baseUrl; // Usa a URL base para tentar carregar a imagem original
-                                console.log('Thumbnail ajustado para alta resolução:', imageUrl);
+                                imageUrl = `https://cors-anywhere.herokuapp.com/${baseUrl}`; // Adiciona o proxy
+                                console.log('Thumbnail ajustado com proxy para alta resolução:', imageUrl);
                             }
                         } else if (link_data && link_data.picture) {
                             imageUrl = link_data.picture;
@@ -182,8 +182,8 @@ async function getCreativeData(creativeId) {
                                 );
                             });
                             if (storyResponse && !storyResponse.error && storyResponse.full_picture) {
-                                imageUrl = storyResponse.full_picture;
-                                console.log('Imagem da postagem original (alta resolução):', imageUrl);
+                                imageUrl = `https://cors-anywhere.herokuapp.com/${storyResponse.full_picture}`;
+                                console.log('Imagem da postagem original (alta resolução) com proxy:', imageUrl);
                             }
                         } catch (error) {
                             console.error('Erro ao buscar full_picture:', error);
@@ -194,11 +194,10 @@ async function getCreativeData(creativeId) {
                     if (!imageUrl || imageUrl.includes('dummyimage')) {
                         imageUrl = thumbnailFallback;
                         console.log('Usando thumbnail como fallback:', imageUrl);
-                        // Tenta ajustar o thumbnail para alta resolução
                         if (imageUrl && imageUrl.includes('p64x64')) {
                             const baseUrl = imageUrl.split('?')[0];
-                            imageUrl = baseUrl;
-                            console.log('Thumbnail ajustado para alta resolução:', imageUrl);
+                            imageUrl = `https://cors-anywhere.herokuapp.com/${baseUrl}`;
+                            console.log('Thumbnail ajustado com proxy para alta resolução:', imageUrl);
                         }
                     }
 
@@ -211,6 +210,7 @@ async function getCreativeData(creativeId) {
         );
     });
 }
+
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
