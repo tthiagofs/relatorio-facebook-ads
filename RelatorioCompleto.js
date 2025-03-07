@@ -139,7 +139,7 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_hash', access_token: currentAccessToken },
+            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id', access_token: currentAccessToken },
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
@@ -157,6 +157,12 @@ async function getCreativeData(creativeId) {
                         } else if (video_data) {
                             imageUrl = video_data.picture || response.thumbnail_url;
                             console.log('Thumbnail do vídeo selecionada:', imageUrl);
+                            // Tenta remover parâmetros de baixa resolução
+                            if (imageUrl && imageUrl.includes('p64x64')) {
+                                const baseUrl = imageUrl.split('?')[0]; // Remove os parâmetros
+                                imageUrl = baseUrl; // Usa a URL base para tentar carregar a imagem original
+                                console.log('Thumbnail ajustado para alta resolução:', imageUrl);
+                            }
                         } else if (link_data && link_data.picture) {
                             imageUrl = link_data.picture;
                             console.log('Imagem de link selecionada:', imageUrl);
@@ -164,7 +170,7 @@ async function getCreativeData(creativeId) {
                     }
 
                     // Tenta buscar a postagem original via effective_object_story_id
-                    if (response.effective_object_story_id) {
+                    if (response.effective_object_story_id && (!imageUrl || imageUrl.includes('p64x64'))) {
                         try {
                             const storyResponse = await new Promise((storyResolve) => {
                                 FB.api(
@@ -177,7 +183,7 @@ async function getCreativeData(creativeId) {
                             });
                             if (storyResponse && !storyResponse.error && storyResponse.full_picture) {
                                 imageUrl = storyResponse.full_picture;
-                                console.log('Imagem da postagem original:', imageUrl);
+                                console.log('Imagem da postagem original (alta resolução):', imageUrl);
                             }
                         } catch (error) {
                             console.error('Erro ao buscar full_picture:', error);
@@ -188,6 +194,12 @@ async function getCreativeData(creativeId) {
                     if (!imageUrl || imageUrl.includes('dummyimage')) {
                         imageUrl = thumbnailFallback;
                         console.log('Usando thumbnail como fallback:', imageUrl);
+                        // Tenta ajustar o thumbnail para alta resolução
+                        if (imageUrl && imageUrl.includes('p64x64')) {
+                            const baseUrl = imageUrl.split('?')[0];
+                            imageUrl = baseUrl;
+                            console.log('Thumbnail ajustado para alta resolução:', imageUrl);
+                        }
                     }
 
                     resolve({ imageUrl: imageUrl });
@@ -199,7 +211,6 @@ async function getCreativeData(creativeId) {
         );
     });
 }
-
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
