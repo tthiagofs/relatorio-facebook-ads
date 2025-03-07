@@ -140,63 +140,57 @@ async function getCreativeData(creativeId) {
         FB.api(
             `/${creativeId}`,
             { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_hash', access_token: currentAccessToken },
-            function(response) {
+            async function(response) {
                 if (response && !response.error) {
-                    console.log('Resposta da API para criativo:', response); // Log para depuração
+                    console.log('Resposta da API para criativo:', response);
                     let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder confiável
+                    let thumbnailFallback = response.thumbnail_url; // Salva o thumbnail como fallback
+
+                    // Tenta extrair a imagem do object_story_spec
                     if (response.object_story_spec) {
                         const { link_data, photo_data, video_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
-                            // Busca a maior resolução disponível
                             const largestImage = photo_data.images.reduce((prev, current) => 
                                 (prev.width > current.width) ? prev : current, photo_data.images[0]);
                             imageUrl = largestImage.original_url || largestImage.url || photo_data.url;
                             console.log('Imagem selecionada (photo_data):', imageUrl);
                         } else if (video_data) {
-                            // Para vídeos, usa o thumbnail padrão ou tenta thumbnails maiores
                             imageUrl = video_data.picture || response.thumbnail_url;
                             console.log('Thumbnail do vídeo selecionada:', imageUrl);
                         } else if (link_data && link_data.picture) {
                             imageUrl = link_data.picture;
                             console.log('Imagem de link selecionada:', imageUrl);
                         }
-                    } else if (response.effective_object_story_id) {
-                        // Tenta buscar a postagem original para uma imagem de maior qualidade
-                        FB.api(
-                            `/${response.effective_object_story_id}`,
-                            { fields: 'full_picture', access_token: currentAccessToken },
-                            function(storyResponse) {
-                                if (storyResponse && !storyResponse.error && storyResponse.full_picture) {
-                                    imageUrl = storyResponse.full_picture;
-                                    console.log('Imagem da postagem original:', imageUrl);
-                                }
-                                resolve({ imageUrl: imageUrl });
-                            }
-                        );
-                        return; // Sai da função para esperar a resposta assíncrona
                     }
-                    // Tenta buscar via image_hash como último recurso
-                    if (!imageUrl || imageUrl.includes('dummyimage')) {
-                        if (response.image_hash) {
-                            FB.api(
-                                `/adimages`,
-                                { hashes: [response.image_hash], access_token: currentAccessToken },
-                                function(imageResponse) {
-                                    if (imageResponse && !imageResponse.error && imageResponse.data && imageResponse.data.length > 0) {
-                                        imageUrl = imageResponse.data[0].url || imageResponse.data[0].original_url;
-                                        console.log('Imagem via image_hash:', imageUrl);
-                                    } else {
-                                        console.warn('Nenhuma imagem encontrada via image_hash:', imageResponse);
+
+                    // Tenta buscar a postagem original via effective_object_story_id
+                    if (response.effective_object_story_id) {
+                        try {
+                            const storyResponse = await new Promise((storyResolve) => {
+                                FB.api(
+                                    `/${response.effective_object_story_id}`,
+                                    { fields: 'full_picture', access_token: currentAccessToken },
+                                    function(storyResponse) {
+                                        storyResolve(storyResponse);
                                     }
-                                    resolve({ imageUrl: imageUrl });
-                                }
-                            );
-                        } else {
-                            resolve({ imageUrl: imageUrl });
+                                );
+                            });
+                            if (storyResponse && !storyResponse.error && storyResponse.full_picture) {
+                                imageUrl = storyResponse.full_picture;
+                                console.log('Imagem da postagem original:', imageUrl);
+                            }
+                        } catch (error) {
+                            console.error('Erro ao buscar full_picture:', error);
                         }
-                    } else {
-                        resolve({ imageUrl: imageUrl });
                     }
+
+                    // Usa o thumbnail como fallback se não encontrou uma imagem melhor
+                    if (!imageUrl || imageUrl.includes('dummyimage')) {
+                        imageUrl = thumbnailFallback;
+                        console.log('Usando thumbnail como fallback:', imageUrl);
+                    }
+
+                    resolve({ imageUrl: imageUrl });
                 } else {
                     console.error(`Erro ao carregar criativo ${creativeId}:`, response.error);
                     resolve({ imageUrl: 'https://dummyimage.com/200x200/ccc/fff' });
@@ -205,6 +199,7 @@ async function getCreativeData(creativeId) {
         );
     });
 }
+
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
@@ -942,8 +937,7 @@ async function generateReport() {
             <h3 style="color: #1e3c72;">Anúncios em Destaque</h3>
             ${topTwoAds.length > 0 ? topTwoAds.map(ad => `
                 <div class="top-ad-card" style="display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
-                    <img src="${ad.imageUrl}" alt="Imagem do Anúncio" style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
-                    <div>
+                  <img src="${ad.imageUrl}" alt="Imagem do Anúncio" crossorigin="anonymous" style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
                         <div class="metric-value">Mensagens: ${ad.messages}</div>
                         <div class="metric-value">Custo por Msg: R$ ${ad.costPerMessage.replace('.', ',')}</div>
                     </div>
