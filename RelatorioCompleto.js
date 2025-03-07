@@ -13,9 +13,6 @@ const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 const confirmComparisonBtn = document.getElementById('confirmComparison');
 const cancelComparisonBtn = document.getElementById('cancelComparison');
 
-
-
-
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = JSON.parse(localStorage.getItem('adAccountsMap')) || {};
 const adSetsMap = {};
@@ -36,6 +33,33 @@ backToReportSelectionBtn.addEventListener('click', () => {
     window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
 });
 
+// Função de login com Facebook
+function fbLogin() {
+    FB.login(function(response) {
+        if (response.authResponse) {
+            let newToken = response.authResponse.accessToken;
+            localStorage.setItem('fbAccessToken', newToken);
+            currentAccessToken = newToken;
+            console.log('Novo token obtido via login:', currentAccessToken);
+            alert('Login bem-sucedido! Gere o relatório novamente.');
+            generateReport(); // Recarrega o relatório automaticamente
+        } else {
+            console.log('Usuário cancelou o login ou não autorizou.');
+            alert('Login não autorizado. Por favor, permita as permissões solicitadas.');
+        }
+    }, { scope: 'ads_read,read_insights,pages_show_list' });
+}
+
+// Associar o evento ao botão de login (já adicionado no HTML)
+document.getElementById('fbLoginButton').addEventListener('click', fbLogin);
+
+// Verificar se o token de acesso está disponível
+if (!currentAccessToken) {
+    console.log('Token de acesso não encontrado. Solicitando login.');
+    alert('Você precisa fazer login com o Facebook primeiro.');
+    fbLogin(); // Inicia o login automaticamente se não houver token
+    throw new Error('Token de acesso não encontrado. Login iniciado.');
+}
 
 // Função para obter insights de um anúncio
 async function getAdInsights(adId, startDate, endDate) {
@@ -134,7 +158,7 @@ async function loadAds(unitId, startDate, endDate, filteredCampaigns = null, fil
     return adsMap;
 }
 
-// Função para obter dados do criativo (imagens ou thumbnails de vídeos)
+// Função para obter dados do criativo (imagens ou thumbnails de vídeos) em alta qualidade
 async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
@@ -143,10 +167,9 @@ async function getCreativeData(creativeId) {
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
-                    let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder confiável
-                    let thumbnailFallback = response.thumbnail_url; // Salva o thumbnail original como fallback
+                    let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder
 
-                    // Tenta extrair a imagem do object_story_spec
+                    // Tenta extrair do object_story_spec
                     if (response.object_story_spec) {
                         const { link_data, photo_data, video_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
@@ -154,8 +177,8 @@ async function getCreativeData(creativeId) {
                                 (prev.width > current.width) ? prev : current, photo_data.images[0]);
                             imageUrl = largestImage.original_url || largestImage.url || photo_data.url;
                             console.log('Imagem selecionada (photo_data):', imageUrl);
-                        } else if (video_data) {
-                            imageUrl = video_data.picture || response.thumbnail_url;
+                        } else if (video_data && video_data.picture) {
+                            imageUrl = video_data.picture;
                             console.log('Thumbnail do vídeo selecionada:', imageUrl);
                         } else if (link_data && link_data.picture) {
                             imageUrl = link_data.picture;
@@ -163,8 +186,8 @@ async function getCreativeData(creativeId) {
                         }
                     }
 
-                    // Tenta buscar a postagem original via effective_object_story_id
-                    if (response.effective_object_story_id && (!imageUrl || imageUrl.includes('p64x64'))) {
+                    // Tenta buscar full_picture da postagem original
+                    if (response.effective_object_story_id) {
                         try {
                             const storyResponse = await new Promise((storyResolve) => {
                                 FB.api(
@@ -186,10 +209,10 @@ async function getCreativeData(creativeId) {
                         }
                     }
 
-                    // Usa o thumbnail original como fallback se não encontrou uma imagem melhor
+                    // Fallback para thumbnail se nada funcionar
                     if (!imageUrl || imageUrl.includes('dummyimage')) {
-                        imageUrl = thumbnailFallback;
-                        console.log('Usando thumbnail original como fallback:', imageUrl);
+                        imageUrl = response.thumbnail_url || imageUrl;
+                        console.log('Usando thumbnail como fallback:', imageUrl);
                     }
 
                     resolve({ imageUrl: imageUrl });
@@ -200,18 +223,6 @@ async function getCreativeData(creativeId) {
             }
         );
     });
-}
-
-
-
-// Verificar se o token de acesso está disponível
-if (!currentAccessToken) {
-    console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
-    alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
-    setTimeout(() => {
-        window.location.replace('index.html');
-    }, 100);
-    throw new Error('Token de acesso não encontrado. Redirecionamento iniciado.');
 }
 
 // Preencher o dropdown de unidades com os dados do localStorage
@@ -738,7 +749,7 @@ async function generateReport() {
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
     const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+    endDate = document.getElementById('endDate').value;
 
     if (!unitId || !startDate || !endDate) {
         reportContainer.innerHTML = '<p>Preencha todos os campos obrigatórios (Unidade e Período).</p>';
@@ -940,7 +951,8 @@ async function generateReport() {
             <h3 style="color: #1e3c72;">Anúncios em Destaque</h3>
             ${topTwoAds.length > 0 ? topTwoAds.map(ad => `
                 <div class="top-ad-card" style="display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
-                  <img src="${ad.imageUrl}" alt="Imagem do Anúncio" crossorigin="anonymous" style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
+                    <img src="${ad.imageUrl}" alt="Imagem do Anúncio" crossorigin="anonymous" style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
+                    <div>
                         <div class="metric-value">Mensagens: ${ad.messages}</div>
                         <div class="metric-value">Custo por Msg: R$ ${ad.costPerMessage.replace('.', ',')}</div>
                     </div>
