@@ -163,7 +163,7 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_url', access_token: currentAccessToken },
+            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_url,video_data', access_token: currentAccessToken },
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
@@ -194,7 +194,28 @@ async function getCreativeData(creativeId) {
                             console.log(`Imagem selecionada (photo_data) - URL: ${bestImageUrl}, Largura: ${bestImageWidth}`);
                         } else if (video_data && video_data.picture) {
                             bestImageUrl = video_data.picture;
-                            console.log('Thumbnail do vídeo selecionada:', bestImageUrl);
+                            console.log('Thumbnail inicial do vídeo selecionada:', bestImageUrl);
+
+                            // Tenta buscar uma versão de maior resolução do vídeo
+                            if (video_data.id) {
+                                try {
+                                    const videoResponse = await new Promise((videoResolve) => {
+                                        FB.api(
+                                            `/${video_data.id}`,
+                                            { fields: 'picture,width', access_token: currentAccessToken },
+                                            function(videoResponse) {
+                                                videoResolve(videoResponse);
+                                            }
+                                        );
+                                    });
+                                    if (videoResponse && !videoResponse.error && videoResponse.picture) {
+                                        bestImageUrl = videoResponse.picture;
+                                        console.log('Thumbnail de vídeo de maior resolução encontrada:', bestImageUrl, 'Largura:', videoResponse.width);
+                                    }
+                                } catch (error) {
+                                    console.error('Erro ao buscar thumbnail de maior resolução do vídeo:', error);
+                                }
+                            }
                         } else if (link_data && link_data.picture) {
                             bestImageUrl = link_data.picture;
                             console.log('Imagem de link selecionada:', bestImageUrl);
@@ -247,7 +268,6 @@ async function getCreativeData(creativeId) {
         );
     });
 }
-
 
 
 // Preencher o dropdown de unidades com os dados do localStorage
