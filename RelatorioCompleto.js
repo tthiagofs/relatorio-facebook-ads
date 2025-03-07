@@ -144,7 +144,7 @@ async function getCreativeData(creativeId) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
                     let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder confiável
-                    let thumbnailFallback = response.thumbnail_url; // Salva o thumbnail como fallback
+                    let thumbnailFallback = response.thumbnail_url; // Salva o thumbnail original como fallback
 
                     // Tenta extrair a imagem do object_story_spec
                     if (response.object_story_spec) {
@@ -157,12 +157,6 @@ async function getCreativeData(creativeId) {
                         } else if (video_data) {
                             imageUrl = video_data.picture || response.thumbnail_url;
                             console.log('Thumbnail do vídeo selecionada:', imageUrl);
-                            // Tenta remover parâmetros de baixa resolução
-                            if (imageUrl && imageUrl.includes('p64x64')) {
-                                const baseUrl = imageUrl.split('?')[0]; // Remove os parâmetros
-                                imageUrl = `https://cors-anywhere.herokuapp.com/${baseUrl}`; // Adiciona o proxy
-                                console.log('Thumbnail ajustado com proxy para alta resolução:', imageUrl);
-                            }
                         } else if (link_data && link_data.picture) {
                             imageUrl = link_data.picture;
                             console.log('Imagem de link selecionada:', imageUrl);
@@ -182,23 +176,20 @@ async function getCreativeData(creativeId) {
                                 );
                             });
                             if (storyResponse && !storyResponse.error && storyResponse.full_picture) {
-                                imageUrl = `https://cors-anywhere.herokuapp.com/${storyResponse.full_picture}`;
-                                console.log('Imagem da postagem original (alta resolução) com proxy:', imageUrl);
+                                imageUrl = storyResponse.full_picture;
+                                console.log('Imagem da postagem original (alta resolução):', imageUrl);
+                            } else {
+                                console.warn('Nenhum full_picture encontrado para effective_object_story_id:', response.effective_object_story_id);
                             }
                         } catch (error) {
                             console.error('Erro ao buscar full_picture:', error);
                         }
                     }
 
-                    // Usa o thumbnail como fallback se não encontrou uma imagem melhor
+                    // Usa o thumbnail original como fallback se não encontrou uma imagem melhor
                     if (!imageUrl || imageUrl.includes('dummyimage')) {
                         imageUrl = thumbnailFallback;
-                        console.log('Usando thumbnail como fallback:', imageUrl);
-                        if (imageUrl && imageUrl.includes('p64x64')) {
-                            const baseUrl = imageUrl.split('?')[0];
-                            imageUrl = `https://cors-anywhere.herokuapp.com/${baseUrl}`;
-                            console.log('Thumbnail ajustado com proxy para alta resolução:', imageUrl);
-                        }
+                        console.log('Usando thumbnail original como fallback:', imageUrl);
                     }
 
                     resolve({ imageUrl: imageUrl });
@@ -210,6 +201,7 @@ async function getCreativeData(creativeId) {
         );
     });
 }
+
 
 
 // Verificar se o token de acesso está disponível
