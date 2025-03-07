@@ -139,7 +139,7 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url,image_hash', access_token: currentAccessToken },
+            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_hash', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response); // Log para depuração
@@ -150,29 +150,32 @@ async function getCreativeData(creativeId) {
                             // Busca a maior resolução disponível
                             const largestImage = photo_data.images.reduce((prev, current) => 
                                 (prev.width > current.width) ? prev : current, photo_data.images[0]);
-                            imageUrl = largestImage.original_url || largestImage.url;
+                            imageUrl = largestImage.original_url || largestImage.url || photo_data.url;
                             console.log('Imagem selecionada (photo_data):', imageUrl);
                         } else if (video_data) {
-                            // Para vídeos, tenta buscar o thumbnail de alta qualidade
-                            if (video_data.image && video_data.image.length > 0) {
-                                const largestThumbnail = video_data.image.reduce((prev, current) => 
-                                    (prev.width > current.width) ? prev : current, video_data.image[0]);
-                                imageUrl = largestThumbnail.url || video_data.picture;
-                            } else if (video_data.thumbnails && video_data.thumbnails.data && video_data.thumbnails.data.length > 0) {
-                                // Tenta buscar thumbnails diretamente
-                                const largestThumbnail = video_data.thumbnails.data.reduce((prev, current) => 
-                                    (prev.width > current.width) ? prev : current, video_data.thumbnails.data[0]);
-                                imageUrl = largestThumbnail.uri;
-                            } else {
-                                imageUrl = video_data.picture || response.thumbnail_url;
-                            }
+                            // Para vídeos, usa o thumbnail padrão ou tenta thumbnails maiores
+                            imageUrl = video_data.picture || response.thumbnail_url;
                             console.log('Thumbnail do vídeo selecionada:', imageUrl);
                         } else if (link_data && link_data.picture) {
                             imageUrl = link_data.picture;
                             console.log('Imagem de link selecionada:', imageUrl);
                         }
+                    } else if (response.effective_object_story_id) {
+                        // Tenta buscar a postagem original para uma imagem de maior qualidade
+                        FB.api(
+                            `/${response.effective_object_story_id}`,
+                            { fields: 'full_picture', access_token: currentAccessToken },
+                            function(storyResponse) {
+                                if (storyResponse && !storyResponse.error && storyResponse.full_picture) {
+                                    imageUrl = storyResponse.full_picture;
+                                    console.log('Imagem da postagem original:', imageUrl);
+                                }
+                                resolve({ imageUrl: imageUrl });
+                            }
+                        );
+                        return; // Sai da função para esperar a resposta assíncrona
                     }
-                    // Tenta buscar imagem de alta qualidade via image_hash se ainda não tiver uma URL válida
+                    // Tenta buscar via image_hash como último recurso
                     if (!imageUrl || imageUrl.includes('dummyimage')) {
                         if (response.image_hash) {
                             FB.api(
@@ -202,7 +205,6 @@ async function getCreativeData(creativeId) {
         );
     });
 }
-
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
