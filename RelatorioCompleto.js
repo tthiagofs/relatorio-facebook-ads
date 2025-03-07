@@ -139,21 +139,41 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url', access_token: currentAccessToken },
+            { fields: 'object_story_spec,thumbnail_url,image_hash', access_token: currentAccessToken },
             function(response) {
                 if (response && !response.error) {
-                    let imageUrl = response.thumbnail_url; // Para vídeos
+                    let imageUrl = response.thumbnail_url; // Default para vídeos
                     if (response.object_story_spec) {
                         const { link_data, photo_data, video_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
-                            imageUrl = photo_data.images[0].original_url || photo_data.images[0].url; // Imagem em boa qualidade
-                        } else if (video_data && video_data.picture) {
-                            imageUrl = video_data.picture; // Thumbnail do vídeo
+                            // Prioriza a maior resolução disponível
+                            const largestImage = photo_data.images.reduce((prev, current) => 
+                                (prev.width > current.width) ? prev : current, photo_data.images[0]);
+                            imageUrl = largestImage.original_url || largestImage.url;
+                        } else if (video_data && video_data.image && video_data.image.length > 0) {
+                            // Tenta pegar a maior thumbnail do vídeo
+                            const largestThumbnail = video_data.image.reduce((prev, current) => 
+                                (prev.width > current.width) ? prev : current, video_data.image[0]);
+                            imageUrl = largestThumbnail.url || video_data.picture;
                         } else if (link_data && link_data.picture) {
-                            imageUrl = link_data.picture; // Imagem de link
+                            imageUrl = link_data.picture;
                         }
                     }
-                    resolve({ imageUrl: imageUrl || 'https://via.placeholder.com/150' }); // Placeholder se não houver imagem
+                    // Se não houver URL de alta qualidade, tenta buscar via image_hash
+                    if (!imageUrl && response.image_hash) {
+                        FB.api(
+                            `/adimages`,
+                            { hashes: [response.image_hash], access_token: currentAccessToken },
+                            function(imageResponse) {
+                                if (imageResponse && !imageResponse.error && imageResponse.data && imageResponse.data.length > 0) {
+                                    imageUrl = imageResponse.data[0].url;
+                                }
+                                resolve({ imageUrl: imageUrl || 'https://via.placeholder.com/150' });
+                            }
+                        );
+                    } else {
+                        resolve({ imageUrl: imageUrl || 'https://via.placeholder.com/150' });
+                    }
                 } else {
                     console.error(`Erro ao carregar criativo ${creativeId}:`, response.error);
                     resolve({ imageUrl: 'https://via.placeholder.com/150' });
@@ -162,7 +182,6 @@ async function getCreativeData(creativeId) {
         );
     });
 }
-
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
@@ -897,10 +916,10 @@ async function generateReport() {
             </div>
         </div>
         <div class="top-ads" style="margin-top: 20px;">
-            <h3 style="color: #1e3c72;">Top 2 Anúncios</h3>
+            <h3 style="color: #1e3c72;">Anúncios em Destaque</h3>
             ${topTwoAds.length > 0 ? topTwoAds.map(ad => `
                 <div class="top-ad-card" style="display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
-                    <img src="${ad.imageUrl}" alt="Imagem do Anúncio" style="width: 150px; height: 150px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
+                    <img src="${ad.imageUrl}" alt="Imagem do Anúncio" style="width: 250px; height: 250px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
                     <div>
                         <div class="metric-value">Mensagens: ${ad.messages}</div>
                         <div class="metric-value">Custo por Msg: R$ ${ad.costPerMessage.replace('.', ',')}</div>
