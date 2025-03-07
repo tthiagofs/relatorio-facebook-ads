@@ -36,6 +36,26 @@ backToReportSelectionBtn.addEventListener('click', () => {
     window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
 });
 
+
+// Função para obter insights de um anúncio
+async function getAdInsights(adId, startDate, endDate) {
+    return new Promise((resolve) => {
+        FB.api(
+            `/${adId}/insights`,
+            { fields: ['spend', 'actions'], time_range: { since: startDate, until: endDate }, access_token: currentAccessToken },
+            function(response) {
+                if (response && !response.error && response.data && response.data.length > 0) {
+                    console.log(`Insights para anúncio ${adId}:`, response.data[0]);
+                    resolve(response.data[0]);
+                } else {
+                    console.warn(`Nenhum insight válido para anúncio ${adId}:`, response.error || 'Dados ausentes');
+                    resolve({ spend: '0', actions: [] }); // Retorna valores padrão se não houver dados
+                }
+            }
+        );
+    });
+}
+
 // Função para carregar anúncios e seus insights
 async function loadAds(unitId, startDate, endDate, filteredCampaigns = null, filteredAdSets = null) {
     const startTime = performance.now();
