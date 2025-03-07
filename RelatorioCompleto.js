@@ -163,31 +163,46 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id', access_token: currentAccessToken },
+            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_url', access_token: currentAccessToken },
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
-                    let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder
+                    let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder padrão
+                    let bestImageUrl = null;
+                    let bestImageWidth = 0;
 
-                    // Tenta extrair do object_story_spec
-                    if (response.object_story_spec) {
+                    // 1. Verifica image_url diretamente no criativo
+                    if (response.image_url) {
+                        bestImageUrl = response.image_url;
+                        console.log('Imagem encontrada via image_url:', bestImageUrl);
+                    }
+
+                    // 2. Tenta extrair do object_story_spec
+                    if (!bestImageUrl && response.object_story_spec) {
                         const { link_data, photo_data, video_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
-                            const largestImage = photo_data.images.reduce((prev, current) => 
-                                (prev.width > current.width) ? prev : current, photo_data.images[0]);
-                            imageUrl = largestImage.original_url || largestImage.url || photo_data.url;
-                            console.log('Imagem selecionada (photo_data):', imageUrl);
+                            const largestImage = photo_data.images.reduce((prev, current) => {
+                                const prevWidth = parseInt(prev.width) || 0;
+                                const currentWidth = parseInt(current.width) || 0;
+                                if (currentWidth > prevWidth) {
+                                    bestImageWidth = currentWidth;
+                                    return current;
+                                }
+                                return prev;
+                            }, photo_data.images[0]);
+                            bestImageUrl = largestImage.original_url || largestImage.url || photo_data.url;
+                            console.log(`Imagem selecionada (photo_data) - URL: ${bestImageUrl}, Largura: ${bestImageWidth}`);
                         } else if (video_data && video_data.picture) {
-                            imageUrl = video_data.picture;
-                            console.log('Thumbnail do vídeo selecionada:', imageUrl);
+                            bestImageUrl = video_data.picture;
+                            console.log('Thumbnail do vídeo selecionada:', bestImageUrl);
                         } else if (link_data && link_data.picture) {
-                            imageUrl = link_data.picture;
-                            console.log('Imagem de link selecionada:', imageUrl);
+                            bestImageUrl = link_data.picture;
+                            console.log('Imagem de link selecionada:', bestImageUrl);
                         }
                     }
 
-                    // Tenta buscar full_picture da postagem original
-                    if (response.effective_object_story_id) {
+                    // 3. Tenta buscar full_picture da postagem original
+                    if (!bestImageUrl && response.effective_object_story_id) {
                         try {
                             const storyResponse = await new Promise((storyResolve) => {
                                 FB.api(
@@ -199,8 +214,8 @@ async function getCreativeData(creativeId) {
                                 );
                             });
                             if (storyResponse && !storyResponse.error && storyResponse.full_picture) {
-                                imageUrl = storyResponse.full_picture;
-                                console.log('Imagem da postagem original (alta resolução):', imageUrl);
+                                bestImageUrl = storyResponse.full_picture;
+                                console.log('Imagem da postagem original (alta resolução):', bestImageUrl);
                             } else {
                                 console.warn('Nenhum full_picture encontrado para effective_object_story_id:', response.effective_object_story_id);
                             }
@@ -209,13 +224,21 @@ async function getCreativeData(creativeId) {
                         }
                     }
 
-                    // Fallback para thumbnail se nada funcionar
-                    if (!imageUrl || imageUrl.includes('dummyimage')) {
-                        imageUrl = response.thumbnail_url || imageUrl;
-                        console.log('Usando thumbnail como fallback:', imageUrl);
+                    // 4. Fallback para thumbnail_url se nada funcionar
+                    if (!bestImageUrl || bestImageUrl.includes('dummyimage')) {
+                        bestImageUrl = response.thumbnail_url || imageUrl;
+                        console.log('Usando thumbnail como fallback:', bestImageUrl);
                     }
 
-                    resolve({ imageUrl: imageUrl });
+                    // 5. Tenta forçar uma resolução maior (se aplicável)
+                    if (bestImageUrl && !bestImageUrl.includes('dummyimage')) {
+                        if (bestImageUrl.includes('facebook.com')) {
+                            bestImageUrl = bestImageUrl.replace(/width=\d+/, 'width=1200').replace(/height=\d+/, 'height=1200');
+                            console.log('Tentando URL com maior resolução:', bestImageUrl);
+                        }
+                    }
+
+                    resolve({ imageUrl: bestImageUrl });
                 } else {
                     console.error(`Erro ao carregar criativo ${creativeId}:`, response.error);
                     resolve({ imageUrl: 'https://dummyimage.com/200x200/ccc/fff' });
@@ -224,6 +247,8 @@ async function getCreativeData(creativeId) {
         );
     });
 }
+
+
 
 // Preencher o dropdown de unidades com os dados do localStorage
 const unitSelect = document.getElementById('unitId');
