@@ -13,6 +13,9 @@ const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 const confirmComparisonBtn = document.getElementById('confirmComparison');
 const cancelComparisonBtn = document.getElementById('cancelComparison');
 
+
+
+
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = JSON.parse(localStorage.getItem('adAccountsMap')) || {};
 const adSetsMap = {};
@@ -32,6 +35,114 @@ const backToReportSelectionBtn = document.getElementById('backToReportSelectionB
 backToReportSelectionBtn.addEventListener('click', () => {
     window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
 });
+
+// Função para carregar anúncios e seus insights
+async function loadAds(unitId, startDate, endDate, filteredCampaigns = null, filteredAdSets = null) {
+    const startTime = performance.now();
+    console.log(`Iniciando carregamento de anúncios para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
+    
+    let adsMap = {};
+    let apiEndpoint = filteredAdSets && filteredAdSets.size > 0 
+        ? null // Iterar sobre ad sets filtrados
+        : filteredCampaigns && filteredCampaigns.size > 0 
+        ? `/${unitId}/ads` 
+        : `/${unitId}/ads`;
+
+    if (filteredAdSets && filteredAdSets.size > 0) {
+        const adPromises = Array.from(filteredAdSets).map(adSetId => 
+            new Promise((resolve) => {
+                FB.api(
+                    `/${adSetId}/ads`,
+                    { fields: 'id,creative', access_token: currentAccessToken },
+                    async function(adResponse) {
+                        if (adResponse && !adResponse.error) {
+                            const adIds = adResponse.data.map(ad => ad.id);
+                            const insightPromises = adIds.map(adId => getAdInsights(adId, startDate, endDate));
+                            const creativePromises = adResponse.data.map(ad => getCreativeData(ad.creative.id));
+                            const [insights, creatives] = await Promise.all([
+                                Promise.all(insightPromises),
+                                Promise.all(creativePromises)
+                            ]);
+                            adIds.forEach((adId, index) => {
+                                adsMap[adId] = {
+                                    insights: insights[index],
+                                    creative: creatives[index]
+                                };
+                            });
+                            resolve();
+                        } else {
+                            console.error(`Erro ao carregar anúncios do ad set ${adSetId}:`, adResponse.error);
+                            resolve();
+                        }
+                    }
+                );
+            })
+        );
+        await Promise.all(adPromises);
+    } else {
+        const adResponse = await new Promise(resolve => {
+            FB.api(
+                apiEndpoint,
+                { fields: 'id,creative', limit: 100, access_token: currentAccessToken },
+                resolve
+            );
+        });
+
+        if (adResponse && !adResponse.error) {
+            console.log(`Resposta da API para anúncios:`, adResponse);
+            const adIds = adResponse.data.map(ad => ad.id);
+            const insightPromises = adIds.map(adId => getAdInsights(adId, startDate, endDate));
+            const creativePromises = adResponse.data.map(ad => getCreativeData(ad.creative.id));
+            const [insights, creatives] = await Promise.all([
+                Promise.all(insightPromises),
+                Promise.all(creativePromises)
+            ]);
+
+            adIds.forEach((adId, index) => {
+                adsMap[adId] = {
+                    insights: insights[index],
+                    creative: creatives[index]
+                };
+            });
+        } else {
+            console.error('Erro ao carregar anúncios:', adResponse.error);
+        }
+    }
+
+    const endTime = performance.now();
+    console.log(`Carregamento de anúncios concluído em ${(endTime - startTime) / 1000} segundos`);
+    return adsMap;
+}
+
+// Função para obter dados do criativo (imagens ou thumbnails de vídeos)
+async function getCreativeData(creativeId) {
+    return new Promise((resolve) => {
+        FB.api(
+            `/${creativeId}`,
+            { fields: 'object_story_spec,thumbnail_url', access_token: currentAccessToken },
+            function(response) {
+                if (response && !response.error) {
+                    let imageUrl = response.thumbnail_url; // Para vídeos
+                    if (response.object_story_spec) {
+                        const { link_data, photo_data, video_data } = response.object_story_spec;
+                        if (photo_data && photo_data.images && photo_data.images.length > 0) {
+                            imageUrl = photo_data.images[0].original_url || photo_data.images[0].url; // Imagem em boa qualidade
+                        } else if (video_data && video_data.picture) {
+                            imageUrl = video_data.picture; // Thumbnail do vídeo
+                        } else if (link_data && link_data.picture) {
+                            imageUrl = link_data.picture; // Imagem de link
+                        }
+                    }
+                    resolve({ imageUrl: imageUrl || 'https://via.placeholder.com/150' }); // Placeholder se não houver imagem
+                } else {
+                    console.error(`Erro ao carregar criativo ${creativeId}:`, response.error);
+                    resolve({ imageUrl: 'https://via.placeholder.com/150' });
+                }
+            }
+        );
+    });
+}
+
 
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
@@ -578,18 +689,16 @@ async function generateReport() {
     let totalConversations = 0;
     let totalReach = 0;
     let comparisonMetrics = null;
+    let topAds = [];
 
-    // Calcular métricas para o período principal
+    const adsMap = await loadAds(unitId, startDate, endDate, selectedCampaigns.size > 0 ? selectedCampaigns : null, selectedAdSets.size > 0 ? selectedAdSets : null);
+
     if (isFilterActivated) {
         if (selectedCampaigns.size > 0) {
             for (const campaignId of selectedCampaigns) {
                 const insights = await getCampaignInsights(campaignId, startDate, endDate);
-                if (insights && insights.spend) {
-                    totalSpend += parseFloat(insights.spend) || 0;
-                }
-                if (insights && insights.reach) {
-                    totalReach += parseInt(insights.reach) || 0;
-                }
+                if (insights && insights.spend) totalSpend += parseFloat(insights.spend) || 0;
+                if (insights && insights.reach) totalReach += parseInt(insights.reach) || 0;
                 (insights.actions || []).forEach(action => {
                     if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                         totalConversations += parseInt(action.value) || 0;
@@ -599,13 +708,8 @@ async function generateReport() {
         } else if (selectedAdSets.size > 0) {
             for (const adSetId of selectedAdSets) {
                 const insights = await getAdSetInsights(adSetId, startDate, endDate);
-                if (insights && insights.spend) {
-                    console.log(`Spend para ad set ${adSetId}: ${insights.spend}`);
-                    totalSpend += parseFloat(insights.spend) || 0;
-                }
-                if (insights && insights.reach) {
-                    totalReach += parseInt(insights.reach) || 0;
-                }
+                if (insights && insights.spend) totalSpend += parseFloat(insights.spend) || 0;
+                if (insights && insights.reach) totalReach += parseInt(insights.reach) || 0;
                 (insights.actions || []).forEach(action => {
                     if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                         totalConversations += parseInt(action.value) || 0;
@@ -624,12 +728,8 @@ async function generateReport() {
 
         if (response && !response.error && response.data.length > 0) {
             response.data.forEach(data => {
-                if (data.spend) {
-                    totalSpend += parseFloat(data.spend) || 0;
-                }
-                if (data.reach) {
-                    totalReach += parseInt(data.reach) || 0;
-                }
+                if (data.spend) totalSpend += parseFloat(data.spend) || 0;
+                if (data.reach) totalReach += parseInt(data.reach) || 0;
                 (data.actions || []).forEach(action => {
                     if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                         totalConversations += parseInt(action.value) || 0;
@@ -644,7 +744,29 @@ async function generateReport() {
         }
     }
 
-    // Calcular métricas para o período de comparação, se aplicável
+    // Processar anúncios para encontrar os Top 2
+    Object.keys(adsMap).forEach(adId => {
+        const ad = adsMap[adId];
+        let messages = 0;
+        let spend = parseFloat(ad.insights.spend) || 0;
+        (ad.insights.actions || []).forEach(action => {
+            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                messages += parseInt(action.value) || 0;
+            }
+        });
+        if (messages > 0) {
+            topAds.push({
+                imageUrl: ad.creative.imageUrl,
+                messages: messages,
+                costPerMessage: messages > 0 ? (spend / messages).toFixed(2) : '0'
+            });
+        }
+    });
+
+    topAds.sort((a, b) => b.messages - a.messages);
+    const topTwoAds = topAds.slice(0, 2);
+
+    // Calcular métricas de comparação
     if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
         let compareSpend = 0;
         let compareConversations = 0;
@@ -654,12 +776,8 @@ async function generateReport() {
             if (selectedCampaigns.size > 0) {
                 for (const campaignId of selectedCampaigns) {
                     const insights = await getCampaignInsights(campaignId, comparisonData.startDate, comparisonData.endDate);
-                    if (insights && insights.spend) {
-                        compareSpend += parseFloat(insights.spend) || 0;
-                    }
-                    if (insights && insights.reach) {
-                        compareReach += parseInt(insights.reach) || 0;
-                    }
+                    if (insights && insights.spend) compareSpend += parseFloat(insights.spend) || 0;
+                    if (insights && insights.reach) compareReach += parseInt(insights.reach) || 0;
                     (insights.actions || []).forEach(action => {
                         if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                             compareConversations += parseInt(action.value) || 0;
@@ -669,12 +787,8 @@ async function generateReport() {
             } else if (selectedAdSets.size > 0) {
                 for (const adSetId of selectedAdSets) {
                     const insights = await getAdSetInsights(adSetId, comparisonData.startDate, comparisonData.endDate);
-                    if (insights && insights.spend) {
-                        compareSpend += parseFloat(insights.spend) || 0;
-                    }
-                    if (insights && insights.reach) {
-                        compareReach += parseInt(insights.reach) || 0;
-                    }
+                    if (insights && insights.spend) compareSpend += parseFloat(insights.spend) || 0;
+                    if (insights && insights.reach) compareReach += parseInt(insights.reach) || 0;
                     (insights.actions || []).forEach(action => {
                         if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                             compareConversations += parseInt(action.value) || 0;
@@ -693,12 +807,8 @@ async function generateReport() {
 
             if (response && !response.error && response.data.length > 0) {
                 response.data.forEach(data => {
-                    if (data.spend) {
-                        compareSpend += parseFloat(data.spend) || 0;
-                    }
-                    if (data.reach) {
-                        compareReach += parseInt(data.reach) || 0;
-                    }
+                    if (data.spend) compareSpend += parseFloat(data.spend) || 0;
+                    if (data.reach) compareReach += parseInt(data.reach) || 0;
                     (data.actions || []).forEach(action => {
                         if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
                             compareConversations += parseInt(action.value) || 0;
@@ -714,14 +824,11 @@ async function generateReport() {
             conversations: compareConversations,
             costPerConversation: parseFloat(compareCostPerConversation)
         };
-        console.log('Métricas de comparação calculadas:', comparisonMetrics); // Depuração
-    } else {
-        console.log('Nenhum período de comparação selecionado ou dados inválidos:', comparisonData); // Depuração
     }
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
-    // Construir o relatório com design bonito
+    // Construir o relatório com os Top 2 anúncios (com imagens)
     let reportHTML = `
         <div class="report-header">
             <h2>Relatório Completo - CA - ${unitName}</h2>
@@ -768,6 +875,18 @@ async function generateReport() {
                     <div class="metric-value">R$ ${totalSpend.toFixed(2).replace('.', ',')}</div>
                 </div>
             </div>
+        </div>
+        <div class="top-ads" style="margin-top: 20px;">
+            <h3 style="color: #1e3c72;">Top 2 Anúncios</h3>
+            ${topTwoAds.length > 0 ? topTwoAds.map(ad => `
+                <div class="top-ad-card" style="display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
+                    <img src="${ad.imageUrl}" alt="Imagem do Anúncio" style="width: 150px; height: 150px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
+                    <div>
+                        <div class="metric-value">Mensagens: ${ad.messages}</div>
+                        <div class="metric-value">Custo por Msg: R$ ${ad.costPerMessage.replace('.', ',')}</div>
+                    </div>
+                </div>
+            `).join('') : '<p>Nenhum anúncio com mensagens no período selecionado.</p>'}
         </div>
     `;
 
