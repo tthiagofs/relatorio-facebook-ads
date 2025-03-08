@@ -25,31 +25,34 @@
             font-size: 1.2em;
             margin-bottom: 30px;
         }
-        .report-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .report-button {
-            background-color: #ffffff;
-            color: #1e3c72;
+        .login-button, .report-button {
+            background-color: #4267B2;
+            color: white;
             border: none;
             padding: 15px 30px;
             font-size: 1.2em;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
+            margin-bottom: 15px;
         }
-        .report-button:hover {
-            background-color: #e6e6e6;
+        .login-button:hover, .report-button:hover {
+            background-color: #365899;
+        }
+        .report-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            display: none; /* Oculto inicialmente */
         }
     </style>
 </head>
 <body>
-    <div class="selection-container">
+    <div class="selection-container" id="selectionContainer">
         <h1>Relatório de Anúncios</h1>
-        <p>Selecione o tipo de relatório que deseja visualizar</p>
-        <div class="report-buttons">
+        <p id="welcomeMessage">Faça login com sua conta do Facebook para continuar</p>
+        <button class="login-button" id="fbLoginButton" onclick="fbLogin()">Login com Facebook</button>
+        <div class="report-buttons" id="reportButtons">
             <button class="report-button" onclick="goToSimplifiedReport()">Relatório Simplificado</button>
             <button class="report-button" onclick="goToCompleteReport()">Relatório Completo</button>
         </div>
@@ -65,23 +68,8 @@
                 version: 'v20.0'
             });
 
-            // Verifica se o usuário já está logado
-            const accessToken = localStorage.getItem('fbAccessToken');
-            if (!accessToken) {
-                console.log('Nenhum token de acesso encontrado. Redirecionando para login.');
-                window.location.href = 'login.html';
-            } else {
-                // Verifica se o token ainda é válido
-                FB.getLoginStatus(function(response) {
-                    if (response.status !== 'connected' || response.authResponse.accessToken !== accessToken) {
-                        console.log('Token de acesso inválido ou expirado. Redirecionando para login.');
-                        localStorage.removeItem('fbAccessToken');
-                        window.location.href = 'login.html';
-                    } else {
-                        console.log('Usuário já está logado e token é válido.');
-                    }
-                });
-            }
+            // Verifica o status de login ao carregar a página
+            checkLoginStatus();
         };
 
         (function(d, s, id) {
@@ -92,12 +80,59 @@
             fjs.parentNode.insertBefore(js, fjs);
         }(document, 'script', 'facebook-jssdk'));
 
+        function checkLoginStatus() {
+            FB.getLoginStatus(function(response) {
+                if (response.status === 'connected') {
+                    console.log('Usuário já está logado:', response.authResponse);
+                    localStorage.setItem('fbAccessToken', response.authResponse.accessToken);
+                    showReportSelection();
+                } else {
+                    console.log('Usuário não está logado.');
+                    showLoginButton();
+                }
+            });
+        }
+
+        function fbLogin() {
+            FB.login(function(response) {
+                if (response.authResponse) {
+                    console.log('Login bem-sucedido:', response);
+                    localStorage.setItem('fbAccessToken', response.authResponse.accessToken);
+                    showReportSelection();
+                } else {
+                    console.log('Usuário cancelou o login ou não autorizou completamente.');
+                    alert('Não foi possível fazer login. Por favor, tente novamente.');
+                }
+            }, { scope: 'ads_read,ads_management,business_management,pages_read_engagement' });
+        }
+
+        function showLoginButton() {
+            document.getElementById('fbLoginButton').style.display = 'block';
+            document.getElementById('reportButtons').style.display = 'none';
+            document.getElementById('welcomeMessage').textContent = 'Faça login com sua conta do Facebook para continuar';
+        }
+
+        function showReportSelection() {
+            document.getElementById('fbLoginButton').style.display = 'none';
+            document.getElementById('reportButtons').style.display = 'flex';
+            document.getElementById('welcomeMessage').textContent = 'Selecione o tipo de relatório que deseja visualizar';
+            // Carrega app.js para inicializar as contas, se necessário
+            loadAdAccounts(); // Adicione esta função se necessário (veja abaixo)
+        }
+
         function goToSimplifiedReport() {
-            window.location.href = 'index.html'; // Mantém a lógica de carregar app.js
+            window.location.href = 'index.html'; // Recarrega com app.js
         }
 
         function goToCompleteReport() {
             window.location.href = 'RelatorioCompleto.html';
+        }
+
+        // Função placeholder para carregar contas (se necessário)
+        function loadAdAccounts() {
+            // Esta função deve ser implementada em app.js ou aqui, dependendo da lógica
+            console.log('Carregando contas de anúncios...');
+            // Exemplo: chame a função existente em app.js
         }
     </script>
     <script src="app.js"></script>
