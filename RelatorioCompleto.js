@@ -139,15 +139,22 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_hash', access_token: currentAccessToken },
+            { 
+                fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_hash,full_picture',
+                access_token: currentAccessToken 
+            },
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
-                    let imageUrl = 'https://dummyimage.com/600x600/ccc/fff'; // Placeholder maior
-                    let thumbnailFallback = response.thumbnail_url;
+                    let imageUrl = 'https://dummyimage.com/600x600/ccc/fff'; // Placeholder
 
-                    // Tenta buscar uma imagem de alta resolução diretamente
-                    if (response.image_hash) {
+                    // Tenta buscar a imagem via full_picture diretamente
+                    if (response.full_picture) {
+                        imageUrl = response.full_picture;
+                        console.log('Imagem de alta resolução via full_picture:', imageUrl);
+                    }
+                    // Tenta buscar via image_hash
+                    else if (response.image_hash) {
                         const imageResponse = await new Promise((imageResolve) => {
                             FB.api(
                                 `/adimages`,
@@ -160,29 +167,28 @@ async function getCreativeData(creativeId) {
                         if (imageResponse && !imageResponse.error && imageResponse.data && imageResponse.data.length > 0) {
                             imageUrl = imageResponse.data[0].url;
                             console.log('Imagem de alta resolução via image_hash:', imageUrl);
+                        } else {
+                            console.warn('Falha ao buscar imagem via image_hash:', imageResponse.error);
                         }
                     }
-
-                    // Tenta extrair a imagem do object_story_spec
-                    if (!imageUrl.includes('dummyimage') && response.object_story_spec) {
-                        const { link_data, photo_data, video_data } = response.object_story_spec;
+                    // Tenta extrair do object_story_spec
+                    else if (response.object_story_spec) {
+                        const { photo_data, video_data, link_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
-                            // Priorizar a maior imagem disponível
                             const largestImage = photo_data.images.reduce((prev, current) => 
                                 (prev.width > current.width) ? prev : current, photo_data.images[0]);
                             imageUrl = largestImage.original_url || largestImage.url || photo_data.url;
                             console.log('Imagem selecionada (photo_data):', imageUrl);
-                        } else if (video_data) {
-                            imageUrl = video_data.picture || response.thumbnail_url;
+                        } else if (video_data && video_data.picture) {
+                            imageUrl = video_data.picture;
                             console.log('Thumbnail do vídeo selecionada:', imageUrl);
                         } else if (link_data && link_data.picture) {
                             imageUrl = link_data.picture;
                             console.log('Imagem de link selecionada:', imageUrl);
                         }
                     }
-
-                    // Tenta buscar a postagem original via effective_object_story_id
-                    if (response.effective_object_story_id && (!imageUrl || imageUrl.includes('p64x64'))) {
+                    // Usa effective_object_story_id como fallback
+                    else if (response.effective_object_story_id) {
                         try {
                             const storyResponse = await new Promise((storyResolve) => {
                                 FB.api(
@@ -203,11 +209,10 @@ async function getCreativeData(creativeId) {
                             console.error('Erro ao buscar full_picture:', error);
                         }
                     }
-
-                    // Usa o thumbnail original como último recurso
-                    if (!imageUrl || imageUrl.includes('dummyimage')) {
-                        imageUrl = thumbnailFallback;
-                        console.log('Usando thumbnail original como fallback:', imageUrl);
+                    // Último recurso: thumbnail
+                    else if (response.thumbnail_url) {
+                        imageUrl = response.thumbnail_url;
+                        console.warn('Usando thumbnail como último recurso:', imageUrl);
                     }
 
                     resolve({ imageUrl: imageUrl });
@@ -823,28 +828,31 @@ async function generateReport() {
 
     // Processar anúncios para encontrar os Top 2
     Object.keys(adsMap).forEach(adId => {
-        const ad = adsMap[adId];
-        let messages = 0;
-        let spend = parseFloat(ad.insights.spend) || 0;
-        (ad.insights.actions || []).forEach(action => {
-            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                messages += parseInt(action.value) || 0;
-            }
-        });
-        if (messages > 0) {
-            topAds.push({
-                imageUrl: ad.creative.imageUrl,
-                messages: messages,
-                costPerMessage: messages > 0 ? (spend / messages).toFixed(2) : '0'
-            });
+    const ad = adsMap[adId];
+    let messages = 0;
+    let spend = parseFloat(ad.insights.spend) || 0;
+    (ad.insights.actions || []).forEach(action => {
+        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+            messages += parseInt(action.value) || 0;
+            console.log(`Anúncio ${adId} tem ${messages} mensagens iniciadas`);
         }
     });
+    if (messages > 0) {
+        topAds.push({
+            imageUrl: ad.creative.imageUrl,
+            messages: messages,
+            costPerMessage: messages > 0 ? (spend / messages).toFixed(2) : '0'
+        });
+    } else {
+        console.warn(`Anúncio ${adId} não tem mensagens iniciadas`);
+    }
+});
 
     topAds.sort((a, b) => b.messages - a.messages);
     // Filtrar para evitar imagens de baixa qualidade (ex.: thumbnails pequenos ou placeholders)
     const topTwoAds = topAds.slice(0, 2).filter(ad => {
-        return ad.imageUrl && !ad.imageUrl.includes('p64x64') && !ad.imageUrl.includes('dummyimage');
-    });
+    return ad.imageUrl && !ad.imageUrl.includes('dummyimage'); // Remove o filtro de 'p64x64' temporariamente
+});
 
     // Calcular métricas de comparação
     if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
