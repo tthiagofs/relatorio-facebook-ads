@@ -3,323 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Anúncios do Facebook</title>
-   <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
-        color: #333;
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .container {
-        max-width: 600px;
-        width: 90%; /* Melhor adaptação em mobile */
-        margin: 20px auto;
-        padding: 20px;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    h1 {
-        color: #1e3c72;
-        text-align: center;
-        font-size: 24px;
-        margin-bottom: 20px;
-    }
-
-    h2 {
-        color: #1e3c72;
-        font-size: 20px;
-        margin-bottom: 15px;
-    }
-
-    .form-group {
-        margin-bottom: 20px; /* Espaçamento consistente */
-    }
-
-    label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: bold;
-        font-size: 14px;
-    }
-
-    select, input[type="date"], input[type="text"], input[type="password"] {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        box-sizing: border-box;
-        font-size: 16px;
-        background: #f9f9f9;
-        transition: border-color 0.3s;
-    }
-
-    select:focus, input:focus {
-        border-color: #1e3c72;
-        outline: none;
-    }
-
-    button {
-        width: 100%;
-        padding: 12px;
-        background-color: #1e3c72;
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 16px;
-        margin-top: 10px;
-        transition: background-color 0.3s, transform 0.2s;
-    }
-
-    button:hover {
-        background-color: #2a5298;
-        transform: translateY(-2px);
-    }
-
-    button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-    }
-
-    .btn-primary {
-        background-color: #1e3c72;
-    }
-
-    .btn-primary:hover {
-        background-color: #2a5298;
-    }
-
-    #simpleReportBtn, #completeReportBtn {
-        background: linear-gradient(135deg, #1e3c72, #355e9c);
-        margin-bottom: 15px; /* Espaço entre botões na tela de seleção */
-    }
-
-    .modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    }
-
-    .modal-content {
-        background: #fff;
-        padding: 20px;
-        border-radius: 12px;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .filter-option {
-        padding: 12px;
-        margin: 8px 0;
-        background: #f5f5f5;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: background 0.3s;
-    }
-
-    .filter-option:hover {
-        background: #e0e0e0;
-    }
-
-    .filter-option.selected {
-        background: #1e3c72;
-        color: #fff;
-    }
-
-    .search-bar {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 15px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 16px;
-    }
-
-    .btn-filter-toggle {
-        width: 100%;
-        margin-top: 15px;
-    }
-
-    .error-message {
-        color: #ff3333;
-        margin-top: 10px;
-        font-size: 14px;
-        text-align: center;
-        display: none;
-    }
-
-    #reportContainer {
-        margin-top: 20px;
-        padding: 15px;
-        background: #f9f9f9;
-        border-radius: 6px;
-    }
-
-    #shareWhatsAppBtn {
-        display: none;
-        background: #25D366;
-    }
-
-    #shareWhatsAppBtn:hover {
-        background: #20c058;
-    }
-
-    /* Ajustes para mobile */
-    @media (max-width: 600px) {
-        .container {
-            padding: 15px;
-            margin: 10px auto;
+    <title>Relatório de Anúncios - Seleção</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .selection-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
+            padding: 20px;
         }
-
-        h1 {
-            font-size: 20px;
+        .selection-container h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
         }
-
-        h2 {
-            font-size: 18px;
+        .selection-container p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
         }
-
-        button, select, input {
-            font-size: 14px;
-            padding: 10px;
+        .report-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
-
-        .form-group {
-            margin-bottom: 15px;
+        .report-button {
+            background-color: #ffffff;
+            color: #1e3c72;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
-
-        #simpleReportBtn, #completeReportBtn {
-            margin-bottom: 10px; /* Evita sobreposição */
+        .report-button:hover {
+            background-color: #e6e6e6;
         }
-
-        #reportContainer {
-            padding: 10px;
-        }
-    }
-</style>
+    </style>
 </head>
 <body>
-    <div class="container" id="appLoginScreen">
-        <h1>Login</h1>
-        <form id="appLoginForm">
-            <div class="form-group">
-                <label for="username">Usuário:</label>
-                <input type="text" id="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Senha:</label>
-                <input type="password" id="password" required>
-            </div>
-            <button type="submit">Entrar</button>
-            <div id="appLoginError" class="error-message"></div>
-        </form>
-    </div>
-
-    <div class="container" id="reportSelectionScreen" style="display: none;">
-        <h1>Selecione o Tipo de Relatório</h1>
-        <button id="simpleReportBtn">Relatório Simplificado</button>
-        <button id="completeReportBtn">Relatório Completo</button>
-    </div>
-
-    <div class="container" id="loginScreen" style="display: none;">
-        <h1>Login com Facebook</h1>
-        <button id="loginBtn">Login com Facebook</button>
-        <div id="loginError" class="error-message"></div>
-    </div>
-
-    <div class="container" id="mainContent" style="display: none;">
-        <h1>Relatório Simplificado</h1>
-        <form id="form">
-            <div class="form-group">
-                <label for="unitId">Unidade:</label>
-                <select id="unitId" required>
-                    <option value="">Escolha a unidade</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="startDate">Data Início:</label>
-                <input type="date" id="startDate" required>
-            </div>
-            <div class="form-group">
-                <label for="endDate">Data Fim:</label>
-                <input type="date" id="endDate" required>
-            </div>
-            <div class="form-group">
-                <button type="button" id="filterCampaigns" class="btn-primary">Campanhas</button>
-                <button type="button" id="filterAdSets" class="btn-primary">Conjuntos</button>
-            </div>
-            <button type="submit">Gerar Relatório</button>
-        </form>
-        <div id="reportContainer"></div>
-        <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
-        <button id="backToReportSelectionBtn">Voltar</button>
-
-    </div>
-
-    <div id="campaignsModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h2>Selecione as Campanhas</h2>
-            <input type="text" id="campaignSearch" class="search-bar" placeholder="Pesquisar campanhas...">
-            <div id="campaignsList"></div>
-            <button type="button" id="closeCampaignsModal" class="btn-primary">Fechar</button>
+    <div class="selection-container">
+        <h1>Relatório de Anúncios</h1>
+        <p>Selecione o tipo de relatório que deseja visualizar</p>
+        <div class="report-buttons">
+            <button class="report-button" onclick="goToSimplifiedReport()">Relatório Simplificado</button>
+            <button class="report-button" onclick="goToCompleteReport()">Relatório Completo</button>
         </div>
     </div>
 
-    <div id="adSetsModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h2>Selecione os Conjuntos de Anúncios</h2>
-            <input type="text" id="adSetSearch" class="search-bar" placeholder="Pesquisar conjuntos...">
-            <div id="adSetsList"></div>
-            <button type="button" id="closeAdSetsModal" class="btn-primary">Fechar</button>
-        </div>
-    </div>
-
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    <!-- Carregar o SDK do Facebook -->
     <script>
-        // Inicializar o SDK do Facebook
         window.fbAsyncInit = function() {
-            console.log("Iniciando inicialização do Facebook SDK...");
             FB.init({
                 appId: '618519427538646',
                 cookie: true,
                 xfbml: true,
                 version: 'v20.0'
             });
-            FB.AppEvents.logPageView();
-            console.log("Facebook SDK inicializado com sucesso!");
+
+            // Verifica se o usuário já está logado
+            const accessToken = localStorage.getItem('fbAccessToken');
+            if (!accessToken) {
+                console.log('Nenhum token de acesso encontrado. Redirecionando para login.');
+                window.location.href = 'login.html';
+            } else {
+                // Verifica se o token ainda é válido
+                FB.getLoginStatus(function(response) {
+                    if (response.status !== 'connected' || response.authResponse.accessToken !== accessToken) {
+                        console.log('Token de acesso inválido ou expirado. Redirecionando para login.');
+                        localStorage.removeItem('fbAccessToken');
+                        window.location.href = 'login.html';
+                    } else {
+                        console.log('Usuário já está logado e token é válido.');
+                    }
+                });
+            }
         };
 
-        // Função para carregar o SDK do Facebook
         (function(d, s, id) {
-            console.log("Carregando SDK do Facebook...");
             var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) {
-                console.log("SDK já carregado, ignorando...");
-                return;
-            }
-            js = d.createElement(s);
-            js.id = id;
-            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            if (d.getElementById(id)) return;
+            js = d.createElement(s); js.id = id;
+            js.src = "https://connect.facebook.net/pt_BR/sdk.js";
             fjs.parentNode.insertBefore(js, fjs);
-            console.log("Script do SDK do Facebook adicionado ao DOM.");
-        })(document, 'script', 'facebook-jssdk');
+        }(document, 'script', 'facebook-jssdk'));
+
+        function goToSimplifiedReport() {
+            window.location.href = 'index.html'; // Mantém a lógica de carregar app.js
+        }
+
+        function goToCompleteReport() {
+            window.location.href = 'RelatorioCompleto.html';
+        }
     </script>
     <script src="app.js"></script>
 </body>
