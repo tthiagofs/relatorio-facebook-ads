@@ -139,22 +139,14 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { 
-                fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_hash,full_picture',
-                access_token: currentAccessToken 
-            },
+            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_hash', access_token: currentAccessToken },
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
                     let imageUrl = 'https://dummyimage.com/600x600/ccc/fff'; // Placeholder
 
-                    // Tenta buscar a imagem via full_picture diretamente
-                    if (response.full_picture) {
-                        imageUrl = response.full_picture;
-                        console.log('Imagem de alta resolução via full_picture:', imageUrl);
-                    }
                     // Tenta buscar via image_hash
-                    else if (response.image_hash) {
+                    if (response.image_hash) {
                         const imageResponse = await new Promise((imageResolve) => {
                             FB.api(
                                 `/adimages`,
@@ -168,11 +160,11 @@ async function getCreativeData(creativeId) {
                             imageUrl = imageResponse.data[0].url;
                             console.log('Imagem de alta resolução via image_hash:', imageUrl);
                         } else {
-                            console.warn('Falha ao buscar imagem via image_hash:', imageResponse.error);
+                            console.warn('Falha ao buscar imagem via image_hash:', imageResponse ? imageResponse.error : 'Nenhum dado retornado');
                         }
                     }
                     // Tenta extrair do object_story_spec
-                    else if (response.object_story_spec) {
+                    if (imageUrl.includes('dummyimage') && response.object_story_spec) {
                         const { photo_data, video_data, link_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
                             const largestImage = photo_data.images.reduce((prev, current) => 
@@ -187,8 +179,8 @@ async function getCreativeData(creativeId) {
                             console.log('Imagem de link selecionada:', imageUrl);
                         }
                     }
-                    // Usa effective_object_story_id como fallback
-                    else if (response.effective_object_story_id) {
+                    // Usa effective_object_story_id para buscar full_picture
+                    if (imageUrl.includes('dummyimage') && response.effective_object_story_id) {
                         try {
                             const storyResponse = await new Promise((storyResolve) => {
                                 FB.api(
@@ -203,14 +195,14 @@ async function getCreativeData(creativeId) {
                                 imageUrl = storyResponse.full_picture;
                                 console.log('Imagem da postagem original (alta resolução):', imageUrl);
                             } else {
-                                console.warn('Nenhum full_picture encontrado para effective_object_story_id:', response.effective_object_story_id);
+                                console.warn('Nenhum full_picture encontrado para effective_object_story_id:', response.effective_object_story_id, storyResponse.error || 'Nenhum erro, mas sem full_picture');
                             }
                         } catch (error) {
-                            console.error('Erro ao buscar full_picture:', error);
+                            console.error('Erro ao buscar full_picture via effective_object_story_id:', error);
                         }
                     }
                     // Último recurso: thumbnail
-                    else if (response.thumbnail_url) {
+                    if (imageUrl.includes('dummyimage') && response.thumbnail_url) {
                         imageUrl = response.thumbnail_url;
                         console.warn('Usando thumbnail como último recurso:', imageUrl);
                     }
