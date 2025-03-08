@@ -1014,11 +1014,13 @@ exportPdfBtn.addEventListener('click', async () => {
     pdfContainer.style.fontFamily = "'Poppins', sans-serif";
     pdfContainer.style.color = '#333';
     pdfContainer.style.padding = '20px';
-    pdfContainer.style.position = 'absolute'; // Garantir que esteja visível
+    pdfContainer.style.position = 'absolute';
     pdfContainer.style.left = '0';
     pdfContainer.style.top = '0';
     pdfContainer.style.width = '100%';
-    pdfContainer.style.background = '#fff'; // Fundo branco para visibilidade
+    pdfContainer.style.background = '#fff';
+    pdfContainer.style.minHeight = '800px'; // Garantir altura mínima
+    pdfContainer.style.overflow = 'visible'; // Evitar corte de conteúdo
 
     // Clonar o relatório
     const reportClone = reportContainer.cloneNode(true);
@@ -1036,7 +1038,7 @@ exportPdfBtn.addEventListener('click', async () => {
         .report-header p { font-size: 16px; color: #666; margin: 5px 0; }
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
         .metric-card { background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
-        .metric-card.reach { background: #e0f7fa; } /* Simplificado para cor sólida */
+        .metric-card.reach { background: #e0f7fa; }
         .metric-card.messages { background: #f3e5f5; }
         .metric-card.cost { background: #fffde7; }
         .metric-card.investment { background: #e8f5e9; }
@@ -1062,6 +1064,10 @@ exportPdfBtn.addEventListener('click', async () => {
     document.body.appendChild(pdfContainer);
     console.log('pdfContainer adicionado ao DOM:', pdfContainer);
 
+    // Forçar a renderização do layout
+    pdfContainer.offsetHeight; // Trigger reflow
+    await new Promise(resolve => setTimeout(resolve, 100)); // Pequeno atraso para garantir layout
+
     // Esperar o carregamento das imagens
     await waitForImages(pdfContainer);
     console.log('Imagens carregadas, iniciando renderização para PDF...');
@@ -1074,7 +1080,7 @@ exportPdfBtn.addEventListener('click', async () => {
         html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            logging: true, // Habilitar logs detalhados
+            logging: true,
             onclone: (doc) => {
                 console.log('Documento clonado para html2canvas:', doc);
             }
