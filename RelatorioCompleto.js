@@ -1,7 +1,7 @@
 const mainContent = document.getElementById('mainContent');
 const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
-const exportPdfBtn = document.getElementById('exportPdfBtn'); // Novo botão
+const exportPdfBtn = document.getElementById('exportPdfBtn');
 const filterCampaignsBtn = document.getElementById('filterCampaigns');
 const filterAdSetsBtn = document.getElementById('filterAdSets');
 const comparePeriodsBtn = document.getElementById('comparePeriods');
@@ -15,7 +15,7 @@ const cancelComparisonBtn = document.getElementById('cancelComparison');
 const actionPlanSection = document.getElementById('actionPlanSection');
 const actionPlanInput = document.getElementById('actionPlanInput');
 const submitActionPlanBtn = document.getElementById('submitActionPlanBtn');
-const actionPlanResult = document.getElementById('actionPlanResult');
+const actionPlanPassive = document.getElementById('actionPlanResult');
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = JSON.parse(localStorage.getItem('adAccountsMap')) || {};
@@ -28,7 +28,7 @@ let isAdSetFilterActive = false;
 let isFilterActivated = false;
 let campaignSearchText = '';
 let adSetSearchText = '';
-let currentAccessToken = localStorage.getItem('fbAccessToken') || null;
+let currentAccessasc = localStorage.getItem('fbAccessToken') || null;
 let comparisonData = null;
 
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
@@ -965,7 +965,7 @@ async function generateReport() {
 
     reportContainer.classList.add('complete');
     reportContainer.innerHTML = reportHTML;
-    exportPdfBtn.style.display = 'block'; // Mostrar botão de exportação
+    exportPdfBtn.style.display = 'block';
     actionPlanSection.style.display = 'block';
     actionPlanResult.style.display = 'none';
 }
@@ -989,14 +989,75 @@ submitActionPlanBtn.addEventListener('click', () => {
     actionPlanSection.style.display = 'none';
 });
 
+// Função para esperar o carregamento de imagens antes de gerar o PDF
+async function waitForImages(element) {
+    const images = element.getElementsByTagName('img');
+    const promises = Array.from(images).map(img => {
+        return new Promise((resolve) => {
+            if (img.complete) {
+                resolve();
+            } else {
+                img.onload = resolve;
+                img.onerror = resolve; // Resolve mesmo em caso de erro para não travar
+            }
+        });
+    });
+    await Promise.all(promises);
+}
+
 // Exportar o relatório em PDF
-exportPdfBtn.addEventListener('click', () => {
-    const element = document.createElement('div');
-    element.appendChild(reportContainer.cloneNode(true));
+exportPdfBtn.addEventListener('click', async () => {
+    // Criar um contêiner temporário para o conteúdo do PDF
+    const pdfContainer = document.createElement('div');
+    pdfContainer.style.fontFamily = "'Poppins', sans-serif";
+    pdfContainer.style.color = '#333';
+    pdfContainer.style.padding = '20px';
+
+    // Clonar o relatório
+    const reportClone = reportContainer.cloneNode(true);
+    pdfContainer.appendChild(reportClone);
+
+    // Adicionar o plano de ação, se visível
     if (actionPlanResult.style.display === 'block') {
-        element.appendChild(actionPlanResult.cloneNode(true));
+        const actionPlanClone = actionPlanResult.cloneNode(true);
+        pdfContainer.appendChild(actionPlanClone);
     }
 
+    // Copiar estilos relevantes do CSS
+    const styles = `
+        .report-header h2 { font-size: 22px; color: #1e3c72; margin: 0 0 10px; }
+        .report-header p { font-size: 16px; color: #666; margin: 5px 0; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        .metric-card { background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
+        .metric-card.reach { background: linear-gradient(135deg, #e0f7fa, #b2ebf2); }
+        .metric-card.messages { background: linear-gradient(135deg, #f3e5f5, #e1bee7); }
+        .metric-card.cost { background: linear-gradient(135deg, #fffde7, #fff9c4); }
+        .metric-card.investment { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+        .metric-label { font-size: 14px; color: #555; margin-bottom: 5px; }
+        .metric-value { font-size: 18px; font-weight: 600; color: #333; }
+        .metric-comparison { font-size: 12px; margin-top: 5px; }
+        .metric-comparison.increase { color: #28a745; }
+        .metric-comparison.decrease { color: #dc3545; }
+        .top-ads { margin-top: 20px; }
+        .top-ads h3 { font-size: 20px; color: #1e3c72; text-align: center; margin-bottom: 15px; }
+        .top-ad-card { display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
+        .top-ad-card img { max-width: 300px; max-height: 300px; width: auto; height: auto; object-fit: contain; border-radius: 6px; margin-right: 15px; }
+        .action-plan-result { margin-top: 20px; padding: 15px; background: #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
+        .action-plan-result h3 { font-size: 22px; color: #1e3c72; margin-bottom: 15px; }
+        .action-plan-result ul { list-style-type: disc; padding-left: 20px; font-size: 16px; color: #333; }
+        .action-plan-result li { margin-bottom: 10px; }
+    `;
+    const styleElement = document.createElement('style');
+    styleElement.textContent = styles;
+    pdfContainer.appendChild(styleElement);
+
+    // Adicionar o contêiner ao corpo temporariamente para garantir renderização
+    document.body.appendChild(pdfContainer);
+
+    // Esperar o carregamento das imagens
+    await waitForImages(pdfContainer);
+
+    // Configurações do PDF
     const opt = {
         margin: 1,
         filename: `Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
@@ -1005,5 +1066,9 @@ exportPdfBtn.addEventListener('click', () => {
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().set(opt).from(element).save();
+    // Gerar e salvar o PDF
+    await html2pdf().set(opt).from(pdfContainer).save();
+
+    // Remover o contêiner temporário
+    document.body.removeChild(pdfContainer);
 });
