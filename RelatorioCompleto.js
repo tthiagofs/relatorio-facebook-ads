@@ -1007,11 +1007,18 @@ async function waitForImages(element) {
 
 // Exportar o relatório em PDF
 exportPdfBtn.addEventListener('click', async () => {
+    console.log('Iniciando exportação para PDF...');
+
     // Criar um contêiner temporário para o conteúdo do PDF
     const pdfContainer = document.createElement('div');
     pdfContainer.style.fontFamily = "'Poppins', sans-serif";
     pdfContainer.style.color = '#333';
     pdfContainer.style.padding = '20px';
+    pdfContainer.style.position = 'absolute'; // Garantir que esteja visível
+    pdfContainer.style.left = '0';
+    pdfContainer.style.top = '0';
+    pdfContainer.style.width = '100%';
+    pdfContainer.style.background = '#fff'; // Fundo branco para visibilidade
 
     // Clonar o relatório
     const reportClone = reportContainer.cloneNode(true);
@@ -1029,10 +1036,10 @@ exportPdfBtn.addEventListener('click', async () => {
         .report-header p { font-size: 16px; color: #666; margin: 5px 0; }
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
         .metric-card { background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
-        .metric-card.reach { background: linear-gradient(135deg, #e0f7fa, #b2ebf2); }
-        .metric-card.messages { background: linear-gradient(135deg, #f3e5f5, #e1bee7); }
-        .metric-card.cost { background: linear-gradient(135deg, #fffde7, #fff9c4); }
-        .metric-card.investment { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); }
+        .metric-card.reach { background: #e0f7fa; } /* Simplificado para cor sólida */
+        .metric-card.messages { background: #f3e5f5; }
+        .metric-card.cost { background: #fffde7; }
+        .metric-card.investment { background: #e8f5e9; }
         .metric-label { font-size: 14px; color: #555; margin-bottom: 5px; }
         .metric-value { font-size: 18px; font-weight: 600; color: #333; }
         .metric-comparison { font-size: 12px; margin-top: 5px; }
@@ -1051,24 +1058,39 @@ exportPdfBtn.addEventListener('click', async () => {
     styleElement.textContent = styles;
     pdfContainer.appendChild(styleElement);
 
-    // Adicionar o contêiner ao corpo temporariamente para garantir renderização
+    // Adicionar o contêiner ao corpo para renderização
     document.body.appendChild(pdfContainer);
+    console.log('pdfContainer adicionado ao DOM:', pdfContainer);
 
     // Esperar o carregamento das imagens
     await waitForImages(pdfContainer);
+    console.log('Imagens carregadas, iniciando renderização para PDF...');
 
     // Configurações do PDF
     const opt = {
-        margin: 1,
+        margin: 0.5,
         filename: `Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            logging: true, // Habilitar logs detalhados
+            onclone: (doc) => {
+                console.log('Documento clonado para html2canvas:', doc);
+            }
+        },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    // Gerar e salvar o PDF
-    await html2pdf().set(opt).from(pdfContainer).save();
+    try {
+        // Gerar e salvar o PDF
+        await html2pdf().set(opt).from(pdfContainer).save();
+        console.log('PDF gerado e baixado com sucesso.');
+    } catch (error) {
+        console.error('Erro ao gerar o PDF:', error);
+    }
 
     // Remover o contêiner temporário
     document.body.removeChild(pdfContainer);
+    console.log('pdfContainer removido do DOM.');
 });
