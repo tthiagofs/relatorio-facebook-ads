@@ -1,7 +1,7 @@
 const mainContent = document.getElementById('mainContent');
 const form = document.getElementById('form');
 const reportContainer = document.getElementById('reportContainer');
-const shareWhatsAppBtn = document.getElementById('shareWhatsAppBtn');
+const exportPdfBtn = document.getElementById('exportPdfBtn'); // Novo botão
 const filterCampaignsBtn = document.getElementById('filterCampaigns');
 const filterAdSetsBtn = document.getElementById('filterAdSets');
 const comparePeriodsBtn = document.getElementById('comparePeriods');
@@ -12,10 +12,10 @@ const closeCampaignsModalBtn = document.getElementById('closeCampaignsModal');
 const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 const confirmComparisonBtn = document.getElementById('confirmComparison');
 const cancelComparisonBtn = document.getElementById('cancelComparison');
-const actionPlanSection = document.getElementById('actionPlanSection'); // Novo
-const actionPlanInput = document.getElementById('actionPlanInput');     // Novo
-const submitActionPlanBtn = document.getElementById('submitActionPlanBtn'); // Novo
-const actionPlanResult = document.getElementById('actionPlanResult');   // Novo
+const actionPlanSection = document.getElementById('actionPlanSection');
+const actionPlanInput = document.getElementById('actionPlanInput');
+const submitActionPlanBtn = document.getElementById('submitActionPlanBtn');
+const actionPlanResult = document.getElementById('actionPlanResult');
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = JSON.parse(localStorage.getItem('adAccountsMap')) || {};
@@ -34,7 +34,7 @@ let comparisonData = null;
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
 
 backToReportSelectionBtn.addEventListener('click', () => {
-    window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
+    window.location.href = 'index.html?screen=reportSelection';
 });
 
 // Função para obter insights de um anúncio
@@ -49,7 +49,7 @@ async function getAdInsights(adId, startDate, endDate) {
                     resolve(response.data[0]);
                 } else {
                     console.warn(`Nenhum insight válido para anúncio ${adId}:`, response.error || 'Dados ausentes');
-                    resolve({ spend: '0', actions: [] }); // Retorna valores padrão se não houver dados
+                    resolve({ spend: '0', actions: [] });
                 }
             }
         );
@@ -63,7 +63,7 @@ async function loadAds(unitId, startDate, endDate, filteredCampaigns = null, fil
     
     let adsMap = {};
     let apiEndpoint = filteredAdSets && filteredAdSets.size > 0 
-        ? null // Iterar sobre ad sets filtrados
+        ? null
         : filteredCampaigns && filteredCampaigns.size > 0 
         ? `/${unitId}/ads` 
         : `/${unitId}/ads`;
@@ -143,9 +143,8 @@ async function getCreativeData(creativeId) {
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
-                    let imageUrl = 'https://dummyimage.com/600x600/ccc/fff'; // Placeholder
+                    let imageUrl = 'https://dummyimage.com/600x600/ccc/fff';
 
-                    // Tenta buscar via image_hash
                     if (response.image_hash) {
                         const imageResponse = await new Promise((imageResolve) => {
                             FB.api(
@@ -163,7 +162,6 @@ async function getCreativeData(creativeId) {
                             console.warn('Falha ao buscar imagem via image_hash:', imageResponse ? imageResponse.error : 'Nenhum dado retornado');
                         }
                     }
-                    // Tenta extrair do object_story_spec
                     if (imageUrl.includes('dummyimage') && response.object_story_spec) {
                         const { photo_data, video_data, link_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
@@ -179,7 +177,6 @@ async function getCreativeData(creativeId) {
                             console.log('Imagem de link selecionada:', imageUrl);
                         }
                     }
-                    // Usa effective_object_story_id para buscar full_picture
                     if (imageUrl.includes('dummyimage') && response.effective_object_story_id) {
                         try {
                             const storyResponse = await new Promise((storyResolve) => {
@@ -201,7 +198,6 @@ async function getCreativeData(creativeId) {
                             console.error('Erro ao buscar full_picture via effective_object_story_id:', error);
                         }
                     }
-                    // Último recurso: thumbnail
                     if (imageUrl.includes('dummyimage') && response.thumbnail_url) {
                         imageUrl = response.thumbnail_url;
                         console.warn('Usando thumbnail como último recurso:', imageUrl);
@@ -262,7 +258,6 @@ function toggleModal(modal, show, isCampaign) {
             filterCampaignsBtn.disabled = isFilterActivated;
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
         }
-        // Ao abrir o modal de comparação, restaurar a seleção anterior, se houver
         if (modal === comparisonModal && comparisonData) {
             if (comparisonData.startDate && comparisonData.endDate) {
                 document.querySelector('input[name="comparisonOption"][value="custom"]').checked = true;
@@ -683,13 +678,13 @@ closeAdSetsModalBtn.addEventListener('click', () => {
 function calculatePreviousPeriod(startDate, endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const diffDays = (end - start) / (1000 * 60 * 60 * 24); // Diferença em dias
+    const diffDays = (end - start) / (1000 * 60 * 60 * 24);
 
     const previousEnd = new Date(start);
-    previousEnd.setDate(previousEnd.getDate() - 1); // Um dia antes do startDate
+    previousEnd.setDate(previousEnd.getDate() - 1);
 
     const previousStart = new Date(previousEnd);
-    previousStart.setDate(previousStart.getDate() - diffDays); // Mesmo número de dias antes
+    previousStart.setDate(previousStart.getDate() - diffDays);
 
     return {
         start: previousStart.toISOString().split('T')[0],
@@ -723,13 +718,13 @@ confirmComparisonBtn.addEventListener('click', async () => {
         comparisonData = null;
     }
 
-    console.log('Dados de comparação salvos:', comparisonData); // Depuração
+    console.log('Dados de comparação salvos:', comparisonData);
     toggleModal(comparisonModal, false, false);
 });
 
 cancelComparisonBtn.addEventListener('click', () => {
-    comparisonData = null; // Limpar dados de comparação ao cancelar
-    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData); // Depuração
+    comparisonData = null;
+    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData);
     toggleModal(comparisonModal, false, false);
 });
 
@@ -812,7 +807,7 @@ async function generateReport() {
         } else {
             reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
             if (response.error) console.error('Erro da API:', response.error);
-            shareWhatsAppBtn.style.display = 'none';
+            exportPdfBtn.style.display = 'none';
             return;
         }
     }
@@ -840,7 +835,6 @@ async function generateReport() {
     });
 
     topAds.sort((a, b) => b.messages - a.messages);
-    // Filtrar para evitar imagens de baixa qualidade (ex.: thumbnails pequenos ou placeholders)
     const topTwoAds = topAds.slice(0, 2).filter(ad => {
         return ad.imageUrl && !ad.imageUrl.includes('dummyimage');
     });
@@ -907,7 +901,7 @@ async function generateReport() {
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
-    // Construir o relatório com os Top 2 anúncios (com imagens de maior qualidade)
+    // Construir o relatório com os Top 2 anúncios
     let reportHTML = `
         <div class="report-header">
             <h2>Relatório Completo - CA - ${unitName}</h2>
@@ -971,9 +965,9 @@ async function generateReport() {
 
     reportContainer.classList.add('complete');
     reportContainer.innerHTML = reportHTML;
-    shareWhatsAppBtn.style.display = 'block';
-    actionPlanSection.style.display = 'block'; // Mostrar a seção do plano de ação
-    actionPlanResult.style.display = 'none';  // Esconder o resultado até o envio
+    exportPdfBtn.style.display = 'block'; // Mostrar botão de exportação
+    actionPlanSection.style.display = 'block';
+    actionPlanResult.style.display = 'none';
 }
 
 // Processar o plano de ação
@@ -984,24 +978,32 @@ submitActionPlanBtn.addEventListener('click', () => {
         return;
     }
 
-    // Dividir o texto em itens da lista (cada linha é um item)
     const actionItems = inputText.split('\n').filter(item => item.trim() !== '');
-
-    // Gerar a lista formatada
     actionPlanResult.innerHTML = `
         <h3>Plano de Ação:</h3>
         <ul>
             ${actionItems.map(item => `<li>${item}</li>`).join('')}
         </ul>
     `;
-    actionPlanResult.style.display = 'block'; // Mostrar o resultado
-    actionPlanSection.style.display = 'none'; // Esconder a seção de entrada
+    actionPlanResult.style.display = 'block';
+    actionPlanSection.style.display = 'none';
 });
 
-// Compartilhar no WhatsApp
-shareWhatsAppBtn.addEventListener('click', () => {
-    const reportText = reportContainer.innerText + (actionPlanResult.style.display === 'block' ? '\n\n' + actionPlanResult.innerText : '');
-    const encodedText = encodeURIComponent(reportText);
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
-    window.open(whatsappUrl, '_blank');
+// Exportar o relatório em PDF
+exportPdfBtn.addEventListener('click', () => {
+    const element = document.createElement('div');
+    element.appendChild(reportContainer.cloneNode(true));
+    if (actionPlanResult.style.display === 'block') {
+        element.appendChild(actionPlanResult.cloneNode(true));
+    }
+
+    const opt = {
+        margin: 1,
+        filename: `Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
 });

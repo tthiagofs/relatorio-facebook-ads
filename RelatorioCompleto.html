@@ -246,13 +246,13 @@
         color: #dc3545;
     }
 
-    #shareWhatsAppBtn {
+    #exportPdfBtn {
         display: none;
-        background: #25D366;
+        background: #ff5722; /* Cor laranja para destacar */
     }
 
-    #shareWhatsAppBtn:hover {
-        background: #20c058;
+    #exportPdfBtn:hover {
+        background: #e64a19;
     }
 
     /* Ajustes para mobile */
@@ -420,7 +420,7 @@
             <button type="submit" class="btn-generate">Gerar Relatório</button>
         </form>
         <div id="reportContainer" class="report-container"></div>
-        <!-- Nova seção para o Plano de Ação -->
+        <!-- Seção para o Plano de Ação -->
         <div class="action-plan-section" id="actionPlanSection">
             <h3>Adicione seu Plano de Ação:</h3>
             <textarea id="actionPlanInput" placeholder="Digite seu plano de ação aqui (pressione Enter para separar itens da lista)"></textarea>
@@ -428,7 +428,7 @@
         </div>
         <!-- Resultado do Plano de Ação -->
         <div class="action-plan-result" id="actionPlanResult" style="display: none;"></div>
-        <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
+        <button id="exportPdfBtn">Exportar em PDF</button>
         <button id="backToReportSelectionBtn">Voltar</button>
     </div>
 
@@ -475,6 +475,7 @@
     </div>
 
     <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         // Inicializar o SDK do Facebook
         window.fbAsyncInit = function() {
@@ -489,5 +490,5 @@
         };
     </script>
     <script src="RelatorioCompleto.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91d277218eab53c6',t:'MTc0MTQzODMwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
