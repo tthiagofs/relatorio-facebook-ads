@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório Completo de Anúncios do Facebook</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-   <style>
+    <style>
     body {
         font-family: 'Poppins', sans-serif;
         margin: 0;
@@ -294,39 +294,103 @@
         }
     }
 
-.top-ads h3 {
-    font-size: 20px;
-    margin-bottom: 15px;
-    text-align: center;
-}
+    .top-ads h3 {
+        font-size: 20px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
 
-.top-ad-card {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-    background: #fff;
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
+    .top-ad-card {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        background: #fff;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
 
-.top-ad-card img {
-    max-width: 200px;
-    max-height: 200px;
-    width: auto;
-    height: auto;
-    object-fit: contain; /* Mantém a proporção sem distorção */
-    border-radius: 6px;
-    margin-right: 15px;
-    border: 1px solid #ddd;
-}
+    .top-ad-card img {
+        max-width: 200px;
+        max-height: 200px;
+        width: auto;
+        height: auto;
+        object-fit: contain; /* Mantém a proporção sem distorção */
+        border-radius: 6px;
+        margin-right: 15px;
+        border: 1px solid #ddd;
+    }
 
-.top-ad-card .metric-value {
-    font-size: 16px;
-    color: #333;
-    margin: 5px 0;
-}
+    .top-ad-card .metric-value {
+        font-size: 16px;
+        color: #333;
+        margin: 5px 0;
+    }
 
+    /* Estilos para o Plano de Ação */
+    .action-plan-section {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 6px;
+        display: none; /* Inicialmente oculto */
+    }
+
+    .action-plan-section h3 {
+        font-size: 20px;
+        color: #1e3c72;
+        margin-bottom: 15px;
+    }
+
+    #actionPlanInput {
+        width: 100%;
+        min-height: 150px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 16px;
+        resize: vertical;
+        background: #fff;
+    }
+
+    #actionPlanInput:focus {
+        border-color: #1e3c72;
+        outline: none;
+    }
+
+    #submitActionPlanBtn {
+        background: linear-gradient(135deg, #1e3c72, #355e9c);
+        margin-top: 15px;
+    }
+
+    #submitActionPlanBtn:hover {
+        background: linear-gradient(135deg, #2a5298, #4b77be);
+    }
+
+    .action-plan-result {
+        margin-top: 20px;
+        padding: 15px;
+        background: #fff;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .action-plan-result h3 {
+        font-size: 22px;
+        color: #1e3c72;
+        margin-bottom: 15px;
+    }
+
+    .action-plan-result ul {
+        list-style-type: disc;
+        padding-left: 20px;
+        font-size: 16px;
+        color: #333;
+    }
+
+    .action-plan-result li {
+        margin-bottom: 10px;
+    }
 </style>
 </head>
 <body>
@@ -356,9 +420,16 @@
             <button type="submit" class="btn-generate">Gerar Relatório</button>
         </form>
         <div id="reportContainer" class="report-container"></div>
+        <!-- Nova seção para o Plano de Ação -->
+        <div class="action-plan-section" id="actionPlanSection">
+            <h3>Adicione seu Plano de Ação:</h3>
+            <textarea id="actionPlanInput" placeholder="Digite seu plano de ação aqui (pressione Enter para separar itens da lista)"></textarea>
+            <button id="submitActionPlanBtn">Enviar</button>
+        </div>
+        <!-- Resultado do Plano de Ação -->
+        <div class="action-plan-result" id="actionPlanResult" style="display: none;"></div>
         <button id="shareWhatsAppBtn">Compartilhar no WhatsApp</button>
         <button id="backToReportSelectionBtn">Voltar</button>
-
     </div>
 
     <div id="campaignsModal" class="modal" style="display: none;">
@@ -418,5 +489,5 @@
         };
     </script>
     <script src="RelatorioCompleto.js"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91d277218eab53c6',t:'MTc0MTQzODMwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
