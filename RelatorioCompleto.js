@@ -15,7 +15,7 @@ const cancelComparisonBtn = document.getElementById('cancelComparison');
 const actionPlanSection = document.getElementById('actionPlanSection');
 const actionPlanInput = document.getElementById('actionPlanInput');
 const submitActionPlanBtn = document.getElementById('submitActionPlanBtn');
-const actionPlanPassive = document.getElementById('actionPlanResult');
+const actionPlanResult = document.getElementById('actionPlanResult');
 
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = JSON.parse(localStorage.getItem('adAccountsMap')) || {};
@@ -28,7 +28,7 @@ let isAdSetFilterActive = false;
 let isFilterActivated = false;
 let campaignSearchText = '';
 let adSetSearchText = '';
-let currentAccessasc = localStorage.getItem('fbAccessToken') || null;
+let currentAccessToken = localStorage.getItem('fbAccessToken') || null; // Corrigido de currentAccessasc para currentAccessToken
 let comparisonData = null;
 
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
