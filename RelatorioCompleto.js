@@ -13,6 +13,9 @@ const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 const confirmComparisonBtn = document.getElementById('confirmComparison');
 const cancelComparisonBtn = document.getElementById('cancelComparison');
 
+
+
+
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = JSON.parse(localStorage.getItem('adAccountsMap')) || {};
 const adSetsMap = {};
@@ -33,44 +36,6 @@ backToReportSelectionBtn.addEventListener('click', () => {
     window.location.href = 'index.html?screen=reportSelection'; // Adiciona um parâmetro na URL
 });
 
-
-// Função para carregar contas de anúncios
-async function loadAdAccounts() {
-    if (!currentAccessToken) {
-        console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
-        alert('Você precisa fazer login com o Facebook primeiro. Redirecionando para a página inicial.');
-        setTimeout(() => {
-            window.location.replace('index.html');
-        }, 100);
-        return;
-    }
-
-    FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
-        if (accountResponse && !accountResponse.error) {
-            console.log('Contas de anúncios carregadas com sucesso');
-            const unitSelect = document.getElementById('unitId');
-            unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-            let accounts = accountResponse.data || [];
-            accounts.forEach(account => {
-                adAccountsMap[account.id] = account.name;
-            });
-            // Adicionar opções ao select
-            Object.keys(adAccountsMap).forEach(accountId => {
-                const option = document.createElement('option');
-                option.value = accountId;
-                option.textContent = adAccountsMap[accountId];
-                unitSelect.appendChild(option);
-            });
-        } else {
-            console.error('Erro ao carregar contas de anúncios:', accountResponse.error);
-            document.getElementById('loginError').textContent = 'Erro ao carregar contas de anúncios. Tente novamente.';
-            document.getElementById('loginError').style.display = 'block';
-        }
-    });
-}
-
-// Chamar a função para carregar contas de anúncios ao iniciar
-loadAdAccounts();
 
 // Função para obter insights de um anúncio
 async function getAdInsights(adId, startDate, endDate) {

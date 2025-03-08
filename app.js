@@ -19,6 +19,11 @@ const closeAdSetsModalBtn = document.getElementById('closeAdSetsModal');
 
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
 
+backToReportSelectionBtn.addEventListener('click', () => {
+    showScreen(reportSelectionScreen);
+});
+
+
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
 const adSetsMap = {};
@@ -31,77 +36,6 @@ let isFilterActivated = false;
 let campaignSearchText = '';
 let adSetSearchText = '';
 let currentAccessToken = null;
-
-// Função para lidar com o login do Facebook
-async function facebookLogin() {
-    return new Promise((resolve, reject) => {
-        FB.login(function(response) {
-            if (response.authResponse) {
-                console.log('Login com Facebook bem-sucedido:', response.authResponse);
-                currentAccessToken = response.authResponse.accessToken;
-                localStorage.setItem('fbAccessToken', currentAccessToken);
-                resolve(response);
-            } else {
-                console.error('Login com Facebook falhou:', response);
-                reject('Login cancelado ou falhou. Tente novamente.');
-            }
-        }, {scope: 'ads_read,ads_management,business_management'});
-    });
-}
-
-// Função para gerenciar o login e carregar dados
-async function handleLogin() {
-    try {
-        const response = await facebookLogin();
-        await loadAdAccounts(); // Carregar contas de anúncios após login
-        showScreen(reportSelectionScreen); // Mostrar a tela de seleção de relatório após login
-    } catch (error) {
-        appLoginError.textContent = error;
-        appLoginError.style.display = 'block';
-    }
-}
-
-// Evento de clique para o botão de login
-loginBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    handleLogin();
-});
-
-// Função para carregar contas de anúncios
-async function loadAdAccounts() {
-    FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
-        if (accountResponse && !accountResponse.error) {
-            console.log('Contas de anúncios carregadas com sucesso');
-            const unitSelect = document.getElementById('unitId');
-            unitSelect.innerHTML = '<option value="">Escolha a unidade</option>';
-            let accounts = accountResponse.data || [];
-            accounts.forEach(account => {
-                adAccountsMap[account.id] = account.name;
-            });
-            // Adicionar opções ao select
-            Object.keys(adAccountsMap).forEach(accountId => {
-                const option = document.createElement('option');
-                option.value = accountId;
-                option.textContent = adAccountsMap[accountId];
-                unitSelect.appendChild(option);
-            });
-            localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
-        } else {
-            console.error('Erro ao carregar contas de anúncios:', accountResponse.error);
-            appLoginError.textContent = 'Erro ao carregar contas de anúncios. Tente novamente.';
-            appLoginError.style.display = 'block';
-        }
-    });
-}
-
-// Verificar se o token de acesso já está armazenado
-const storedToken = localStorage.getItem('fbAccessToken');
-if (storedToken) {
-    currentAccessToken = storedToken;
-    loadAdAccounts(); // Carregar contas de anúncios se já estiver logado
-} else {
-    showScreen(appLoginScreen); // Mostrar tela de login se não estiver logado
-}
 
 // Função para alternar telas
 function showScreen(screen) {
@@ -531,6 +465,7 @@ function handleCompleteReportLoginResponse(response) {
         document.getElementById('loginError').style.display = 'block';
     }
 }
+
 
 // Carrega os ad sets e campanhas quando o formulário é preenchido
 form.addEventListener('input', async function(e) {
