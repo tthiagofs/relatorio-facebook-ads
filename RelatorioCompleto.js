@@ -1007,96 +1007,126 @@ async function waitForImages(element) {
 
 // Exportar o relatório em PDF
 exportPdfBtn.addEventListener('click', async () => {
-    console.log('Iniciando exportação para PDF...');
+    console.log('Iniciando exportação para PDF com jsPDF...');
 
-    // Criar um contêiner temporário para o conteúdo do PDF
-    const pdfContainer = document.createElement('div');
-    pdfContainer.style.fontFamily = "'Poppins', sans-serif";
-    pdfContainer.style.color = '#333';
-    pdfContainer.style.padding = '20px';
-    pdfContainer.style.position = 'absolute';
-    pdfContainer.style.left = '0';
-    pdfContainer.style.top = '0';
-    pdfContainer.style.width = '100%';
-    pdfContainer.style.background = '#fff';
-    pdfContainer.style.minHeight = '800px'; // Garantir altura mínima
-    pdfContainer.style.overflow = 'visible'; // Evitar corte de conteúdo
+    // Acessar o jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
 
-    // Clonar o relatório
-    const reportClone = reportContainer.cloneNode(true);
-    pdfContainer.appendChild(reportClone);
+    // Variáveis para controle de posição
+    let yPosition = 20;
 
-    // Adicionar o plano de ação, se visível
-    if (actionPlanResult.style.display === 'block') {
-        const actionPlanClone = actionPlanResult.cloneNode(true);
-        pdfContainer.appendChild(actionPlanClone);
+    // Extrair dados do relatório
+    const unitId = document.getElementById('unitId').value;
+    const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    const reach = document.querySelector('.metric-card.reach .metric-value')?.textContent || '0 pessoas';
+    const messages = document.querySelector('.metric-card.messages .metric-value')?.textContent || '0';
+    const costPerMessage = document.querySelector('.metric-card.cost .metric-value')?.textContent || 'R$ 0';
+    const investment = document.querySelector('.metric-card.investment .metric-value')?.textContent || 'R$ 0';
+
+    // Título
+    doc.setFontSize(16);
+    doc.setTextColor(30, 60, 114); // Cor #1e3c72
+    doc.text(`Relatório Completo - CA - ${unitName}`, 40, yPosition);
+    yPosition += 20;
+
+    // Período
+    doc.setFontSize(12);
+    doc.setTextColor(102, 102, 102); // Cor #666
+    doc.text(`Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}`, 40, yPosition);
+    yPosition += 20;
+
+    // Comparação (se houver)
+    if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
+        doc.text(`Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}`, 40, yPosition);
+        yPosition += 20;
     }
 
-    // Copiar estilos relevantes do CSS
-    const styles = `
-        .report-header h2 { font-size: 22px; color: #1e3c72; margin: 0 0 10px; }
-        .report-header p { font-size: 16px; color: #666; margin: 5px 0; }
-        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
-        .metric-card { background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
-        .metric-card.reach { background: #e0f7fa; }
-        .metric-card.messages { background: #f3e5f5; }
-        .metric-card.cost { background: #fffde7; }
-        .metric-card.investment { background: #e8f5e9; }
-        .metric-label { font-size: 14px; color: #555; margin-bottom: 5px; }
-        .metric-value { font-size: 18px; font-weight: 600; color: #333; }
-        .metric-comparison { font-size: 12px; margin-top: 5px; }
-        .metric-comparison.increase { color: #28a745; }
-        .metric-comparison.decrease { color: #dc3545; }
-        .top-ads { margin-top: 20px; }
-        .top-ads h3 { font-size: 20px; color: #1e3c72; text-align: center; margin-bottom: 15px; }
-        .top-ad-card { display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
-        .top-ad-card img { max-width: 300px; max-height: 300px; width: auto; height: auto; object-fit: contain; border-radius: 6px; margin-right: 15px; }
-        .action-plan-result { margin-top: 20px; padding: 15px; background: #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); }
-        .action-plan-result h3 { font-size: 22px; color: #1e3c72; margin-bottom: 15px; }
-        .action-plan-result ul { list-style-type: disc; padding-left: 20px; font-size: 16px; color: #333; }
-        .action-plan-result li { margin-bottom: 10px; }
-    `;
-    const styleElement = document.createElement('style');
-    styleElement.textContent = styles;
-    pdfContainer.appendChild(styleElement);
+    // Métricas
+    doc.setFontSize(14);
+    doc.setTextColor(85, 85, 85); // Cor #555
+    doc.text('Métricas:', 40, yPosition);
+    yPosition += 10;
 
-    // Adicionar o contêiner ao corpo para renderização
-    document.body.appendChild(pdfContainer);
-    console.log('pdfContainer adicionado ao DOM:', pdfContainer);
+    doc.setFontSize(12);
+    doc.setTextColor(51, 51, 51); // Cor #333
+    doc.text(`Alcance Total: ${reach}`, 50, yPosition);
+    yPosition += 15;
+    doc.text(`Mensagens Iniciadas: ${messages}`, 50, yPosition);
+    yPosition += 15;
+    doc.text(`Custo por Mensagem: ${costPerMessage}`, 50, yPosition);
+    yPosition += 15;
+    doc.text(`Investimento Total: ${investment}`, 50, yPosition);
+    yPosition += 20;
 
-    // Forçar a renderização do layout
-    pdfContainer.offsetHeight; // Trigger reflow
-    await new Promise(resolve => setTimeout(resolve, 100)); // Pequeno atraso para garantir layout
+    // Anúncios em destaque
+    const topAds = document.querySelectorAll('.top-ad-card');
+    if (topAds.length > 0) {
+        doc.setFontSize(14);
+        doc.setTextColor(30, 60, 114); // Cor #1e3c72
+        doc.text('Anúncios em Destaque:', 40, yPosition);
+        yPosition += 10;
 
-    // Esperar o carregamento das imagens
-    await waitForImages(pdfContainer);
-    console.log('Imagens carregadas, iniciando renderização para PDF...');
+        for (const [index, ad] of Array.from(topAds).entries()) {
+            const img = ad.querySelector('img');
+            const messagesText = ad.querySelectorAll('.metric-value')[0]?.textContent || 'Mensagens: 0';
+            const costText = ad.querySelectorAll('.metric-value')[1]?.textContent || 'Custo por Msg: R$ 0';
 
-    // Configurações do PDF
-    const opt = {
-        margin: 0.5,
-        filename: `Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
-            logging: true,
-            onclone: (doc) => {
-                console.log('Documento clonado para html2canvas:', doc);
+            // Adicionar texto do anúncio
+            doc.setFontSize(12);
+            doc.setTextColor(51, 51, 51);
+            doc.text(`${index + 1}. ${messagesText}`, 50, yPosition);
+            yPosition += 15;
+            doc.text(`   ${costText}`, 50, yPosition);
+            yPosition += 20;
+
+            // Adicionar imagem, se disponível
+            if (img && img.src) {
+                try {
+                    const imgData = await fetchImageAsBase64(img.src);
+                    doc.addImage(imgData, 'JPEG', 50, yPosition, 200, 200); // 200x200 pontos
+                    yPosition += 220; // Espaço após a imagem
+                } catch (error) {
+                    console.error('Erro ao carregar imagem para PDF:', error);
+                    doc.text('Imagem não pôde ser carregada.', 50, yPosition);
+                    yPosition += 20;
+                }
             }
-        },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-
-    try {
-        // Gerar e salvar o PDF
-        await html2pdf().set(opt).from(pdfContainer).save();
-        console.log('PDF gerado e baixado com sucesso.');
-    } catch (error) {
-        console.error('Erro ao gerar o PDF:', error);
+        }
     }
 
-    // Remover o contêiner temporário
-    document.body.removeChild(pdfContainer);
-    console.log('pdfContainer removido do DOM.');
+    // Plano de ação, se visível
+    if (actionPlanResult.style.display === 'block') {
+        doc.setFontSize(14);
+        doc.setTextColor(30, 60, 114);
+        doc.text('Plano de Ação:', 40, yPosition);
+        yPosition += 10;
+
+        const actionItems = actionPlanResult.querySelectorAll('li');
+        doc.setFontSize(12);
+        doc.setTextColor(51, 51, 51);
+        actionItems.forEach((item, index) => {
+            doc.text(`- ${item.textContent}`, 50, yPosition);
+            yPosition += 15;
+        });
+    }
+
+    // Salvar o PDF
+    doc.save(`Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
+    console.log('PDF gerado e baixado com sucesso usando jsPDF.');
 });
+
+// Função auxiliar para carregar imagem como base64
+async function fetchImageAsBase64(url) {
+    const response = await fetch(url, { mode: 'cors' });
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
