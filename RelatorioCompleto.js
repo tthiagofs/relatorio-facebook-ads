@@ -139,17 +139,35 @@ async function getCreativeData(creativeId) {
     return new Promise((resolve) => {
         FB.api(
             `/${creativeId}`,
-            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id', access_token: currentAccessToken },
+            { fields: 'object_story_spec,thumbnail_url,effective_object_story_id,image_hash', access_token: currentAccessToken },
             async function(response) {
                 if (response && !response.error) {
                     console.log('Resposta da API para criativo:', response);
-                    let imageUrl = 'https://dummyimage.com/200x200/ccc/fff'; // Placeholder confiável
-                    let thumbnailFallback = response.thumbnail_url; // Salva o thumbnail original como fallback
+                    let imageUrl = 'https://dummyimage.com/600x600/ccc/fff'; // Placeholder maior
+                    let thumbnailFallback = response.thumbnail_url;
+
+                    // Tenta buscar uma imagem de alta resolução diretamente
+                    if (response.image_hash) {
+                        const imageResponse = await new Promise((imageResolve) => {
+                            FB.api(
+                                `/adimages`,
+                                { hashes: [response.image_hash], fields: 'url', access_token: currentAccessToken },
+                                function(imageResponse) {
+                                    imageResolve(imageResponse);
+                                }
+                            );
+                        });
+                        if (imageResponse && !imageResponse.error && imageResponse.data && imageResponse.data.length > 0) {
+                            imageUrl = imageResponse.data[0].url;
+                            console.log('Imagem de alta resolução via image_hash:', imageUrl);
+                        }
+                    }
 
                     // Tenta extrair a imagem do object_story_spec
-                    if (response.object_story_spec) {
+                    if (!imageUrl.includes('dummyimage') && response.object_story_spec) {
                         const { link_data, photo_data, video_data } = response.object_story_spec;
                         if (photo_data && photo_data.images && photo_data.images.length > 0) {
+                            // Priorizar a maior imagem disponível
                             const largestImage = photo_data.images.reduce((prev, current) => 
                                 (prev.width > current.width) ? prev : current, photo_data.images[0]);
                             imageUrl = largestImage.original_url || largestImage.url || photo_data.url;
@@ -186,7 +204,7 @@ async function getCreativeData(creativeId) {
                         }
                     }
 
-                    // Usa o thumbnail original como fallback se não encontrou uma imagem melhor
+                    // Usa o thumbnail original como último recurso
                     if (!imageUrl || imageUrl.includes('dummyimage')) {
                         imageUrl = thumbnailFallback;
                         console.log('Usando thumbnail original como fallback:', imageUrl);
@@ -195,13 +213,12 @@ async function getCreativeData(creativeId) {
                     resolve({ imageUrl: imageUrl });
                 } else {
                     console.error(`Erro ao carregar criativo ${creativeId}:`, response.error);
-                    resolve({ imageUrl: 'https://dummyimage.com/200x200/ccc/fff' });
+                    resolve({ imageUrl: 'https://dummyimage.com/600x600/ccc/fff' });
                 }
             }
         );
     });
 }
-
 
 
 // Verificar se o token de acesso está disponível
@@ -824,7 +841,10 @@ async function generateReport() {
     });
 
     topAds.sort((a, b) => b.messages - a.messages);
-    const topTwoAds = topAds.slice(0, 2);
+    // Filtrar para evitar imagens de baixa qualidade (ex.: thumbnails pequenos ou placeholders)
+    const topTwoAds = topAds.slice(0, 2).filter(ad => {
+        return ad.imageUrl && !ad.imageUrl.includes('p64x64') && !ad.imageUrl.includes('dummyimage');
+    });
 
     // Calcular métricas de comparação
     if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
@@ -888,7 +908,7 @@ async function generateReport() {
 
     const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
 
-    // Construir o relatório com os Top 2 anúncios (com imagens)
+    // Construir o relatório com os Top 2 anúncios (com imagens de maior qualidade)
     let reportHTML = `
         <div class="report-header">
             <h2>Relatório Completo - CA - ${unitName}</h2>
@@ -940,12 +960,13 @@ async function generateReport() {
             <h3 style="color: #1e3c72;">Anúncios em Destaque</h3>
             ${topTwoAds.length > 0 ? topTwoAds.map(ad => `
                 <div class="top-ad-card" style="display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
-                  <img src="${ad.imageUrl}" alt="Imagem do Anúncio" crossorigin="anonymous" style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
+                    <img src="${ad.imageUrl}" alt="Imagem do Anúncio" crossorigin="anonymous" loading="lazy" style="max-width: 300px; max-height: 300px; width: auto; height: auto; object-fit: contain; border-radius: 6px; margin-right: 15px;">
+                    <div>
                         <div class="metric-value">Mensagens: ${ad.messages}</div>
                         <div class="metric-value">Custo por Msg: R$ ${ad.costPerMessage.replace('.', ',')}</div>
                     </div>
                 </div>
-            `).join('') : '<p>Nenhum anúncio com mensagens no período selecionado.</p>'}
+            `).join('') : '<p>Nenhum anúncio com mensagens no período selecionado ou imagens de qualidade insuficiente.</p>'}
         </div>
     `;
 
@@ -953,6 +974,7 @@ async function generateReport() {
     reportContainer.innerHTML = reportHTML;
     shareWhatsAppBtn.style.display = 'block';
 }
+
 
 // Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {
