@@ -235,6 +235,14 @@ button:hover {
     overflow-y: auto !important; /* Garantir rolagem vertical */
     padding-right: 10px !important; /* Espaço para a barra de rolagem */
     margin-bottom: 10px; /* Espaçamento abaixo da lista */
+    box-sizing: border-box; /* Garantir que padding não afete o tamanho */
+    display: block; /* Forçar o contêiner a se comportar como bloco */
+}
+
+/* Garantir que os elementos dentro da lista não quebrem a rolagem */
+#campaignsList .filter-option, #adSetsList .filter-option {
+    width: 100%; /* Forçar largura total */
+    box-sizing: border-box; /* Incluir padding na largura */
 }
 
 /* Estilos responsivos */

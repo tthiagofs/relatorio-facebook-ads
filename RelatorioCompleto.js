@@ -28,7 +28,7 @@ let isAdSetFilterActive = false;
 let isFilterActivated = false;
 let campaignSearchText = '';
 let adSetSearchText = '';
-let currentAccessToken = localStorage.getItem('fbAccessToken') || null; // Corrigido de currentAccessasc para currentAccessToken
+let currentAccessToken = localStorage.getItem('fbAccessToken') || null;
 let comparisonData = null;
 
 const backToReportSelectionBtn = document.getElementById('backToReportSelectionBtn');
@@ -257,7 +257,7 @@ sortedAccounts.forEach(account => {
     unitSelect.appendChild(option);
 });
 
-// Função para mostrar/esconder modais e gerenciar estado
+// Função para mostrar/esconder modals e gerenciar estado
 function toggleModal(modal, show, isCampaign) {
     if (show && isFilterActivated && ((isCampaign && selectedCampaigns.size === 0) || (!isCampaign && selectedAdSets.size === 0))) {
         return;
@@ -355,7 +355,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
         }
 
         function renderFilteredOptions(filteredOptions, set, isCampaignParam) {
-            container.innerHTML = '';
+            container.innerHTML = ''; // Limpar o contêiner
             filteredOptions.forEach(option => {
                 const div = document.createElement('div');
                 div.className = `filter-option ${set.has(option.value) ? 'selected' : ''}`;
@@ -428,6 +428,10 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 updateFilterButton();
             });
             container.appendChild(filterButton);
+
+            // Forçar o contêiner a reconhecer o conteúdo para rolagem
+            container.style.overflowY = 'auto';
+            container.style.maxHeight = '400px';
         }
 
         const currentSearchText = isCampaign ? campaignSearchText : adSetSearchText;
@@ -480,14 +484,20 @@ form.addEventListener('input', async function(e) {
         filterAdSetsBtn.disabled = false;
         filterCampaignsBtn.style.cursor = 'pointer';
         filterAdSetsBtn.style.cursor = 'pointer';
-        await Promise.all([
-            loadCampaigns(unitId, startDate, endDate),
-            loadAdSets(unitId, startDate, endDate)
-        ]);
+
+        // Executar as funções sequencialmente para evitar sobrecarga na API
+        try {
+            await loadCampaigns(unitId, startDate, endDate);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay de 1 segundo entre as chamadas
+            await loadAdSets(unitId, startDate, endDate);
+        } catch (error) {
+            console.error('Erro ao carregar campanhas ou ad sets:', error);
+            // Evitar alertas desnecessários, já que o relatório pode ser gerado
+        }
     }
 });
 
-// Função para carregar campanhas com paginação
+// Função para carregar campanhas com paginação e controle de limite de taxa
 async function loadCampaigns(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
@@ -533,6 +543,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
 
             if (campaignResponse.paging && campaignResponse.paging.next) {
                 nextPage = campaignResponse.paging.next;
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Delay de 1 segundo para respeitar o limite de taxa
                 loadMoreButton.style.display = 'block';
                 loadMoreButton.onclick = () => loadCampaigns(unitId, startDate, endDate); // Recarrega a próxima página
                 campaignsList.appendChild(loadMoreButton);
@@ -542,6 +553,9 @@ async function loadCampaigns(unitId, startDate, endDate) {
             }
         } else {
             console.error('Erro ao carregar campanhas:', campaignResponse.error);
+            if (campaignResponse.error && campaignResponse.error.code === 17) {
+                console.warn('Limite de requisições atingido durante o carregamento de campanhas.');
+            }
             nextPage = null;
         }
     }
@@ -615,7 +629,7 @@ async function loadAdSets(unitId, startDate, endDate) {
         } else {
             console.error('Erro ao carregar ad sets:', adSetResponse.error);
             if (adSetResponse.error && adSetResponse.error.code === 17) {
-                alert('Limite de requisições atingido. Tente novamente mais tarde ou verifique seu token.');
+                console.warn('Limite de requisições atingido durante o carregamento de ad sets.');
             }
             nextPage = null;
         }
