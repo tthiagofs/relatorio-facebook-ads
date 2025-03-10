@@ -213,6 +213,24 @@ async function getCreativeData(creativeId) {
     });
 }
 
+// Função para converter imagem para base64
+async function fetchImageAsBase64(url) {
+    try {
+        const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+        if (!response.ok) throw new Error('Erro ao carregar imagem');
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Falha ao converter imagem'));
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar imagem:', error);
+        return null; // Retorna null se falhar, para evitar crash
+    }
+}
+
 // Verificar se o token de acesso está disponível
 if (!currentAccessToken) {
     console.log('Token de acesso não encontrado. Redirecionando para a página de login.');
@@ -532,13 +550,13 @@ async function loadCampaigns(unitId, startDate, endDate) {
     console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
 }
 
-// Função para carregar ad sets com paginação
+// Função para carregar ad sets com paginação e controle de limite de taxa
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     
     adSetsMap[unitId] = adSetsMap[unitId] || {};
-    let nextPage = `/${unitId}/adsets?fields=id,name&limit=50&access_token=${currentAccessToken}`;
+    let nextPage = `/${unitId}/adsets?fields=id,name,effective_status&limit=50&access_token=${currentAccessToken}`;
 
     const loadMoreButton = document.createElement('button');
     loadMoreButton.textContent = 'Carregar mais';
@@ -586,6 +604,7 @@ async function loadAdSets(unitId, startDate, endDate) {
 
             if (adSetResponse.paging && adSetResponse.paging.next) {
                 nextPage = adSetResponse.paging.next;
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Delay de 1 segundo para respeitar o limite de taxa
                 loadMoreButton.style.display = 'block';
                 loadMoreButton.onclick = () => loadAdSets(unitId, startDate, endDate); // Recarrega a próxima página
                 adSetsList.appendChild(loadMoreButton);
@@ -595,6 +614,9 @@ async function loadAdSets(unitId, startDate, endDate) {
             }
         } else {
             console.error('Erro ao carregar ad sets:', adSetResponse.error);
+            if (adSetResponse.error && adSetResponse.error.code === 17) {
+                alert('Limite de requisições atingido. Tente novamente mais tarde ou verifique seu token.');
+            }
             nextPage = null;
         }
     }
@@ -602,6 +624,7 @@ async function loadAdSets(unitId, startDate, endDate) {
     const endTime = performance.now();
     console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`);
 }
+
 // Função para atualizar as opções de ad sets
 function updateAdSets(selectedCampaigns) {
     const unitId = document.getElementById('unitId').value;
@@ -1056,10 +1079,14 @@ exportPdfBtn.addEventListener('click', async () => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.setTextColor(102, 102, 102); // #666
-    doc.text(`📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}`, margin, yPosition);
+    const periodText = `📅 Período: ${startDate.split('-').reverse().join('/')}`;
+    const comparisonText = comparisonData && comparisonData.startDate && comparisonData.endDate
+        ? `📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}`
+        : '';
+    doc.text(periodText, margin, yPosition, { maxWidth: contentWidth, encoding: 'UTF-8' });
     yPosition += 15;
-    if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
-        doc.text(`📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}`, margin, yPosition);
+    if (comparisonText) {
+        doc.text(comparisonText, margin, yPosition, { maxWidth: contentWidth, encoding: 'UTF-8' });
         yPosition += 15;
     }
 
@@ -1114,9 +1141,14 @@ exportPdfBtn.addEventListener('click', async () => {
             if (img && img.src) {
                 try {
                     const imgData = await fetchImageAsBase64(img.src);
-                    doc.addImage(imgData, 'JPEG', margin + 10, yPosition + 5, 100, 100); // Imagem pequena
+                    if (imgData) {
+                        doc.addImage(imgData, 'JPEG', margin + 10, yPosition + 5, 100, 100); // Imagem pequena
+                    } else {
+                        doc.setFontSize(10);
+                        doc.text('Imagem não disponível (CORS ou URL inválida)', margin + 10, yPosition + 55);
+                    }
                 } catch (error) {
-                    console.error('Erro ao carregar imagem para PDF:', error);
+                    console.error('Erro ao adicionar imagem ao PDF:', error);
                     doc.setFontSize(10);
                     doc.text('Imagem não disponível', margin + 10, yPosition + 55);
                 }
