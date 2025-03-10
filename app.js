@@ -166,6 +166,14 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 container.appendChild(div);
             });
 
+            // Adicionar estilos de rolagem diretamente
+            container.style.maxHeight = '400px';
+            container.style.overflowY = 'auto';
+            container.style.paddingRight = '10px';
+            container.style.marginBottom = '10px';
+            container.style.boxSizing = 'border-box';
+            container.style.display = 'block';
+
             const existingButton = container.querySelector('.btn-filter-toggle');
             if (existingButton) existingButton.remove();
 
@@ -563,7 +571,16 @@ async function loadAdSets(unitId, startDate, endDate) {
             if (adSetResponse && !adSetResponse.error) {
                 console.log(`Resposta da API para ad sets:`, adSetResponse);
                 adSetsMap[unitId] = {};
-                const adSetIds = adSetResponse.data.map(set => set.id);
+                const adSetIds = adSetResponse.data ? adSetResponse.data.map(set => set.id) : [];
+
+                if (adSetIds.length === 0) {
+                    console.warn(`Nenhum ad set retornado para unitId: ${unitId}`);
+                    const adSetsList = document.getElementById('adSetsList');
+                    if (adSetsList) {
+                        adSetsList.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para o período selecionado.</p>';
+                    }
+                    return;
+                }
 
                 const insightPromises = adSetIds.map(adSetId => getAdSetInsights(adSetId, startDate, endDate));
                 const insights = await Promise.all(insightPromises);
@@ -604,7 +621,7 @@ async function loadAdSets(unitId, startDate, endDate) {
                 console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
                 const adSetsList = document.getElementById('adSetsList');
                 if (adSetsList) {
-                    adSetsList.innerHTML = '<p>Erro ao carregar os conjuntos de anúncios. Tente novamente ou faça login novamente.</p>';
+                    adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${adSetResponse.error.message || 'Erro desconhecido'}. Tente novamente ou faça login novamente.</p>`;
                 }
             }
         }
