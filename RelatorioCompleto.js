@@ -1023,13 +1023,16 @@ exportPdfBtn.addEventListener('click', async () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
     let yPosition = 20;
+    const pageWidth = doc.internal.pageSize.width; // 612pt para letter
+    const margin = 40;
+    const contentWidth = pageWidth - 2 * margin;
 
-    // Função para adicionar retângulo com sombra
-    const addCard = (x, y, width, height, color) => {
-        doc.setFillColor(color);
-        doc.rect(x, y, width, height, 'F'); // Preenchimento
-        doc.setDrawColor(0, 0, 0, 0.1); // Sombra leve
-        doc.rect(x + 2, y + 2, width, height, 'S');
+    // Função para adicionar nova página se necessário
+    const checkPageBreak = (height) => {
+        if (yPosition + height > doc.internal.pageSize.height - margin) {
+            doc.addPage();
+            yPosition = margin;
+        }
     };
 
     // Extrair dados do relatório
@@ -1037,82 +1040,66 @@ exportPdfBtn.addEventListener('click', async () => {
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-
     const reach = document.querySelector('.metric-card.reach .metric-value')?.textContent || '0 pessoas';
     const messages = document.querySelector('.metric-card.messages .metric-value')?.textContent || '0';
     const costPerMessage = document.querySelector('.metric-card.cost .metric-value')?.textContent || 'R$ 0';
     const investment = document.querySelector('.metric-card.investment .metric-value')?.textContent || 'R$ 0';
 
     // Título
-    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
     doc.setTextColor(30, 60, 114); // #1e3c72
-    doc.text(`Relatório Completo - CA - ${unitName}`, 40, yPosition);
+    doc.text(`Relatório Completo - CA - ${unitName}`, margin, yPosition, { maxWidth: contentWidth });
     yPosition += 25;
 
     // Período
-    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
     doc.setTextColor(102, 102, 102); // #666
-    doc.text(`📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}`, 40, yPosition);
-    yPosition += 20;
-
-    // Comparação (se houver)
+    doc.text(`📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}`, margin, yPosition);
+    yPosition += 15;
     if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
-        doc.text(`📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}`, 40, yPosition);
-        yPosition += 20;
+        doc.text(`📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}`, margin, yPosition);
+        yPosition += 15;
     }
 
     // Métricas em grade
-    yPosition += 10;
-    const cardWidth = 260;
-    const cardHeight = 80;
-    const margin = 15;
+    checkPageBreak(100);
+    const cardWidth = (contentWidth - 15) / 2; // Dois cards por linha com margem de 15pt entre eles
+    const cardHeight = 70;
+    const colors = {
+        reach: '#e0f7fa',
+        messages: '#f3e5f5',
+        cost: '#fffde7',
+        investment: '#e8f5e9'
+    };
 
-    // Alcance
-    addCard(40, yPosition, cardWidth, cardHeight, '#e0f7fa');
-    doc.setFontSize(10);
-    doc.setTextColor(85, 85, 85); // #555
-    doc.text('Alcance Total', 50, yPosition + 20);
-    doc.setFontSize(14);
-    doc.setTextColor(51, 51, 51); // #333
-    doc.text(reach, 50, yPosition + 40);
+    // Função para desenhar card
+    const drawCard = (x, y, label, value, bgColor) => {
+        doc.setFillColor(bgColor);
+        doc.rect(x, y, cardWidth, cardHeight, 'F');
+        doc.setFontSize(9);
+        doc.setTextColor(85, 85, 85);
+        doc.text(label, x + 10, y + 20);
+        doc.setFontSize(12);
+        doc.setTextColor(51, 51, 51);
+        doc.text(value, x + 10, y + 40, { maxWidth: cardWidth - 20 });
+    };
 
-    // Mensagens
-    addCard(40 + cardWidth + margin, yPosition, cardWidth, cardHeight, '#f3e5f5');
-    doc.setFontSize(10);
-    doc.setTextColor(85, 85, 85);
-    doc.text('Mensagens Iniciadas', 50 + cardWidth + margin, yPosition + 20);
-    doc.setFontSize(14);
-    doc.setTextColor(51, 51, 51);
-    doc.text(messages, 50 + cardWidth + margin, yPosition + 40);
-
-    yPosition += cardHeight + margin;
-
-    // Custo
-    addCard(40, yPosition, cardWidth, cardHeight, '#fffde7');
-    doc.setFontSize(10);
-    doc.setTextColor(85, 85, 85);
-    doc.text('Custo por Mensagem', 50, yPosition + 20);
-    doc.setFontSize(14);
-    doc.setTextColor(51, 51, 51);
-    doc.text(costPerMessage, 50, yPosition + 40);
-
-    // Investimento
-    addCard(40 + cardWidth + margin, yPosition, cardWidth, cardHeight, '#e8f5e9');
-    doc.setFontSize(10);
-    doc.setTextColor(85, 85, 85);
-    doc.text('Investimento Total', 50 + cardWidth + margin, yPosition + 20);
-    doc.setFontSize(14);
-    doc.setTextColor(51, 51, 51);
-    doc.text(investment, 50 + cardWidth + margin, yPosition + 40);
-
+    drawCard(margin, yPosition, 'Alcance Total', reach, colors.reach);
+    drawCard(margin + cardWidth + 15, yPosition, 'Mensagens Iniciadas', messages, colors.messages);
+    yPosition += cardHeight + 10;
+    drawCard(margin, yPosition, 'Custo por Mensagem', costPerMessage, colors.cost);
+    drawCard(margin + cardWidth + 15, yPosition, 'Investimento Total', investment, colors.investment);
     yPosition += cardHeight + 20;
 
     // Anúncios em destaque
     const topAds = document.querySelectorAll('.top-ad-card');
     if (topAds.length > 0) {
-        doc.setFontSize(16);
+        checkPageBreak(30);
+        doc.setFontSize(14);
         doc.setTextColor(30, 60, 114);
-        doc.text('Anúncios em Destaque', 40, yPosition);
+        doc.text('Anúncios em Destaque', margin, yPosition);
         yPosition += 20;
 
         for (const [index, ad] of Array.from(topAds).entries()) {
@@ -1120,54 +1107,48 @@ exportPdfBtn.addEventListener('click', async () => {
             const messagesText = ad.querySelectorAll('.metric-value')[0]?.textContent || 'Mensagens: 0';
             const costText = ad.querySelectorAll('.metric-value')[1]?.textContent || 'Custo por Msg: R$ 0';
 
-            // Cartão do anúncio
-            addCard(40, yPosition, 500, 220, '#ffffff');
-            doc.setFontSize(12);
-            doc.setTextColor(51, 51, 51);
-            doc.text(messagesText, 260, yPosition + 30);
-            doc.text(costText, 260, yPosition + 50);
+            checkPageBreak(120);
+            doc.setFillColor(255, 255, 255);
+            doc.rect(margin, yPosition, contentWidth, 110, 'F');
 
             if (img && img.src) {
                 try {
                     const imgData = await fetchImageAsBase64(img.src);
-                    doc.addImage(imgData, 'JPEG', 50, yPosition + 10, 200, 200);
+                    doc.addImage(imgData, 'JPEG', margin + 10, yPosition + 5, 100, 100); // Imagem pequena
                 } catch (error) {
                     console.error('Erro ao carregar imagem para PDF:', error);
-                    doc.text('Imagem não pôde ser carregada.', 50, yPosition + 30);
+                    doc.setFontSize(10);
+                    doc.text('Imagem não disponível', margin + 10, yPosition + 55);
                 }
             }
-            yPosition += 240;
+
+            doc.setFontSize(11);
+            doc.setTextColor(51, 51, 51);
+            doc.text(messagesText, margin + 120, yPosition + 30);
+            doc.text(costText, margin + 120, yPosition + 50);
+            yPosition += 120;
         }
     }
 
-    // Plano de ação
+    // Plano de Ação
     if (actionPlanResult.style.display === 'block') {
-        doc.setFontSize(16);
+        checkPageBreak(30);
+        doc.setFontSize(14);
         doc.setTextColor(30, 60, 114);
-        doc.text('Plano de Ação:', 40, yPosition);
+        doc.text('Plano de Ação:', margin, yPosition);
         yPosition += 20;
 
         const actionItems = actionPlanResult.querySelectorAll('li');
-        doc.setFontSize(12);
+        doc.setFontSize(11);
         doc.setTextColor(51, 51, 51);
         actionItems.forEach((item) => {
-            doc.text(`• ${item.textContent}`, 50, yPosition);
-            yPosition += 15;
+            checkPageBreak(15);
+            const lines = doc.splitTextToSize(`• ${item.textContent}`, contentWidth - 20);
+            doc.text(lines, margin + 10, yPosition);
+            yPosition += lines.length * 12; // Ajuste de altura por linha
         });
     }
 
     doc.save(`Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
     console.log('PDF gerado e baixado com sucesso usando jsPDF.');
 });
-
-// Função auxiliar para carregar imagem como base64 (já deve estar no seu código)
-async function fetchImageAsBase64(url) {
-    const response = await fetch(url, { mode: 'cors' });
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-}

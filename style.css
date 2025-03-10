@@ -242,3 +242,15 @@ button:hover {
         margin-bottom: 15px; /* Ajustar o espaçamento entre grupos de formulário */
     }
 }
+
+
+#campaignsList, #adSetsList {
+    max-height: 400px; /* Altura máxima ajustável conforme necessário */
+    overflow-y: auto; /* Habilita barra de rolagem vertical */
+    padding-right: 10px; /* Espaço para a barra de rolagem não sobrepor o conteúdo */
+}
+
+.modal-content {
+    max-height: 80vh; /* Limita a altura do modal a 80% da tela */
+    overflow-y: auto; /* Rolagem no modal se o conteúdo total for muito grande */
+}
