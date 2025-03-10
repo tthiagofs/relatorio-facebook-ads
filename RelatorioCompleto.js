@@ -227,7 +227,7 @@ async function fetchImageAsBase64(url) {
         });
     } catch (error) {
         console.error('Erro ao carregar imagem:', error);
-        return null; // Retorna null se falhar, para evitar crash
+        return null;
     }
 }
 
@@ -492,7 +492,6 @@ form.addEventListener('input', async function(e) {
             await loadAdSets(unitId, startDate, endDate);
         } catch (error) {
             console.error('Erro ao carregar campanhas ou ad sets:', error);
-            // Evitar alertas desnecessários, já que o relatório pode ser gerado
         }
     }
 });
@@ -564,7 +563,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
 }
 
-// Função para carregar ad sets com paginação e controle de limite de taxa
+// Função para carregar ad sets (baseada em uma lógica genérica funcional)
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
@@ -591,26 +590,19 @@ async function loadAdSets(unitId, startDate, endDate) {
             const insights = await Promise.all(insightPromises);
 
             adSetIds.forEach((adSetId, index) => {
-                let spend = 0;
-                if (insights[index].spend !== undefined && insights[index].spend !== null) {
-                    spend = parseFloat(insights[index].spend) || 0;
-                }
-                if (spend > 0) {
-                    const adSet = adSetResponse.data.find(set => set.id === adSetId);
-                    adSetsMap[unitId][adSetId] = {
-                        name: adSet.name.toLowerCase(),
-                        insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
-                    };
-                }
+                const adSet = adSetResponse.data.find(set => set.id === adSetId);
+                const spend = insights[index].spend !== undefined && insights[index].spend !== null ? parseFloat(insights[index].spend) : 0;
+                adSetsMap[unitId][adSetId] = {
+                    name: adSet.name.toLowerCase(),
+                    insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
+                };
             });
 
-            const adSetOptions = Object.keys(adSetsMap[unitId])
-                .filter(id => adSetsMap[unitId][id].insights.spend > 0)
-                .map(id => ({
-                    value: id,
-                    label: adSetsMap[unitId][id].name,
-                    spend: adSetsMap[unitId][id].insights.spend
-                }));
+            const adSetOptions = Object.keys(adSetsMap[unitId]).map(id => ({
+                value: id,
+                label: adSetsMap[unitId][id].name,
+                spend: adSetsMap[unitId][id].insights.spend
+            }));
 
             if (!isCampaignFilterActive) {
                 renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
@@ -646,12 +638,7 @@ function updateAdSets(selectedCampaigns) {
     const endDate = document.getElementById('endDate').value;
 
     if (unitId && startDate && endDate && !isAdSetFilterActive) {
-        let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
-        validAdSetIds = validAdSetIds.filter(id => {
-            const adSetData = adSetsMap[unitId][id];
-            return adSetData && adSetData.insights.spend > 0;
-        });
-
+        const validAdSetIds = Object.keys(adSetsMap[unitId] || {});
         const adSetOptions = validAdSetIds.map(id => ({
             value: id,
             label: adSetsMap[unitId][id].name,

@@ -23,7 +23,6 @@ backToReportSelectionBtn.addEventListener('click', () => {
     showScreen(reportSelectionScreen);
 });
 
-
 // Mapa para armazenar os nomes das contas, IDs dos ad sets e campanhas
 const adAccountsMap = {};
 const adSetsMap = {};
@@ -466,7 +465,6 @@ function handleCompleteReportLoginResponse(response) {
     }
 }
 
-
 // Carrega os ad sets e campanhas quando o formulário é preenchido
 form.addEventListener('input', async function(e) {
     const unitId = document.getElementById('unitId').value;
@@ -540,7 +538,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     );
 }
 
-// Função para carregar ad sets
+// Função para carregar ad sets (corrigida para exibir todos os ad sets)
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
@@ -548,13 +546,11 @@ async function loadAdSets(unitId, startDate, endDate) {
     if (adSetsMap[unitId] && Object.keys(adSetsMap[unitId]).length > 0) {
         console.log(`Ad sets já carregados para unitId: ${unitId}, reutilizando dados existentes.`);
         if (!isCampaignFilterActive) {
-            const adSetOptions = Object.keys(adSetsMap[unitId])
-                .filter(id => adSetsMap[unitId][id].insights.spend > 0)
-                .map(id => ({
-                    value: id,
-                    label: adSetsMap[unitId][id].name,
-                    spend: adSetsMap[unitId][id].insights.spend
-                }));
+            const adSetOptions = Object.keys(adSetsMap[unitId]).map(id => ({
+                value: id,
+                label: adSetsMap[unitId][id].name,
+                spend: adSetsMap[unitId][id].insights.spend
+            }));
             renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
         }
         return;
@@ -582,25 +578,21 @@ async function loadAdSets(unitId, startDate, endDate) {
                         }
                     }
                     console.log(`Spend para ad set ${adSetId}: ${spend}`);
-                    if (spend > 0) {
-                        const adSet = adSetResponse.data.find(set => set.id === adSetId);
-                        adSetsMap[unitId][adSetId] = {
-                            name: adSet.name.toLowerCase(),
-                            insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
-                        };
-                    }
+                    const adSet = adSetResponse.data.find(set => set.id === adSetId);
+                    adSetsMap[unitId][adSetId] = {
+                        name: adSet.name.toLowerCase(),
+                        insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
+                    };
                 });
 
                 console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]);
 
                 if (!isCampaignFilterActive) {
-                    const adSetOptions = Object.keys(adSetsMap[unitId])
-                        .filter(id => adSetsMap[unitId][id].insights.spend > 0)
-                        .map(id => ({
-                            value: id,
-                            label: adSetsMap[unitId][id].name,
-                            spend: adSetsMap[unitId][id].insights.spend
-                        }));
+                    const adSetOptions = Object.keys(adSetsMap[unitId]).map(id => ({
+                        value: id,
+                        label: adSetsMap[unitId][id].name,
+                        spend: adSetsMap[unitId][id].insights.spend
+                    }));
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
 
@@ -627,11 +619,6 @@ function updateAdSets(selectedCampaigns) {
 
     if (unitId && startDate && endDate && !isAdSetFilterActive) {
         let validAdSetIds = Object.keys(adSetsMap[unitId] || {});
-        validAdSetIds = validAdSetIds.filter(id => {
-            const adSetData = adSetsMap[unitId][id];
-            return adSetData && adSetData.insights.spend > 0;
-        });
-
         const adSetOptions = validAdSetIds.map(id => ({
             value: id,
             label: adSetsMap[unitId][id].name,
