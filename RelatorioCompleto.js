@@ -469,57 +469,109 @@ form.addEventListener('input', async function(e) {
     }
 });
 
-// Função para carregar campanhas
+// Função para carregar campanhas com paginação
 async function loadCampaigns(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de campanhas para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
-    FB.api(
-        `/${unitId}/campaigns`,
-        { fields: 'id,name', access_token: currentAccessToken },
-        async function(campaignResponse) {
-            if (campaignResponse && !campaignResponse.error) {
-                console.log(`Resposta da API para campanhas:`, campaignResponse);
-                campaignsMap[unitId] = {};
-                const campaignIds = campaignResponse.data.map(camp => camp.id);
-                const insightPromises = campaignIds.map(campaignId => getCampaignInsights(campaignId, startDate, endDate));
+    
+    campaignsMap[unitId] = campaignsMap[unitId] || {};
+    let nextPage = `/${unitId}/campaigns?fields=id,name&limit=100&access_token=${currentAccessToken}`;
+    
+    const loadMoreButton = document.createElement('button');
+    loadMoreButton.textContent = 'Carregar mais';
+    loadMoreButton.className = 'btn-filter';
+    loadMoreButton.style.display = 'none';
 
-                const insights = await Promise.all(insightPromises);
-                campaignIds.forEach((campaignId, index) => {
-                    const spend = insights[index].spend !== undefined && insights[index].spend !== null ? parseFloat(insights[index].spend) : 0;
-                    campaignsMap[unitId][campaignId] = {
-                        name: campaignResponse.data.find(camp => camp.id === campaignId).name.toLowerCase(),
-                        insights: { spend: spend }
-                    };
-                });
+    const campaignsList = document.getElementById('campaignsList');
+    
+    while (nextPage) {
+        const campaignResponse = await new Promise(resolve => {
+            FB.api(nextPage, resolve);
+        });
 
-                if (!isAdSetFilterActive) {
-                    const campaignOptions = campaignIds.map(id => ({
-                        value: id,
-                        label: campaignsMap[unitId][id].name,
-                        spend: campaignsMap[unitId][id].insights.spend
-                    }));
-                    renderOptions('campaignsList', campaignOptions, selectedCampaigns, true);
-                }
+        if (campaignResponse && !campaignResponse.error) {
+            console.log(`Resposta da API para campanhas:`, campaignResponse);
+            const campaignIds = campaignResponse.data.map(camp => camp.id);
+            const insightPromises = campaignIds.map(campaignId => getCampaignInsights(campaignId, startDate, endDate));
+            const insights = await Promise.all(insightPromises);
 
-                const endTime = performance.now();
-                console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
-            } else {
-                console.error('Erro ao carregar campanhas:', campaignResponse.error);
-                const endTime = performance.now();
-                console.log(`Carregamento de campanhas falhou após ${(endTime - startTime) / 1000} segundos`);
+            campaignIds.forEach((campaignId, index) => {
+                const spend = insights[index].spend !== undefined && insights[index].spend !== null ? parseFloat(insights[index].spend) : 0;
+                campaignsMap[unitId][campaignId] = {
+                    name: campaignResponse.data.find(camp => camp.id === campaignId).name.toLowerCase(),
+                    insights: { spend: spend }
+                };
+            });
+
+            const campaignOptions = Object.keys(campaignsMap[unitId]).map(id => ({
+                value: id,
+                label: campaignsMap[unitId][id].name,
+                spend: campaignsMap[unitId][id].insights.spend
+            }));
+
+            if (!isAdSetFilterActive) {
+                renderOptions('campaignsList', campaignOptions, selectedCampaigns, true);
             }
+
+            if (campaignResponse.paging && campaignResponse.paging.next) {
+                nextPage = campaignResponse.paging.next;
+                loadMoreButton.style.display = 'block';
+                loadMoreButton.onclick = () => loadCampaigns(unitId, startDate, endDate); // Recarrega a próxima página
+                campaignsList.appendChild(loadMoreButton);
+            } else {
+                nextPage = null;
+                loadMoreButton.style.display = 'none';
+            }
+        } else {
+            console.error('Erro ao carregar campanhas:', campaignResponse.error);
+            nextPage = null;
         }
-    );
+    }
+
+    const endTime = performance.now();
+    console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
 }
 
-// Função para carregar ad sets
+// Função para carregar ad sets com paginação
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     
-    if (adSetsMap[unitId] && Object.keys(adSetsMap[unitId]).length > 0) {
-        console.log(`Ad sets já carregados para unitId: ${unitId}, reutilizando dados existentes.`);
-        if (!isCampaignFilterActive) {
+    adSetsMap[unitId] = adSetsMap[unitId] || {};
+    let nextPage = `/${unitId}/adsets?fields=id,name&limit=50&access_token=${currentAccessToken}`;
+
+    const loadMoreButton = document.createElement('button');
+    loadMoreButton.textContent = 'Carregar mais';
+    loadMoreButton.className = 'btn-filter';
+    loadMoreButton.style.display = 'none';
+
+    const adSetsList = document.getElementById('adSetsList');
+
+    while (nextPage) {
+        const adSetResponse = await new Promise(resolve => {
+            FB.api(nextPage, resolve);
+        });
+
+        if (adSetResponse && !adSetResponse.error) {
+            console.log(`Resposta da API para ad sets:`, adSetResponse);
+            const adSetIds = adSetResponse.data.map(set => set.id);
+            const insightPromises = adSetIds.map(adSetId => getAdSetInsights(adSetId, startDate, endDate));
+            const insights = await Promise.all(insightPromises);
+
+            adSetIds.forEach((adSetId, index) => {
+                let spend = 0;
+                if (insights[index].spend !== undefined && insights[index].spend !== null) {
+                    spend = parseFloat(insights[index].spend) || 0;
+                }
+                if (spend > 0) {
+                    const adSet = adSetResponse.data.find(set => set.id === adSetId);
+                    adSetsMap[unitId][adSetId] = {
+                        name: adSet.name.toLowerCase(),
+                        insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
+                    };
+                }
+            });
+
             const adSetOptions = Object.keys(adSetsMap[unitId])
                 .filter(id => adSetsMap[unitId][id].insights.spend > 0)
                 .map(id => ({
@@ -527,70 +579,29 @@ async function loadAdSets(unitId, startDate, endDate) {
                     label: adSetsMap[unitId][id].name,
                     spend: adSetsMap[unitId][id].insights.spend
                 }));
-            renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
+
+            if (!isCampaignFilterActive) {
+                renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
+            }
+
+            if (adSetResponse.paging && adSetResponse.paging.next) {
+                nextPage = adSetResponse.paging.next;
+                loadMoreButton.style.display = 'block';
+                loadMoreButton.onclick = () => loadAdSets(unitId, startDate, endDate); // Recarrega a próxima página
+                adSetsList.appendChild(loadMoreButton);
+            } else {
+                nextPage = null;
+                loadMoreButton.style.display = 'none';
+            }
+        } else {
+            console.error('Erro ao carregar ad sets:', adSetResponse.error);
+            nextPage = null;
         }
-        return;
     }
 
-    FB.api(
-        `/${unitId}/adsets`,
-        { fields: 'id,name', limit: 50, access_token: currentAccessToken },
-        async function(adSetResponse) {
-            if (adSetResponse && !adSetResponse.error) {
-                console.log(`Resposta da API para ad sets:`, adSetResponse);
-                adSetsMap[unitId] = {};
-                const adSetIds = adSetResponse.data.map(set => set.id);
-
-                const insightPromises = adSetIds.map(adSetId => getAdSetInsights(adSetId, startDate, endDate));
-                const insights = await Promise.all(insightPromises);
-
-                adSetIds.forEach((adSetId, index) => {
-                    let spend = 0;
-                    if (insights[index].spend !== undefined && insights[index].spend !== null) {
-                        spend = parseFloat(insights[index].spend) || 0;
-                        if (isNaN(spend)) {
-                            console.warn(`Valor inválido de spend para ad set ${adSetId}: ${insights[index].spend}`);
-                            spend = 0;
-                        }
-                    }
-                    console.log(`Spend para ad set ${adSetId}: ${spend}`);
-                    if (spend > 0) {
-                        const adSet = adSetResponse.data.find(set => set.id === adSetId);
-                        adSetsMap[unitId][adSetId] = {
-                            name: adSet.name.toLowerCase(),
-                            insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
-                        };
-                    }
-                });
-
-                console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]);
-
-                if (!isCampaignFilterActive) {
-                    const adSetOptions = Object.keys(adSetsMap[unitId])
-                        .filter(id => adSetsMap[unitId][id].insights.spend > 0)
-                        .map(id => ({
-                            value: id,
-                            label: adSetsMap[unitId][id].name,
-                            spend: adSetsMap[unitId][id].insights.spend
-                        }));
-                    renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
-                }
-
-                const endTime = performance.now();
-                console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`);
-            } else {
-                console.error('Erro ao carregar ad sets. Detalhes:', adSetResponse.error);
-                const endTime = performance.now();
-                console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
-                const adSetsList = document.getElementById('adSetsList');
-                if (adSetsList) {
-                    adSetsList.innerHTML = '<p>Erro ao carregar os conjuntos de anúncios. Tente novamente ou faça login novamente.</p>';
-                }
-            }
-        }
-    );
+    const endTime = performance.now();
+    console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`);
 }
-
 // Função para atualizar as opções de ad sets
 function updateAdSets(selectedCampaigns) {
     const unitId = document.getElementById('unitId').value;
@@ -1009,12 +1020,17 @@ async function waitForImages(element) {
 exportPdfBtn.addEventListener('click', async () => {
     console.log('Iniciando exportação para PDF com jsPDF...');
 
-    // Acessar o jsPDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
-
-    // Variáveis para controle de posição
     let yPosition = 20;
+
+    // Função para adicionar retângulo com sombra
+    const addCard = (x, y, width, height, color) => {
+        doc.setFillColor(color);
+        doc.rect(x, y, width, height, 'F'); // Preenchimento
+        doc.setDrawColor(0, 0, 0, 0.1); // Sombra leve
+        doc.rect(x + 2, y + 2, width, height, 'S');
+    };
 
     // Extrair dados do relatório
     const unitId = document.getElementById('unitId').value;
@@ -1028,98 +1044,123 @@ exportPdfBtn.addEventListener('click', async () => {
     const investment = document.querySelector('.metric-card.investment .metric-value')?.textContent || 'R$ 0';
 
     // Título
-    doc.setFontSize(16);
-    doc.setTextColor(30, 60, 114); // Cor #1e3c72
+    doc.setFontSize(18);
+    doc.setTextColor(30, 60, 114); // #1e3c72
     doc.text(`Relatório Completo - CA - ${unitName}`, 40, yPosition);
-    yPosition += 20;
+    yPosition += 25;
 
     // Período
     doc.setFontSize(12);
-    doc.setTextColor(102, 102, 102); // Cor #666
-    doc.text(`Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}`, 40, yPosition);
+    doc.setTextColor(102, 102, 102); // #666
+    doc.text(`📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}`, 40, yPosition);
     yPosition += 20;
 
     // Comparação (se houver)
     if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
-        doc.text(`Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}`, 40, yPosition);
+        doc.text(`📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}`, 40, yPosition);
         yPosition += 20;
     }
 
-    // Métricas
-    doc.setFontSize(14);
-    doc.setTextColor(85, 85, 85); // Cor #555
-    doc.text('Métricas:', 40, yPosition);
+    // Métricas em grade
     yPosition += 10;
+    const cardWidth = 260;
+    const cardHeight = 80;
+    const margin = 15;
 
-    doc.setFontSize(12);
-    doc.setTextColor(51, 51, 51); // Cor #333
-    doc.text(`Alcance Total: ${reach}`, 50, yPosition);
-    yPosition += 15;
-    doc.text(`Mensagens Iniciadas: ${messages}`, 50, yPosition);
-    yPosition += 15;
-    doc.text(`Custo por Mensagem: ${costPerMessage}`, 50, yPosition);
-    yPosition += 15;
-    doc.text(`Investimento Total: ${investment}`, 50, yPosition);
-    yPosition += 20;
+    // Alcance
+    addCard(40, yPosition, cardWidth, cardHeight, '#e0f7fa');
+    doc.setFontSize(10);
+    doc.setTextColor(85, 85, 85); // #555
+    doc.text('Alcance Total', 50, yPosition + 20);
+    doc.setFontSize(14);
+    doc.setTextColor(51, 51, 51); // #333
+    doc.text(reach, 50, yPosition + 40);
+
+    // Mensagens
+    addCard(40 + cardWidth + margin, yPosition, cardWidth, cardHeight, '#f3e5f5');
+    doc.setFontSize(10);
+    doc.setTextColor(85, 85, 85);
+    doc.text('Mensagens Iniciadas', 50 + cardWidth + margin, yPosition + 20);
+    doc.setFontSize(14);
+    doc.setTextColor(51, 51, 51);
+    doc.text(messages, 50 + cardWidth + margin, yPosition + 40);
+
+    yPosition += cardHeight + margin;
+
+    // Custo
+    addCard(40, yPosition, cardWidth, cardHeight, '#fffde7');
+    doc.setFontSize(10);
+    doc.setTextColor(85, 85, 85);
+    doc.text('Custo por Mensagem', 50, yPosition + 20);
+    doc.setFontSize(14);
+    doc.setTextColor(51, 51, 51);
+    doc.text(costPerMessage, 50, yPosition + 40);
+
+    // Investimento
+    addCard(40 + cardWidth + margin, yPosition, cardWidth, cardHeight, '#e8f5e9');
+    doc.setFontSize(10);
+    doc.setTextColor(85, 85, 85);
+    doc.text('Investimento Total', 50 + cardWidth + margin, yPosition + 20);
+    doc.setFontSize(14);
+    doc.setTextColor(51, 51, 51);
+    doc.text(investment, 50 + cardWidth + margin, yPosition + 40);
+
+    yPosition += cardHeight + 20;
 
     // Anúncios em destaque
     const topAds = document.querySelectorAll('.top-ad-card');
     if (topAds.length > 0) {
-        doc.setFontSize(14);
-        doc.setTextColor(30, 60, 114); // Cor #1e3c72
-        doc.text('Anúncios em Destaque:', 40, yPosition);
-        yPosition += 10;
+        doc.setFontSize(16);
+        doc.setTextColor(30, 60, 114);
+        doc.text('Anúncios em Destaque', 40, yPosition);
+        yPosition += 20;
 
         for (const [index, ad] of Array.from(topAds).entries()) {
             const img = ad.querySelector('img');
             const messagesText = ad.querySelectorAll('.metric-value')[0]?.textContent || 'Mensagens: 0';
             const costText = ad.querySelectorAll('.metric-value')[1]?.textContent || 'Custo por Msg: R$ 0';
 
-            // Adicionar texto do anúncio
+            // Cartão do anúncio
+            addCard(40, yPosition, 500, 220, '#ffffff');
             doc.setFontSize(12);
             doc.setTextColor(51, 51, 51);
-            doc.text(`${index + 1}. ${messagesText}`, 50, yPosition);
-            yPosition += 15;
-            doc.text(`   ${costText}`, 50, yPosition);
-            yPosition += 20;
+            doc.text(messagesText, 260, yPosition + 30);
+            doc.text(costText, 260, yPosition + 50);
 
-            // Adicionar imagem, se disponível
             if (img && img.src) {
                 try {
                     const imgData = await fetchImageAsBase64(img.src);
-                    doc.addImage(imgData, 'JPEG', 50, yPosition, 200, 200); // 200x200 pontos
-                    yPosition += 220; // Espaço após a imagem
+                    doc.addImage(imgData, 'JPEG', 50, yPosition + 10, 200, 200);
                 } catch (error) {
                     console.error('Erro ao carregar imagem para PDF:', error);
-                    doc.text('Imagem não pôde ser carregada.', 50, yPosition);
-                    yPosition += 20;
+                    doc.text('Imagem não pôde ser carregada.', 50, yPosition + 30);
                 }
             }
+            yPosition += 240;
         }
     }
 
-    // Plano de ação, se visível
+    // Plano de ação
     if (actionPlanResult.style.display === 'block') {
-        doc.setFontSize(14);
+        doc.setFontSize(16);
         doc.setTextColor(30, 60, 114);
         doc.text('Plano de Ação:', 40, yPosition);
-        yPosition += 10;
+        yPosition += 20;
 
         const actionItems = actionPlanResult.querySelectorAll('li');
         doc.setFontSize(12);
         doc.setTextColor(51, 51, 51);
-        actionItems.forEach((item, index) => {
-            doc.text(`- ${item.textContent}`, 50, yPosition);
+        actionItems.forEach((item) => {
+            doc.text(`• ${item.textContent}`, 50, yPosition);
             yPosition += 15;
         });
     }
 
-    // Salvar o PDF
     doc.save(`Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
     console.log('PDF gerado e baixado com sucesso usando jsPDF.');
 });
 
-// Função auxiliar para carregar imagem como base64
+// Função auxiliar para carregar imagem como base64 (já deve estar no seu código)
 async function fetchImageAsBase64(url) {
     const response = await fetch(url, { mode: 'cors' });
     const blob = await response.blob();
