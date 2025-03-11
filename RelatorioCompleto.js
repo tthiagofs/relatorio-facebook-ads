@@ -563,67 +563,37 @@ async function loadCampaigns(unitId, startDate, endDate) {
     console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
 }
 
-// Função auxiliar para adicionar atraso entre requisições
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Função para carregar ad sets com paginação, atraso e retry (sem insights inicialmente)
+// Função para carregar ad sets (replicando a lógica de loadCampaigns)
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
     
-    // Verificar se os ad sets já estão no localStorage
-    const cachedAdSets = localStorage.getItem(`adSetsMap_${unitId}_complete`);
-    if (cachedAdSets) {
-        adSetsMap[unitId] = JSON.parse(cachedAdSets);
-        console.log(`Ad sets carregados do cache para unitId: ${unitId}`);
-        if (!isCampaignFilterActive) {
-            const adSetOptions = Object.keys(adSetsMap[unitId]).map(id => ({
-                value: id,
-                label: adSetsMap[unitId][id].name,
-                spend: adSetsMap[unitId][id].insights?.spend || 0
-            }));
-            renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
-        }
-        return;
-    }
-
+    adSetsMap[unitId] = {};
     let allAdSets = [];
-    let url = `/${unitId}/adsets?fields=id,name,campaign{id}&access_token=${currentAccessToken}&limit=50`;
+    let url = `/${unitId}/adsets?fields=id,name,campaign{id}&access_token=${currentAccessToken}&limit=100`;
 
-    // Função auxiliar para buscar ad sets com paginação e retry
-    async function fetchAdSetsWithRetry(fetchUrl, retries = 5, delayMs = 3000) {
-        for (let attempt = 1; attempt <= retries; attempt++) {
-            try {
-                const adSetResponse = await new Promise((resolve, reject) => {
-                    FB.api(fetchUrl, function(response) {
-                        if (response && !response.error) {
-                            resolve(response);
-                        } else {
-                            reject(response.error);
-                        }
-                    });
-                });
-                return adSetResponse;
-            } catch (error) {
-                console.warn(`Tentativa ${attempt} falhou para ${fetchUrl}:`, error.message);
-                if (attempt === retries) throw error;
-                await delay(delayMs); // Atraso antes da próxima tentativa
-                delayMs *= 2; // Aumenta o atraso para as próximas tentativas (backoff)
-            }
-        }
+    // Função auxiliar para buscar ad sets com paginação
+    async function fetchAdSets(fetchUrl) {
+        return new Promise((resolve, reject) => {
+            FB.api(fetchUrl, function(response) {
+                if (response && !response.error) {
+                    resolve(response);
+                } else {
+                    console.error('Erro ao carregar ad sets:', response.error);
+                    reject(response.error);
+                }
+            });
+        });
     }
 
     // Buscar todos os ad sets iterando pelas páginas
     try {
         while (url) {
-            const adSetResponse = await fetchAdSetsWithRetry(url);
+            const adSetResponse = await fetchAdSets(url);
             const adSets = adSetResponse.data || [];
             allAdSets = allAdSets.concat(adSets);
             url = adSetResponse.paging && adSetResponse.paging.next ? adSetResponse.paging.next : null;
             console.log(`Carregados ${adSets.length} ad sets. Total acumulado: ${allAdSets.length}`);
-            if (url) await delay(2000); // Atraso de 2 segundos entre páginas
         }
 
         if (allAdSets.length === 0) {
@@ -635,21 +605,18 @@ async function loadAdSets(unitId, startDate, endDate) {
             return;
         }
 
-        adSetsMap[unitId] = {};
-        allAdSets.forEach(adSet => {
-            adSetsMap[unitId][adSet.id] = {
+        const adSetIds = allAdSets.map(set => set.id);
+        adSetIds.forEach((adSetId, index) => {
+            const adSet = allAdSets.find(set => set.id === adSetId);
+            adSetsMap[unitId][adSetId] = {
                 name: adSet.name.toLowerCase(),
                 campaignId: adSet.campaign ? adSet.campaign.id : null,
-                insights: { spend: 0, actions: [], reach: 0 } // Inicialmente sem insights
+                insights: { spend: 0, actions: [], reach: 0 } // Insights serão carregados sob demanda
             };
         });
 
-        // Salvar no localStorage
-        localStorage.setItem(`adSetsMap_${unitId}_complete`, JSON.stringify(adSetsMap[unitId]));
-        console.log(`adSetsMap[${unitId}] salvo no localStorage`);
-
         if (!isCampaignFilterActive) {
-            const adSetOptions = Object.keys(adSetsMap[unitId]).map(id => ({
+            const adSetOptions = adSetIds.map(id => ({
                 value: id,
                 label: adSetsMap[unitId][id].name,
                 spend: adSetsMap[unitId][id].insights.spend
@@ -665,11 +632,10 @@ async function loadAdSets(unitId, startDate, endDate) {
         console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
         const adSetsList = document.getElementById('adSetsList');
         if (adSetsList) {
-            adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${error.message || 'Erro desconhecido'}. Por favor, espere alguns minutos e tente novamente, ou faça login novamente.</p>`;
+            adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${error.message || 'Erro desconhecido'}. Tente novamente ou faça login novamente.</p>`;
         }
     }
 }
-
 
 // Função para atualizar as opções de ad sets
 function updateAdSets(selectedCampaigns) {
