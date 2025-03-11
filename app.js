@@ -578,7 +578,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
         }
     }
 }
-// Função para carregar ad sets (corrigida para exibir todos os ad sets)
+/// Função para carregar ad sets com paginação
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
@@ -596,68 +596,86 @@ async function loadAdSets(unitId, startDate, endDate) {
         return;
     }
 
-    FB.api(
-        `/${unitId}/adsets`,
-        { fields: 'id,name', limit: 50, access_token: currentAccessToken },
-        async function(adSetResponse) {
-            if (adSetResponse && !adSetResponse.error) {
-                console.log(`Resposta da API para ad sets:`, adSetResponse);
-                adSetsMap[unitId] = {};
-                const adSetIds = adSetResponse.data ? adSetResponse.data.map(set => set.id) : [];
+    let allAdSets = [];
+    let url = `/${unitId}/adsets?fields=id,name&access_token=${currentAccessToken}&limit=100`;
 
-                if (adSetIds.length === 0) {
-                    console.warn(`Nenhum ad set retornado para unitId: ${unitId}`);
-                    const adSetsList = document.getElementById('adSetsList');
-                    if (adSetsList) {
-                        adSetsList.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para o período selecionado.</p>';
-                    }
-                    return;
+    // Função auxiliar para buscar ad sets com paginação
+    async function fetchAdSets(fetchUrl) {
+        return new Promise((resolve, reject) => {
+            FB.api(fetchUrl, function(response) {
+                if (response && !response.error) {
+                    resolve(response);
+                } else {
+                    console.error('Erro ao carregar ad sets:', response.error);
+                    reject(response.error);
                 }
+            });
+        });
+    }
 
-                const insightPromises = adSetIds.map(adSetId => getAdSetInsights(adSetId, startDate, endDate));
-                const insights = await Promise.all(insightPromises);
+    // Buscar todos os ad sets iterando pelas páginas
+    try {
+        while (url) {
+            const adSetResponse = await fetchAdSets(url);
+            const adSets = adSetResponse.data || [];
+            allAdSets = allAdSets.concat(adSets);
+            url = adSetResponse.paging && adSetResponse.paging.next ? adSetResponse.paging.next : null;
+            console.log(`Carregados ${adSets.length} ad sets. Total acumulado: ${allAdSets.length}`);
+        }
 
-                adSetIds.forEach((adSetId, index) => {
-                    let spend = 0;
-                    if (insights[index].spend !== undefined && insights[index].spend !== null) {
-                        spend = parseFloat(insights[index].spend) || 0;
-                        if (isNaN(spend)) {
-                            console.warn(`Valor inválido de spend para ad set ${adSetId}: ${insights[index].spend}`);
-                            spend = 0;
-                        }
-                    }
-                    console.log(`Spend para ad set ${adSetId}: ${spend}`);
-                    const adSet = adSetResponse.data.find(set => set.id === adSetId);
-                    adSetsMap[unitId][adSetId] = {
-                        name: adSet.name.toLowerCase(),
-                        insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
-                    };
-                });
+        if (allAdSets.length === 0) {
+            console.warn(`Nenhum ad set retornado para unitId: ${unitId}`);
+            const adSetsList = document.getElementById('adSetsList');
+            if (adSetsList) {
+                adSetsList.innerHTML = '<p>Nenhum conjunto de anúncios encontrado para o período selecionado.</p>';
+            }
+            return;
+        }
 
-                console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]);
+        adSetsMap[unitId] = {};
+        const adSetIds = allAdSets.map(set => set.id);
+        const insightPromises = adSetIds.map(adSetId => getAdSetInsights(adSetId, startDate, endDate));
+        const insights = await Promise.all(insightPromises);
 
-                if (!isCampaignFilterActive) {
-                    const adSetOptions = Object.keys(adSetsMap[unitId]).map(id => ({
-                        value: id,
-                        label: adSetsMap[unitId][id].name,
-                        spend: adSetsMap[unitId][id].insights.spend
-                    }));
-                    renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
-                }
-
-                const endTime = performance.now();
-                console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos`);
-            } else {
-                console.error('Erro ao carregar ad sets. Detalhes:', adSetResponse.error);
-                const endTime = performance.now();
-                console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
-                const adSetsList = document.getElementById('adSetsList');
-                if (adSetsList) {
-                    adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${adSetResponse.error.message || 'Erro desconhecido'}. Tente novamente ou faça login novamente.</p>`;
+        adSetIds.forEach((adSetId, index) => {
+            let spend = 0;
+            if (insights[index].spend !== undefined && insights[index].spend !== null) {
+                spend = parseFloat(insights[index].spend) || 0;
+                if (isNaN(spend)) {
+                    console.warn(`Valor inválido de spend para ad set ${adSetId}: ${insights[index].spend}`);
+                    spend = 0;
                 }
             }
+            console.log(`Spend para ad set ${adSetId}: ${spend}`);
+            const adSet = allAdSets.find(set => set.id === adSetId);
+            adSetsMap[unitId][adSetId] = {
+                name: adSet.name.toLowerCase(),
+                insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
+            };
+        });
+
+        console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]);
+
+        if (!isCampaignFilterActive) {
+            const adSetOptions = Object.keys(adSetsMap[unitId]).map(id => ({
+                value: id,
+                label: adSetsMap[unitId][id].name,
+                spend: adSetsMap[unitId][id].insights.spend
+            }));
+            renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
         }
-    );
+
+        const endTime = performance.now();
+        console.log(`Carregamento de ad sets concluído em ${(endTime - startTime) / 1000} segundos. Total de ad sets: ${allAdSets.length}`);
+    } catch (error) {
+        console.error('Erro ao carregar ad sets com paginação:', error);
+        const endTime = performance.now();
+        console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
+        const adSetsList = document.getElementById('adSetsList');
+        if (adSetsList) {
+            adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${error.message || 'Erro desconhecido'}. Tente novamente ou faça login novamente.</p>`;
+        }
+    }
 }
 
 // Função para atualizar as opções de ad sets

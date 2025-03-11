@@ -568,7 +568,7 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Função para carregar ad sets com paginação e atraso
+// Função para carregar ad sets com paginação, atraso e retry
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
@@ -589,30 +589,38 @@ async function loadAdSets(unitId, startDate, endDate) {
     let allAdSets = [];
     let url = `/${unitId}/adsets?fields=id,name,campaign{id}&access_token=${currentAccessToken}&limit=50`;
 
-    // Função auxiliar para buscar ad sets com paginação
-    async function fetchAdSets(fetchUrl) {
-        return new Promise((resolve, reject) => {
-            FB.api(fetchUrl, function(response) {
-                if (response && !response.error) {
-                    resolve(response);
-                } else {
-                    console.error('Erro ao carregar ad sets:', response.error);
-                    reject(response.error);
-                }
-            });
-        });
+    // Função auxiliar para buscar ad sets com paginação e retry
+    async function fetchAdSetsWithRetry(fetchUrl, retries = 3, delayMs = 2000) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const adSetResponse = await new Promise((resolve, reject) => {
+                    FB.api(fetchUrl, function(response) {
+                        if (response && !response.error) {
+                            resolve(response);
+                        } else {
+                            reject(response.error);
+                        }
+                    });
+                });
+                return adSetResponse;
+            } catch (error) {
+                console.warn(`Tentativa ${attempt} falhou para ${fetchUrl}:`, error.message);
+                if (attempt === retries) throw error;
+                await delay(delayMs); // Atraso antes da próxima tentativa
+                delayMs *= 2; // Aumenta o atraso para as próximas tentativas (backoff)
+            }
+        }
     }
 
     // Buscar todos os ad sets iterando pelas páginas
     try {
         while (url) {
-            const adSetResponse = await fetchAdSets(url);
+            const adSetResponse = await fetchAdSetsWithRetry(url);
             const adSets = adSetResponse.data || [];
             allAdSets = allAdSets.concat(adSets);
             url = adSetResponse.paging && adSetResponse.paging.next ? adSetResponse.paging.next : null;
             console.log(`Carregados ${adSets.length} ad sets. Total acumulado: ${allAdSets.length}`);
-            // Adicionar atraso entre requisições para evitar limite
-            if (url) await delay(1000); // Atraso de 1 segundo entre páginas
+            if (url) await delay(1500); // Atraso de 1.5 segundos entre páginas
         }
 
         if (allAdSets.length === 0) {
@@ -628,10 +636,10 @@ async function loadAdSets(unitId, startDate, endDate) {
         const adSetIds = allAdSets.map(set => set.id);
         const insightPromises = [];
 
-        // Carregar insights com atraso entre requisições
+        // Carregar insights com atraso e retry
         for (let i = 0; i < adSetIds.length; i++) {
             insightPromises.push(getAdSetInsights(adSetIds[i], startDate, endDate));
-            if (i < adSetIds.length - 1) await delay(500); // Atraso de 0.5 segundos entre cada insight
+            if (i < adSetIds.length - 1) await delay(1000); // Atraso de 1 segundo entre cada insight
         }
 
         const insights = await Promise.all(insightPromises);
@@ -677,6 +685,7 @@ async function loadAdSets(unitId, startDate, endDate) {
         }
     }
 }
+
 // Função para atualizar as opções de ad sets
 function updateAdSets(selectedCampaigns) {
     const unitId = document.getElementById('unitId').value;
