@@ -117,7 +117,7 @@ function updateFilterButton() {
     filterAdSetsBtn.style.cursor = filterAdSetsBtn.disabled ? 'not-allowed' : 'pointer';
 }
 
-// Função para criar e gerenciar opções clicáveis nos modals com valor gasto e pesquisa
+// Função para criar e gerenciar opções clicáveis nos modais com valor gasto e pesquisa
 function renderOptions(containerId, options, selectedSet, isCampaign) {
     const container = document.getElementById(containerId);
     const searchInput = document.getElementById(isCampaign ? 'campaignSearch' : 'adSetSearch');
@@ -166,7 +166,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 container.appendChild(div);
             });
 
-            // Adicionar estilos de rolagem diretamente
             container.style.maxHeight = '400px';
             container.style.overflowY = 'auto';
             container.style.paddingRight = '10px';
@@ -244,7 +243,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
 
 // Login do app
 appLoginForm.addEventListener('submit', (e) => {
-    e.preventDefault(); // Impede o recarregamento da página
+    e.preventDefault();
     console.log('Formulário de login submetido');
 
     const usernameInput = document.getElementById('username');
@@ -263,16 +262,14 @@ appLoginForm.addEventListener('submit', (e) => {
 
     if (username === '@admin' && password === '134679') {
         console.log('Login bem-sucedido, alternando para reportSelectionScreen');
-        appLoginError.style.display = 'none'; // Limpa mensagem de erro
+        appLoginError.style.display = 'none';
         showScreen(reportSelectionScreen);
-        // Limpa os campos do formulário
         usernameInput.value = '';
         passwordInput.value = '';
     } else {
         console.log('Login falhou: usuário ou senha inválidos');
         appLoginError.textContent = 'Usuário ou senha inválidos.';
         appLoginError.style.display = 'block';
-        // Limpa os campos do formulário
         usernameInput.value = '';
         passwordInput.value = '';
     }
@@ -442,10 +439,8 @@ function handleCompleteReportLoginResponse(response) {
         currentAccessToken = response.authResponse.accessToken;
         console.log('Access Token:', currentAccessToken);
         
-        // Salvar o token no localStorage
         localStorage.setItem('fbAccessToken', currentAccessToken);
         
-        // Carregar contas para garantir que adAccountsMap esteja preenchido
         FB.api('/me/adaccounts', { fields: 'id,name', access_token: currentAccessToken }, function(accountResponse) {
             if (accountResponse && !accountResponse.error) {
                 console.log('Resposta da API /me/adaccounts (Relatório Completo) - Versão Atualizada (03/03/2025):', accountResponse);
@@ -454,11 +449,9 @@ function handleCompleteReportLoginResponse(response) {
                     adAccountsMap[account.id] = account.name;
                 });
 
-                // Salvar adAccountsMap no localStorage
                 localStorage.setItem('adAccountsMap', JSON.stringify(adAccountsMap));
                 console.log('adAccountsMap salvo no localStorage:', adAccountsMap);
 
-                // Redirecionar para RelatorioCompleto.html
                 window.location.href = 'RelatorioCompleto.html';
             } else {
                 console.error('Erro ao carregar contas:', accountResponse.error);
@@ -512,7 +505,6 @@ async function loadCampaigns(unitId, startDate, endDate) {
     let allCampaigns = [];
     let url = `/${unitId}/campaigns?fields=id,name&access_token=${currentAccessToken}&limit=100`;
 
-    // Função auxiliar para buscar campanhas com paginação
     async function fetchCampaigns(fetchUrl) {
         return new Promise((resolve, reject) => {
             FB.api(fetchUrl, function(response) {
@@ -526,7 +518,6 @@ async function loadCampaigns(unitId, startDate, endDate) {
         });
     }
 
-    // Buscar todas as campanhas iterando pelas páginas
     try {
         while (url) {
             const campaignResponse = await fetchCampaigns(url);
@@ -534,6 +525,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
             allCampaigns = allCampaigns.concat(campaigns);
             url = campaignResponse.paging && campaignResponse.paging.next ? campaignResponse.paging.next : null;
             console.log(`Carregadas ${campaigns.length} campanhas. Total acumulado: ${allCampaigns.length}`);
+            if (url) await new Promise(resolve => setTimeout(resolve, 2000)); // Atraso de 2 segundos entre páginas
         }
 
         if (allCampaigns.length === 0) {
@@ -579,9 +571,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     }
 }
 
-
-
-// Função para carregar ad sets (replicando a lógica de loadCampaigns)
+// Função para carregar ad sets com paginação e retry
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
@@ -590,21 +580,28 @@ async function loadAdSets(unitId, startDate, endDate) {
     let allAdSets = [];
     let url = `/${unitId}/adsets?fields=id,name&access_token=${currentAccessToken}&limit=100`;
 
-    // Função auxiliar para buscar ad sets com paginação
-    async function fetchAdSets(fetchUrl) {
-        return new Promise((resolve, reject) => {
-            FB.api(fetchUrl, function(response) {
-                if (response && !response.error) {
-                    resolve(response);
-                } else {
-                    console.error('Erro ao carregar ad sets:', response.error);
-                    reject(response.error);
-                }
-            });
-        });
+    async function fetchAdSets(fetchUrl, retries = 5, delayMs = 2000) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const adSetResponse = await new Promise((resolve, reject) => {
+                    FB.api(fetchUrl, function(response) {
+                        if (response && !response.error) {
+                            resolve(response);
+                        } else {
+                            reject(response.error);
+                        }
+                    });
+                });
+                return adSetResponse;
+            } catch (error) {
+                console.warn(`Tentativa ${attempt} falhou para ${fetchUrl}:`, error.message);
+                if (attempt === retries) throw error;
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+                delayMs *= 2; // Backoff exponencial (2s, 4s, 8s, 16s, 32s)
+            }
+        }
     }
 
-    // Buscar todos os ad sets iterando pelas páginas
     try {
         while (url) {
             const adSetResponse = await fetchAdSets(url);
@@ -612,6 +609,7 @@ async function loadAdSets(unitId, startDate, endDate) {
             allAdSets = allAdSets.concat(adSets);
             url = adSetResponse.paging && adSetResponse.paging.next ? adSetResponse.paging.next : null;
             console.log(`Carregados ${adSets.length} ad sets. Total acumulado: ${allAdSets.length}`);
+            if (url) await new Promise(resolve => setTimeout(resolve, 2000)); // Atraso de 2 segundos entre páginas
         }
 
         if (allAdSets.length === 0) {
@@ -624,11 +622,10 @@ async function loadAdSets(unitId, startDate, endDate) {
         }
 
         const adSetIds = allAdSets.map(set => set.id);
-        adSetsMap[unitId] = {};
         adSetIds.forEach((adSetId, index) => {
             adSetsMap[unitId][adSetId] = {
                 name: allAdSets.find(set => set.id === adSetId).name.toLowerCase(),
-                insights: { spend: 0, actions: [], reach: 0 } // Insights serão carregados sob demanda
+                insights: { spend: 0, actions: [], reach: 0 }
             };
         });
 
@@ -649,12 +646,10 @@ async function loadAdSets(unitId, startDate, endDate) {
         console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
         const adSetsList = document.getElementById('adSetsList');
         if (adSetsList) {
-            adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${error.message || 'Erro desconhecido'}. Tente novamente ou faça login novamente.</p>`;
+            adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${error.message || 'Erro desconhecido'}. Por favor, espere alguns minutos e tente novamente, ou faça login novamente.</p>`;
         }
     }
 }
-
-
 
 // Funções para obter insights
 async function getCampaignInsights(campaignId, startDate, endDate) {
@@ -756,7 +751,6 @@ form.addEventListener('submit', async (e) => {
                 if (insights && insights.spend) {
                     console.log(`Spend para ad set ${adSetId}: ${insights.spend}`);
                     totalSpend += parseFloat(insights.spend) || 0;
-                    // Atualizar o adSetsMap com os insights carregados
                     adSetsMap[unitId][adSetId].insights.spend = parseFloat(insights.spend) || 0;
                 }
                 if (insights && insights.reach) {
@@ -770,7 +764,6 @@ form.addEventListener('submit', async (e) => {
                     }
                 });
             }
-            // Atualizar o cache após carregar os insights
             localStorage.setItem(`adSetsMap_${unitId}`, JSON.stringify(adSetsMap[unitId]));
         }
     } else {
@@ -823,7 +816,6 @@ form.addEventListener('submit', async (e) => {
     `;
     shareWhatsAppBtn.style.display = 'block';
 });
-
 
 // Compartilhar no WhatsApp
 shareWhatsAppBtn.addEventListener('click', () => {

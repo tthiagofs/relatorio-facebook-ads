@@ -100,32 +100,34 @@ async function loadAds(unitId, startDate, endDate, filteredCampaigns = null, fil
         );
         await Promise.all(adPromises);
     } else {
-        const adResponse = await new Promise(resolve => {
-            FB.api(
-                apiEndpoint,
-                { fields: 'id,creative', limit: 100, access_token: currentAccessToken },
-                resolve
-            );
-        });
-
-        if (adResponse && !adResponse.error) {
-            console.log(`Resposta da API para anúncios:`, adResponse);
-            const adIds = adResponse.data.map(ad => ad.id);
-            const insightPromises = adIds.map(adId => getAdInsights(adId, startDate, endDate));
-            const creativePromises = adResponse.data.map(ad => getCreativeData(ad.creative.id));
-            const [insights, creatives] = await Promise.all([
-                Promise.all(insightPromises),
-                Promise.all(creativePromises)
-            ]);
-
-            adIds.forEach((adId, index) => {
-                adsMap[adId] = {
-                    insights: insights[index],
-                    creative: creatives[index]
-                };
+        let nextPage = `${apiEndpoint}?fields=id,creative&limit=100&access_token=${currentAccessToken}`;
+        while (nextPage) {
+            const adResponse = await new Promise(resolve => {
+                FB.api(nextPage, resolve);
             });
-        } else {
-            console.error('Erro ao carregar anúncios:', adResponse.error);
+
+            if (adResponse && !adResponse.error) {
+                console.log(`Resposta da API para anúncios:`, adResponse);
+                const adIds = adResponse.data.map(ad => ad.id);
+                const insightPromises = adIds.map(adId => getAdInsights(adId, startDate, endDate));
+                const creativePromises = adResponse.data.map(ad => getCreativeData(ad.creative.id));
+                const [insights, creatives] = await Promise.all([
+                    Promise.all(insightPromises),
+                    Promise.all(creativePromises)
+                ]);
+
+                adIds.forEach((adId, index) => {
+                    adsMap[adId] = {
+                        insights: insights[index],
+                        creative: creatives[index]
+                    };
+                });
+                nextPage = adResponse.paging && adResponse.paging.next ? adResponse.paging.next : null;
+                if (nextPage) await new Promise(resolve => setTimeout(resolve, 2000)); // Atraso de 2 segundos
+            } else {
+                console.error('Erro ao carregar anúncios:', adResponse.error);
+                nextPage = null;
+            }
         }
     }
 
@@ -270,22 +272,24 @@ function toggleModal(modal, show, isCampaign) {
             isAdSetFilterActive = false;
             filterAdSetsBtn.disabled = isFilterActivated;
             filterAdSetsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
+        } else if (modal === comparisonModal) {
+            // Configurações específicas para o modal de comparação
+            if (comparisonData) {
+                if (comparisonData.startDate && comparisonData.endDate) {
+                    document.querySelector('input[name="comparisonOption"][value="custom"]').checked = true;
+                    document.getElementById('compareStartDate').value = comparisonData.startDate;
+                    document.getElementById('compareEndDate').value = comparisonData.endDate;
+                } else if (comparisonData.isPrevious) {
+                    document.querySelector('input[name="comparisonOption"][value="previous"]').checked = true;
+                } else {
+                    document.querySelector('input[name="comparisonOption"][value="none"]').checked = true;
+                }
+            }
         } else {
             isAdSetFilterActive = true;
             isCampaignFilterActive = false;
             filterCampaignsBtn.disabled = isFilterActivated;
             filterCampaignsBtn.style.cursor = isFilterActivated ? 'not-allowed' : 'pointer';
-        }
-        if (modal === comparisonModal && comparisonData) {
-            if (comparisonData.startDate && comparisonData.endDate) {
-                document.querySelector('input[name="comparisonOption"][value="custom"]').checked = true;
-                document.getElementById('compareStartDate').value = comparisonData.startDate;
-                document.getElementById('compareEndDate').value = comparisonData.endDate;
-            } else if (comparisonData.isPrevious) {
-                document.querySelector('input[name="comparisonOption"][value="previous"]').checked = true;
-            } else {
-                document.querySelector('input[name="comparisonOption"][value="none"]').checked = true;
-            }
         }
     } else {
         if (isCampaign) {
@@ -302,7 +306,8 @@ function toggleModal(modal, show, isCampaign) {
             const campaignSearchInput = document.getElementById('campaignSearch');
             if (campaignSearchInput) campaignSearchInput.value = '';
         } else if (modal === comparisonModal) {
-            // Não limpar os campos ou comparisonData aqui, apenas fechar o modal
+            // Limpar dados de comparação ao fechar
+            comparisonData = null;
         } else {
             isAdSetFilterActive = false;
             if (isFilterActivated && selectedAdSets.size === 0) {
@@ -355,7 +360,7 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
         }
 
         function renderFilteredOptions(filteredOptions, set, isCampaignParam) {
-            container.innerHTML = ''; // Limpar o contêiner
+            container.innerHTML = '';
             filteredOptions.forEach(option => {
                 const div = document.createElement('div');
                 div.className = `filter-option ${set.has(option.value) ? 'selected' : ''}`;
@@ -388,6 +393,9 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 });
                 container.appendChild(div);
             });
+
+            container.style.overflowY = 'auto';
+            container.style.maxHeight = '400px';
 
             const existingButton = container.querySelector('.btn-filter-toggle');
             if (existingButton) existingButton.remove();
@@ -428,10 +436,6 @@ function renderOptions(containerId, options, selectedSet, isCampaign) {
                 updateFilterButton();
             });
             container.appendChild(filterButton);
-
-            // Forçar o contêiner a reconhecer o conteúdo para rolagem
-            container.style.overflowY = 'auto';
-            container.style.maxHeight = '400px';
         }
 
         const currentSearchText = isCampaign ? campaignSearchText : adSetSearchText;
@@ -485,10 +489,9 @@ form.addEventListener('input', async function(e) {
         filterCampaignsBtn.style.cursor = 'pointer';
         filterAdSetsBtn.style.cursor = 'pointer';
 
-        // Executar as funções sequencialmente para evitar sobrecarga na API
         try {
             await loadCampaigns(unitId, startDate, endDate);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay de 1 segundo entre as chamadas
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Delay de 2 segundos entre as chamadas
             await loadAdSets(unitId, startDate, endDate);
         } catch (error) {
             console.error('Erro ao carregar campanhas ou ad sets:', error);
@@ -542,9 +545,9 @@ async function loadCampaigns(unitId, startDate, endDate) {
 
             if (campaignResponse.paging && campaignResponse.paging.next) {
                 nextPage = campaignResponse.paging.next;
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Delay de 1 segundo para respeitar o limite de taxa
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Delay de 2 segundos para respeitar o limite de taxa
                 loadMoreButton.style.display = 'block';
-                loadMoreButton.onclick = () => loadCampaigns(unitId, startDate, endDate); // Recarrega a próxima página
+                loadMoreButton.onclick = () => loadCampaigns(unitId, startDate, endDate);
                 campaignsList.appendChild(loadMoreButton);
             } else {
                 nextPage = null;
@@ -563,7 +566,7 @@ async function loadCampaigns(unitId, startDate, endDate) {
     console.log(`Carregamento de campanhas concluído em ${(endTime - startTime) / 1000} segundos`);
 }
 
-// Função para carregar ad sets (replicando a lógica de loadCampaigns)
+// Função para carregar ad sets com paginação e retry
 async function loadAdSets(unitId, startDate, endDate) {
     const startTime = performance.now();
     console.log(`Iniciando carregamento de ad sets para unitId: ${unitId}, período: ${startDate} a ${endDate}`);
@@ -572,21 +575,28 @@ async function loadAdSets(unitId, startDate, endDate) {
     let allAdSets = [];
     let url = `/${unitId}/adsets?fields=id,name,campaign{id}&access_token=${currentAccessToken}&limit=100`;
 
-    // Função auxiliar para buscar ad sets com paginação
-    async function fetchAdSets(fetchUrl) {
-        return new Promise((resolve, reject) => {
-            FB.api(fetchUrl, function(response) {
-                if (response && !response.error) {
-                    resolve(response);
-                } else {
-                    console.error('Erro ao carregar ad sets:', response.error);
-                    reject(response.error);
-                }
-            });
-        });
+    async function fetchAdSets(fetchUrl, retries = 5, delayMs = 2000) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const adSetResponse = await new Promise((resolve, reject) => {
+                    FB.api(fetchUrl, function(response) {
+                        if (response && !response.error) {
+                            resolve(response);
+                        } else {
+                            reject(response.error);
+                        }
+                    });
+                });
+                return adSetResponse;
+            } catch (error) {
+                console.warn(`Tentativa ${attempt} falhou para ${fetchUrl}:`, error.message);
+                if (attempt === retries) throw error;
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+                delayMs *= 2; // Backoff exponencial (2s, 4s, 8s, 16s, 32s)
+            }
+        }
     }
 
-    // Buscar todos os ad sets iterando pelas páginas
     try {
         while (url) {
             const adSetResponse = await fetchAdSets(url);
@@ -594,6 +604,7 @@ async function loadAdSets(unitId, startDate, endDate) {
             allAdSets = allAdSets.concat(adSets);
             url = adSetResponse.paging && adSetResponse.paging.next ? adSetResponse.paging.next : null;
             console.log(`Carregados ${adSets.length} ad sets. Total acumulado: ${allAdSets.length}`);
+            if (url) await new Promise(resolve => setTimeout(resolve, 2000)); // Atraso de 2 segundos entre páginas
         }
 
         if (allAdSets.length === 0) {
@@ -606,12 +617,15 @@ async function loadAdSets(unitId, startDate, endDate) {
         }
 
         const adSetIds = allAdSets.map(set => set.id);
+        const insightPromises = adSetIds.map(adSetId => getAdSetInsights(adSetId, startDate, endDate));
+        const insights = await Promise.all(insightPromises);
+
         adSetIds.forEach((adSetId, index) => {
             const adSet = allAdSets.find(set => set.id === adSetId);
             adSetsMap[unitId][adSetId] = {
                 name: adSet.name.toLowerCase(),
                 campaignId: adSet.campaign ? adSet.campaign.id : null,
-                insights: { spend: 0, actions: [], reach: 0 } // Insights serão carregados sob demanda
+                insights: insights[index] || { spend: 0, actions: [], reach: 0 }
             };
         });
 
@@ -632,7 +646,7 @@ async function loadAdSets(unitId, startDate, endDate) {
         console.log(`Carregamento de ad sets falhou após ${(endTime - startTime) / 1000} segundos`);
         const adSetsList = document.getElementById('adSetsList');
         if (adSetsList) {
-            adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${error.message || 'Erro desconhecido'}. Tente novamente ou faça login novamente.</p>`;
+            adSetsList.innerHTML = `<p>Erro ao carregar os conjuntos de anúncios: ${error.message || 'Erro desconhecido'}. Por favor, espere alguns minutos e tente novamente, ou faça login novamente.</p>`;
         }
     }
 }
@@ -644,7 +658,8 @@ function updateAdSets(selectedCampaigns) {
     const endDate = document.getElementById('endDate').value;
 
     if (unitId && startDate && endDate && !isAdSetFilterActive) {
-        const validAdSetIds = Object.keys(adSetsMap[unitId] || {});
+        const validAdSetIds = Object.keys(adSetsMap[unitId] || {}).filter(id => 
+            !selectedCampaigns.size || selectedCampaigns.has(adSetsMap[unitId][id].campaignId));
         const adSetOptions = validAdSetIds.map(id => ({
             value: id,
             label: adSetsMap[unitId][id].name,
@@ -733,56 +748,43 @@ function calculatePreviousPeriod(startDate, endDate) {
     };
 }
 
-// Configurar evento para o botão "Período de Comparação"
+// Configurar evento para o botão de comparação de períodos
 comparePeriodsBtn.addEventListener('click', () => {
+    if (isFilterActivated && (selectedCampaigns.size > 0 || selectedAdSets.size > 0)) return;
     toggleModal(comparisonModal, true, false);
 });
 
-// Configurar eventos para o modal de comparação
-confirmComparisonBtn.addEventListener('click', async () => {
-    const option = document.querySelector('input[name="comparisonOption"]:checked').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+confirmComparisonBtn.addEventListener('click', () => {
+    const comparisonOption = document.querySelector('input[name="comparisonOption"]:checked');
+    const compareStartDate = document.getElementById('compareStartDate').value;
+    const compareEndDate = document.getElementById('compareEndDate').value;
 
-    if (option === 'custom') {
-        const compareStartDate = document.getElementById('compareStartDate').value;
-        const compareEndDate = document.getElementById('compareEndDate').value;
-        if (!compareStartDate || !compareEndDate) {
-            alert('Por favor, preencha as datas do período de comparação.');
-            return;
-        }
-        comparisonData = { startDate: compareStartDate, endDate: compareEndDate, isPrevious: false };
-    } else if (option === 'previous') {
-        const previousPeriod = calculatePreviousPeriod(startDate, endDate);
-        comparisonData = { startDate: previousPeriod.start, endDate: previousPeriod.end, isPrevious: true };
+    if (comparisonOption.value === 'custom' && (!compareStartDate || !compareEndDate)) {
+        alert('Por favor, selecione um período personalizado válido.');
+        return;
+    }
+
+    if (comparisonOption.value === 'previous') {
+        const unitId = document.getElementById('unitId').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        comparisonData = calculatePreviousPeriod(startDate, endDate);
+        comparisonData.isPrevious = true;
+    } else if (comparisonOption.value === 'custom') {
+        comparisonData = { startDate: compareStartDate, endDate: compareEndDate };
     } else {
         comparisonData = null;
     }
-
-    console.log('Dados de comparação salvos:', comparisonData);
     toggleModal(comparisonModal, false, false);
+    generateReport();
 });
 
 cancelComparisonBtn.addEventListener('click', () => {
     comparisonData = null;
-    console.log('Comparação cancelada. Dados de comparação limpos:', comparisonData);
     toggleModal(comparisonModal, false, false);
 });
 
-// Função para calcular a variação percentual e determinar o ícone
-function calculateVariation(currentValue, previousValue) {
-    if (!previousValue || previousValue === 0) return { percentage: 0, icon: '' };
-    const percentage = ((currentValue - previousValue) / previousValue) * 100;
-    const icon = percentage >= 0 ? '⬆️' : '⬇️';
-    return { percentage: Math.abs(percentage).toFixed(2), icon };
-}
-
-// Geração do relatório com soma consolidada dos itens filtrados ativados
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await generateReport();
-});
-
+// Gerar o relatório completo
 async function generateReport() {
     const unitId = document.getElementById('unitId').value;
     const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
@@ -797,397 +799,127 @@ async function generateReport() {
     let totalSpend = 0;
     let totalConversations = 0;
     let totalReach = 0;
-    let comparisonMetrics = null;
-    let topAds = [];
+    let adsMap = {};
 
-    const adsMap = await loadAds(unitId, startDate, endDate, selectedCampaigns.size > 0 ? selectedCampaigns : null, selectedAdSets.size > 0 ? selectedAdSets : null);
-
-    if (isFilterActivated) {
-        if (selectedCampaigns.size > 0) {
-            for (const campaignId of selectedCampaigns) {
-                const insights = await getCampaignInsights(campaignId, startDate, endDate);
-                if (insights && insights.spend) totalSpend += parseFloat(insights.spend) || 0;
-                if (insights && insights.reach) totalReach += parseInt(insights.reach) || 0;
-                (insights.actions || []).forEach(action => {
-                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                        totalConversations += parseInt(action.value) || 0;
-                    }
-                });
-            }
-        } else if (selectedAdSets.size > 0) {
-            for (const adSetId of selectedAdSets) {
-                const insights = await getAdSetInsights(adSetId, startDate, endDate);
-                if (insights && insights.spend) totalSpend += parseFloat(insights.spend) || 0;
-                if (insights && insights.reach) totalReach += parseInt(insights.reach) || 0;
-                (insights.actions || []).forEach(action => {
-                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                        totalConversations += parseInt(action.value) || 0;
-                    }
-                });
-            }
-        }
-    } else {
-        const response = await new Promise(resolve => {
-            FB.api(
-                `/${unitId}/insights`,
-                { fields: ['spend', 'actions', 'reach'], time_range: { since: startDate, until: endDate }, level: 'account', access_token: currentAccessToken },
-                resolve
-            );
-        });
-
-        if (response && !response.error && response.data.length > 0) {
-            response.data.forEach(data => {
-                if (data.spend) totalSpend += parseFloat(data.spend) || 0;
-                if (data.reach) totalReach += parseInt(data.reach) || 0;
-                (data.actions || []).forEach(action => {
-                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                        totalConversations += parseInt(action.value) || 0;
-                    }
-                });
-            });
-        } else {
-            reportContainer.innerHTML = '<p>Nenhum dado encontrado para os filtros aplicados ou erro na requisição.</p>';
-            if (response.error) console.error('Erro da API:', response.error);
-            exportPdfBtn.style.display = 'none';
-            return;
-        }
-    }
-
-    // Processar anúncios para encontrar os Top 2
-    Object.keys(adsMap).forEach(adId => {
-        const ad = adsMap[adId];
-        let messages = 0;
-        let spend = parseFloat(ad.insights.spend) || 0;
-        (ad.insights.actions || []).forEach(action => {
-            if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                messages += parseInt(action.value) || 0;
-                console.log(`Anúncio ${adId} tem ${messages} mensagens iniciadas`);
-            }
-        });
-        if (messages > 0) {
-            topAds.push({
-                imageUrl: ad.creative.imageUrl,
-                messages: messages,
-                costPerMessage: messages > 0 ? (spend / messages).toFixed(2) : '0'
-            });
-        } else {
-            console.warn(`Anúncio ${adId} não tem mensagens iniciadas`);
-        }
-    });
-
-    topAds.sort((a, b) => b.messages - a.messages);
-    const topTwoAds = topAds.slice(0, 2).filter(ad => {
-        return ad.imageUrl && !ad.imageUrl.includes('dummyimage');
-    });
-
-    // Calcular métricas de comparação
-    if (comparisonData && comparisonData.startDate && comparisonData.endDate) {
-        let compareSpend = 0;
-        let compareConversations = 0;
-        let compareReach = 0;
-
+    try {
         if (isFilterActivated) {
             if (selectedCampaigns.size > 0) {
-                for (const campaignId of selectedCampaigns) {
-                    const insights = await getCampaignInsights(campaignId, comparisonData.startDate, comparisonData.endDate);
-                    if (insights && insights.spend) compareSpend += parseFloat(insights.spend) || 0;
-                    if (insights && insights.reach) compareReach += parseInt(insights.reach) || 0;
-                    (insights.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
-                        }
-                    });
-                }
+                adsMap = await loadAds(unitId, startDate, endDate, selectedCampaigns);
             } else if (selectedAdSets.size > 0) {
-                for (const adSetId of selectedAdSets) {
-                    const insights = await getAdSetInsights(adSetId, comparisonData.startDate, comparisonData.endDate);
-                    if (insights && insights.spend) compareSpend += parseFloat(insights.spend) || 0;
-                    if (insights && insights.reach) compareReach += parseInt(insights.reach) || 0;
-                    (insights.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
-                        }
-                    });
-                }
+                adsMap = await loadAds(unitId, startDate, endDate, null, selectedAdSets);
             }
         } else {
-            const response = await new Promise(resolve => {
-                FB.api(
-                    `/${unitId}/insights`,
-                    { fields: ['spend', 'actions', 'reach'], time_range: { since: comparisonData.startDate, until: comparisonData.endDate }, level: 'account', access_token: currentAccessToken },
-                    resolve
-                );
+            adsMap = await loadAds(unitId, startDate, endDate);
+        }
+
+        Object.values(adsMap).forEach(ad => {
+            if (ad.insights && ad.insights.spend) {
+                totalSpend += parseFloat(ad.insights.spend) || 0;
+            }
+            if (ad.insights && ad.insights.reach) {
+                totalReach += parseInt(ad.insights.reach) || 0;
+            }
+            (ad.insights.actions || []).forEach(action => {
+                if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                    totalConversations += parseInt(action.value) || 0;
+                }
+            });
+        });
+
+        let comparisonText = '';
+        if (comparisonData) {
+            let comparisonSpend = 0;
+            let comparisonConversations = 0;
+            let comparisonReach = 0;
+            let comparisonAdsMap = {};
+
+            if (comparisonData.isPrevious) {
+                comparisonAdsMap = await loadAds(unitId, comparisonData.start, comparisonData.end);
+            } else if (comparisonData.startDate && comparisonData.endDate) {
+                comparisonAdsMap = await loadAds(unitId, comparisonData.startDate, comparisonData.endDate);
+            }
+
+            Object.values(comparisonAdsMap).forEach(ad => {
+                if (ad.insights && ad.insights.spend) {
+                    comparisonSpend += parseFloat(ad.insights.spend) || 0;
+                }
+                if (ad.insights && ad.insights.reach) {
+                    comparisonReach += parseInt(ad.insights.reach) || 0;
+                }
+                (ad.insights.actions || []).forEach(action => {
+                    if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
+                        comparisonConversations += parseInt(action.value) || 0;
+                    }
+                });
             });
 
-            if (response && !response.error && response.data.length > 0) {
-                response.data.forEach(data => {
-                    if (data.spend) compareSpend += parseFloat(data.spend) || 0;
-                    if (data.reach) compareReach += parseInt(data.reach) || 0;
-                    (data.actions || []).forEach(action => {
-                        if (action.action_type === 'onsite_conversion.messaging_conversation_started_7d') {
-                            compareConversations += parseInt(action.value) || 0;
-                        }
-                    });
-                });
-            }
+            const spendDiff = ((totalSpend - comparisonSpend) / comparisonSpend * 100).toFixed(2) || 0;
+            const conversationDiff = ((totalConversations - comparisonConversations) / comparisonConversations * 100).toFixed(2) || 0;
+            const reachDiff = ((totalReach - comparisonReach) / comparisonReach * 100).toFixed(2) || 0;
+
+            comparisonText = `
+                <h3>Comparação com Período Anterior (${comparisonData.start} a ${comparisonData.end || comparisonData.endDate}):</h3>
+                <p>💰 Investimento: R$ ${comparisonSpend.toFixed(2).replace('.', ',')} (${spendDiff}%)</p>
+                <p>💬 Mensagens: ${comparisonConversations} (${conversationDiff}%)</p>
+                <p>📢 Alcance: ${comparisonReach.toLocaleString('pt-BR')} (${reachDiff}%)</p>
+            `;
         }
 
-        const compareCostPerConversation = compareConversations > 0 ? (compareSpend / compareConversations).toFixed(2) : '0';
-        comparisonMetrics = {
-            reach: compareReach,
-            conversations: compareConversations,
-            costPerConversation: parseFloat(compareCostPerConversation)
-        };
-    }
-
-    const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
-
-    // Construir o relatório com os Top 2 anúncios
-    let reportHTML = `
-        <div class="report-header">
-            <h2>Relatório Completo - CA - ${unitName}</h2>
+        const costPerConversation = totalConversations > 0 ? (totalSpend / totalConversations).toFixed(2) : '0';
+        reportContainer.innerHTML = `
+            <h2>📊 RELATÓRIO COMPLETO - ${unitName}</h2>
             <p>📅 Período: ${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}</p>
-            ${comparisonData && comparisonData.startDate && comparisonData.endDate ? `<p>📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}</p>` : ''}
-        </div>
-        <div class="metrics-grid">
-            <div class="metric-card reach">
-                <div>
-                    <div class="metric-label">Alcance Total</div>
-                    <div class="metric-value">${totalReach.toLocaleString('pt-BR')} pessoas</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.reach <= totalReach ? 'increase' : 'decrease'}">
-                            ${calculateVariation(totalReach, comparisonMetrics.reach).percentage}% ${calculateVariation(totalReach, comparisonMetrics.reach).icon}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="metric-card messages">
-                <div>
-                    <div class="metric-label">Mensagens Iniciadas</div>
-                    <div class="metric-value">${totalConversations}</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.conversations <= totalConversations ? 'increase' : 'decrease'}">
-                            ${calculateVariation(totalConversations, comparisonMetrics.conversations).percentage}% ${calculateVariation(totalConversations, comparisonMetrics.conversations).icon}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="metric-card cost">
-                <div>
-                    <div class="metric-label">Custo por Mensagem</div>
-                    <div class="metric-value">R$ ${costPerConversation.replace('.', ',')}</div>
-                    ${comparisonMetrics ? `
-                        <div class="metric-comparison ${comparisonMetrics.costPerConversation >= parseFloat(costPerConversation) ? 'increase' : 'decrease'}">
-                            ${calculateVariation(parseFloat(costPerConversation), comparisonMetrics.costPerConversation).percentage}% ${calculateVariation(parseFloat(costPerConversation), comparisonMetrics.costPerConversation).icon}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="metric-card investment">
-                <div>
-                    <div class="metric-label">Investimento Total</div>
-                    <div class="metric-value">R$ ${totalSpend.toFixed(2).replace('.', ',')}</div>
-                </div>
-            </div>
-        </div>
-        <div class="top-ads" style="margin-top: 20px;">
-            <h3 style="color: #1e3c72;">Anúncios em Destaque</h3>
-            ${topTwoAds.length > 0 ? topTwoAds.map(ad => `
-                <div class="top-ad-card" style="display: flex; align-items: center; margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
-                    <img src="${ad.imageUrl}" alt="Imagem do Anúncio" crossorigin="anonymous" loading="lazy" style="max-width: 300px; max-height: 300px; width: auto; height: auto; object-fit: contain; border-radius: 6px; margin-right: 15px;">
-                    <div>
-                        <div class="metric-value">Mensagens: ${ad.messages}</div>
-                        <div class="metric-value">Custo por Msg: R$ ${ad.costPerMessage.replace('.', ',')}</div>
-                    </div>
-                </div>
-            `).join('') : '<p>Nenhum anúncio com mensagens no período selecionado ou imagens de qualidade insuficiente.</p>'}
-        </div>
-    `;
+            <p>💰 Investimento Total: R$ ${totalSpend.toFixed(2).replace('.', ',')}</p>
+            <p>💬 Mensagens Iniciadas: ${totalConversations}</p>
+            <p>💵 Custo por Mensagem: R$ ${costPerConversation.replace('.', ',')}</p>
+            <p>📢 Alcance Total: ${totalReach.toLocaleString('pt-BR')} pessoas</p>
+            ${comparisonText}
+            <div id="adsList"></div>
+        `;
 
-    reportContainer.classList.add('complete');
-    reportContainer.innerHTML = reportHTML;
-    exportPdfBtn.style.display = 'block';
-    actionPlanSection.style.display = 'block';
-    actionPlanResult.style.display = 'none';
+        const adsList = document.getElementById('adsList');
+        for (const [adId, ad] of Object.entries(adsMap)) {
+            const imageBase64 = ad.creative.imageUrl ? await fetchImageAsBase64(ad.creative.imageUrl) : null;
+            const adDiv = document.createElement('div');
+            adDiv.innerHTML = `
+                <h4>Anúncio ID: ${adId}</h4>
+                ${imageBase64 ? `<img src="${imageBase64}" alt="Imagem do Anúncio" style="max-width: 200px; max-height: 200px;">` : '<p>Imagem não disponível</p>'}
+                <p>💰 Investimento: R$ ${(ad.insights.spend || 0).toFixed(2).replace('.', ',')}</p>
+                <p>📢 Alcance: ${parseInt(ad.insights.reach || 0).toLocaleString('pt-BR')}</p>
+                <p>💬 Mensagens: ${((ad.insights.actions || []).find(a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d')?.value || 0)}</p>
+            `;
+            adsList.appendChild(adDiv);
+        }
+
+        exportPdfBtn.style.display = 'block';
+        actionPlanSection.style.display = 'block';
+    } catch (error) {
+        console.error('Erro ao gerar relatório:', error);
+        reportContainer.innerHTML = `<p>Erro ao carregar os dados do relatório: ${error.message || 'Erro desconhecido'}. Tente novamente.</p>`;
+        exportPdfBtn.style.display = 'none';
+        actionPlanSection.style.display = 'none';
+    }
 }
 
-// Processar o plano de ação
-submitActionPlanBtn.addEventListener('click', () => {
-    const inputText = actionPlanInput.value.trim();
-    if (!inputText) {
-        alert('Por favor, insira um plano de ação.');
-        return;
-    }
-
-    const actionItems = inputText.split('\n').filter(item => item.trim() !== '');
-    actionPlanResult.innerHTML = `
-        <h3>Plano de Ação:</h3>
-        <ul>
-            ${actionItems.map(item => `<li>${item}</li>`).join('')}
-        </ul>
-    `;
-    actionPlanResult.style.display = 'block';
-    actionPlanSection.style.display = 'none';
+// Configurar evento para o formulário
+form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    generateReport();
 });
 
-// Função para esperar o carregamento de imagens antes de gerar o PDF
-async function waitForImages(element) {
-    const images = element.getElementsByTagName('img');
-    const promises = Array.from(images).map(img => {
-        return new Promise((resolve) => {
-            if (img.complete) {
-                resolve();
-            } else {
-                img.onload = resolve;
-                img.onerror = resolve; // Resolve mesmo em caso de erro para não travar
-            }
-        });
-    });
-    await Promise.all(promises);
-}
+// Exportar para PDF (simplificado - usa html2pdf)
+exportPdfBtn.addEventListener('click', () => {
+    const element = reportContainer;
+    html2pdf().from(element).save('Relatorio_Completo.pdf');
+});
 
-// Exportar o relatório em PDF
-exportPdfBtn.addEventListener('click', async () => {
-    console.log('Iniciando exportação para PDF com jsPDF...');
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
-    let yPosition = 20;
-    const pageWidth = doc.internal.pageSize.width; // 612pt para letter
-    const margin = 40;
-    const contentWidth = pageWidth - 2 * margin;
-
-    // Função para adicionar nova página se necessário
-    const checkPageBreak = (height) => {
-        if (yPosition + height > doc.internal.pageSize.height - margin) {
-            doc.addPage();
-            yPosition = margin;
-        }
-    };
-
-    // Extrair dados do relatório
-    const unitId = document.getElementById('unitId').value;
-    const unitName = adAccountsMap[unitId] || 'Unidade Desconhecida';
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    const reach = document.querySelector('.metric-card.reach .metric-value')?.textContent || '0 pessoas';
-    const messages = document.querySelector('.metric-card.messages .metric-value')?.textContent || '0';
-    const costPerMessage = document.querySelector('.metric-card.cost .metric-value')?.textContent || 'R$ 0';
-    const investment = document.querySelector('.metric-card.investment .metric-value')?.textContent || 'R$ 0';
-
-    // Título
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(30, 60, 114); // #1e3c72
-    doc.text(`Relatório Completo - CA - ${unitName}`, margin, yPosition, { maxWidth: contentWidth });
-    yPosition += 25;
-
-    // Período
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(102, 102, 102); // #666
-    const periodText = `📅 Período: ${startDate.split('-').reverse().join('/')}`;
-    const comparisonText = comparisonData && comparisonData.startDate && comparisonData.endDate
-        ? `📅 Comparação: ${comparisonData.startDate.split('-').reverse().join('/')} a ${comparisonData.endDate.split('-').reverse().join('/')}`
-        : '';
-    doc.text(periodText, margin, yPosition, { maxWidth: contentWidth, encoding: 'UTF-8' });
-    yPosition += 15;
-    if (comparisonText) {
-        doc.text(comparisonText, margin, yPosition, { maxWidth: contentWidth, encoding: 'UTF-8' });
-        yPosition += 15;
+// Gerenciar plano de ação
+submitActionPlanBtn.addEventListener('click', () => {
+    const actionPlanText = actionPlanInput.value.trim();
+    if (actionPlanText) {
+        actionPlanResult.innerHTML = `<p>Plano de Ação Salvo: ${actionPlanText}</p>`;
+        actionPlanInput.value = '';
+    } else {
+        actionPlanResult.innerHTML = '<p>Por favor, insira um plano de ação.</p>';
     }
-
-    // Métricas em grade
-    checkPageBreak(100);
-    const cardWidth = (contentWidth - 15) / 2; // Dois cards por linha com margem de 15pt entre eles
-    const cardHeight = 70;
-    const colors = {
-        reach: '#e0f7fa',
-        messages: '#f3e5f5',
-        cost: '#fffde7',
-        investment: '#e8f5e9'
-    };
-
-    // Função para desenhar card
-    const drawCard = (x, y, label, value, bgColor) => {
-        doc.setFillColor(bgColor);
-        doc.rect(x, y, cardWidth, cardHeight, 'F');
-        doc.setFontSize(9);
-        doc.setTextColor(85, 85, 85);
-        doc.text(label, x + 10, y + 20);
-        doc.setFontSize(12);
-        doc.setTextColor(51, 51, 51);
-        doc.text(value, x + 10, y + 40, { maxWidth: cardWidth - 20 });
-    };
-
-    drawCard(margin, yPosition, 'Alcance Total', reach, colors.reach);
-    drawCard(margin + cardWidth + 15, yPosition, 'Mensagens Iniciadas', messages, colors.messages);
-    yPosition += cardHeight + 10;
-    drawCard(margin, yPosition, 'Custo por Mensagem', costPerMessage, colors.cost);
-    drawCard(margin + cardWidth + 15, yPosition, 'Investimento Total', investment, colors.investment);
-    yPosition += cardHeight + 20;
-
-    // Anúncios em destaque
-    const topAds = document.querySelectorAll('.top-ad-card');
-    if (topAds.length > 0) {
-        checkPageBreak(30);
-        doc.setFontSize(14);
-        doc.setTextColor(30, 60, 114);
-        doc.text('Anúncios em Destaque', margin, yPosition);
-        yPosition += 20;
-
-        for (const [index, ad] of Array.from(topAds).entries()) {
-            const img = ad.querySelector('img');
-            const messagesText = ad.querySelectorAll('.metric-value')[0]?.textContent || 'Mensagens: 0';
-            const costText = ad.querySelectorAll('.metric-value')[1]?.textContent || 'Custo por Msg: R$ 0';
-
-            checkPageBreak(120);
-            doc.setFillColor(255, 255, 255);
-            doc.rect(margin, yPosition, contentWidth, 110, 'F');
-
-            if (img && img.src) {
-                try {
-                    const imgData = await fetchImageAsBase64(img.src);
-                    if (imgData) {
-                        doc.addImage(imgData, 'JPEG', margin + 10, yPosition + 5, 100, 100); // Imagem pequena
-                    } else {
-                        doc.setFontSize(10);
-                        doc.text('Imagem não disponível (CORS ou URL inválida)', margin + 10, yPosition + 55);
-                    }
-                } catch (error) {
-                    console.error('Erro ao adicionar imagem ao PDF:', error);
-                    doc.setFontSize(10);
-                    doc.text('Imagem não disponível', margin + 10, yPosition + 55);
-                }
-            }
-
-            doc.setFontSize(11);
-            doc.setTextColor(51, 51, 51);
-            doc.text(messagesText, margin + 120, yPosition + 30);
-            doc.text(costText, margin + 120, yPosition + 50);
-            yPosition += 120;
-        }
-    }
-
-    // Plano de Ação
-    if (actionPlanResult.style.display === 'block') {
-        checkPageBreak(30);
-        doc.setFontSize(14);
-        doc.setTextColor(30, 60, 114);
-        doc.text('Plano de Ação:', margin, yPosition);
-        yPosition += 20;
-
-        const actionItems = actionPlanResult.querySelectorAll('li');
-        doc.setFontSize(11);
-        doc.setTextColor(51, 51, 51);
-        actionItems.forEach((item) => {
-            checkPageBreak(15);
-            const lines = doc.splitTextToSize(`• ${item.textContent}`, contentWidth - 20);
-            doc.text(lines, margin + 10, yPosition);
-            yPosition += lines.length * 12; // Ajuste de altura por linha
-        });
-    }
-
-    doc.save(`Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`);
-    console.log('PDF gerado e baixado com sucesso usando jsPDF.');
 });
