@@ -521,11 +521,13 @@ async function loadCampaigns(unitId, startDate, endDate) {
                 });
 
                 if (!isAdSetFilterActive) {
+                    // Show all campaigns regardless of spend
                     const campaignOptions = campaignIds.map(id => ({
                         value: id,
                         label: campaignsMap[unitId][id].name,
-                        spend: campaignsMap[unitId][id].insights.spend
+                        spend: campaignsMap[unitId][id].insights.spend || 0
                     }));
+                    console.log(`Total campaigns to render: ${campaignOptions.length}`);
                     renderOptions('campaignsList', campaignOptions, selectedCampaigns, true);
                 }
 
@@ -549,12 +551,12 @@ async function loadAdSets(unitId, startDate, endDate) {
         console.log(`Ad sets já carregados para unitId: ${unitId}, reutilizando dados existentes.`);
         if (!isCampaignFilterActive) {
             const adSetOptions = Object.keys(adSetsMap[unitId])
-                .filter(id => adSetsMap[unitId][id].insights.spend > 0)
                 .map(id => ({
                     value: id,
                     label: adSetsMap[unitId][id].name,
-                    spend: adSetsMap[unitId][id].insights.spend
+                    spend: adSetsMap[unitId][id].insights.spend || 0
                 }));
+            console.log(`Total cached adsets to render: ${adSetOptions.length}`);
             renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
         }
         return;
@@ -562,7 +564,7 @@ async function loadAdSets(unitId, startDate, endDate) {
 
     FB.api(
         `/${unitId}/adsets`,
-        { fields: 'id,name', limit: 50, access_token: currentAccessToken },
+        { fields: 'id,name', limit: 500, access_token: currentAccessToken },
         async function(adSetResponse) {
             if (adSetResponse && !adSetResponse.error) {
                 console.log(`Resposta da API para ad sets:`, adSetResponse);
@@ -582,25 +584,26 @@ async function loadAdSets(unitId, startDate, endDate) {
                         }
                     }
                     console.log(`Spend para ad set ${adSetId}: ${spend}`);
-                    if (spend > 0) {
-                        const adSet = adSetResponse.data.find(set => set.id === adSetId);
-                        adSetsMap[unitId][adSetId] = {
-                            name: adSet.name.toLowerCase(),
-                            insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
-                        };
-                    }
+                    
+                    // Include all adsets regardless of spend
+                    const adSet = adSetResponse.data.find(set => set.id === adSetId);
+                    adSetsMap[unitId][adSetId] = {
+                        name: adSet.name.toLowerCase(),
+                        insights: { spend: spend, actions: insights[index].actions || [], reach: insights[index].reach || 0 }
+                    };
                 });
 
                 console.log(`adSetsMap[${unitId}] após carregamento:`, adSetsMap[unitId]);
 
                 if (!isCampaignFilterActive) {
+                    // Show all adsets without filtering by spend
                     const adSetOptions = Object.keys(adSetsMap[unitId])
-                        .filter(id => adSetsMap[unitId][id].insights.spend > 0)
                         .map(id => ({
                             value: id,
                             label: adSetsMap[unitId][id].name,
-                            spend: adSetsMap[unitId][id].insights.spend
+                            spend: adSetsMap[unitId][id].insights.spend || 0
                         }));
+                    console.log(`Total adsets to render: ${adSetOptions.length}`);
                     renderOptions('adSetsList', adSetOptions, selectedAdSets, false);
                 }
 
